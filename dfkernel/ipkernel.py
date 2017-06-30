@@ -1,190 +1,28 @@
+import ipykernel.ipkernel
+from ipykernel.ipkernel import *
+
 """The IPython kernel implementation"""
 
-import getpass
 import sys
+import time
 
-from IPython.core import release
-from ipython_genutils.py3compat import builtin_mod, PY3, unicode_type, safe_unicode
-from IPython.utils.tokenutil import token_at_cursor, line_at_cursor
-from traitlets import Instance, Type, Any, List
+from ipython_genutils.py3compat import safe_unicode
+from traitlets import Type
+from ipython_genutils import py3compat
+from ipython_genutils.py3compat import unicode_type
+from ipykernel.jsonutil import json_clean
 
-from dfkernel.comm import CommManager
-from .kernelbase import Kernel as KernelBase
 from .zmqshell import ZMQInteractiveShell
 
-
-try:
-    from IPython.core.completer import rectify_completions, provisionalcompleter
-    _use_experimental_60_completion = True
-except ImportError:
-    _use_experimental_60_completion = False
-
-_EXPERIMENTAL_KEY_NAME = '_jupyter_types_experimental'
-
-
-class IPythonKernel(KernelBase):
-    shell = Instance('IPython.core.interactiveshell.InteractiveShellABC',
-                     allow_none=True)
+class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     shell_class = Type(ZMQInteractiveShell)
+    execution_count = None
 
-    user_module = Any()
-    def _user_module_changed(self, name, old, new):
-        if self.shell is not None:
-            self.shell.user_module = new
-
-    user_ns = Instance(dict, args=None, allow_none=True)
-    def _user_ns_changed(self, name, old, new):
-        if self.shell is not None:
-            self.shell.user_ns = new
-            self.shell.init_user_ns()
-
-    # A reference to the Python builtin 'raw_input' function.
-    # (i.e., __builtin__.raw_input for Python 2.7, builtins.input for Python 3)
-    _sys_raw_input = Any()
-    _sys_eval_input = Any()
 
     def __init__(self, **kwargs):
         super(IPythonKernel, self).__init__(**kwargs)
-
-        # Initialize the InteractiveShell subclass
-        self.shell = self.shell_class.instance(parent=self,
-            profile_dir = self.profile_dir,
-            user_module = self.user_module,
-            user_ns     = self.user_ns,
-            kernel      = self,
-        )
-        self.shell.displayhook.session = self.session
-        self.shell.displayhook.pub_socket = self.iopub_socket
-        self.shell.displayhook.topic = self._topic('execute_result')
-        self.shell.display_pub.session = self.session
-        self.shell.display_pub.pub_socket = self.iopub_socket
-
         self.shell.displayhook.get_execution_count = lambda: self.execution_count
         self.shell.display_pub.get_execution_count = lambda: self.execution_count
-
-        self.comm_manager = CommManager(parent=self, kernel=self)
-
-        self.shell.configurables.append(self.comm_manager)
-        comm_msg_types = [ 'comm_open', 'comm_msg', 'comm_close' ]
-        for msg_type in comm_msg_types:
-            self.shell_handlers[msg_type] = getattr(self.comm_manager, msg_type)
-
-    help_links = List([
-        {
-            'text': "Python",
-            'url': "http://docs.python.org/%i.%i" % sys.version_info[:2],
-        },
-        {
-            'text': "IPython",
-            'url': "http://ipython.org/documentation.html",
-        },
-        {
-            'text': "NumPy",
-            'url': "http://docs.scipy.org/doc/numpy/reference/",
-        },
-        {
-            'text': "SciPy",
-            'url': "http://docs.scipy.org/doc/scipy/reference/",
-        },
-        {
-            'text': "Matplotlib",
-            'url': "http://matplotlib.org/contents.html",
-        },
-        {
-            'text': "SymPy",
-            'url': "http://docs.sympy.org/latest/index.html",
-        },
-        {
-            'text': "pandas",
-            'url': "http://pandas.pydata.org/pandas-docs/stable/",
-        },
-    ]).tag(config=True)
-
-    # Kernel info fields
-    implementation = 'ipython'
-    implementation_version = release.version
-    language_info = {
-        'name': 'python',
-        'version': sys.version.split()[0],
-        'mimetype': 'text/x-python',
-        'codemirror_mode': {
-            'name': 'ipython',
-            'version': sys.version_info[0]
-        },
-        'pygments_lexer': 'ipython%d' % (3 if PY3 else 2),
-        'nbconvert_exporter': 'python',
-        'file_extension': '.py'
-    }
-
-    @property
-    def banner(self):
-        return self.shell.banner
-
-    def start(self):
-        self.shell.exit_now = False
-        super(IPythonKernel, self).start()
-
-    def set_parent(self, ident, parent):
-        """Overridden from parent to tell the display hook and output streams
-        about the parent message.
-        """
-        super(IPythonKernel, self).set_parent(ident, parent)
-        self.shell.set_parent(parent)
-
-    def init_metadata(self, parent):
-        """Initialize metadata.
-
-        Run at the beginning of each execution request.
-        """
-        md = super(IPythonKernel, self).init_metadata(parent)
-        # FIXME: remove deprecated ipyparallel-specific code
-        # This is required for ipyparallel < 5.0
-        md.update({
-            'dependencies_met' : True,
-            'engine' : self.ident,
-        })
-        return md
-
-    def finish_metadata(self, parent, metadata, reply_content):
-        """Finish populating metadata.
-
-        Run after completing an execution request.
-        """
-        # FIXME: remove deprecated ipyparallel-specific code
-        # This is required by ipyparallel < 5.0
-        metadata['status'] = reply_content['status']
-        if reply_content['status'] == 'error' and reply_content['ename'] == 'UnmetDependency':
-                metadata['dependencies_met'] = False
-
-        return metadata
-
-    def _forward_input(self, allow_stdin=False):
-        """Forward raw_input and getpass to the current frontend.
-
-        via input_request
-        """
-        self._allow_stdin = allow_stdin
-
-        if PY3:
-            self._sys_raw_input = builtin_mod.input
-            builtin_mod.input = self.raw_input
-        else:
-            self._sys_raw_input = builtin_mod.raw_input
-            self._sys_eval_input = builtin_mod.input
-            builtin_mod.raw_input = self.raw_input
-            builtin_mod.input = lambda prompt='': eval(self.raw_input(prompt))
-        self._save_getpass = getpass.getpass
-        getpass.getpass = self.getpass
-
-    def _restore_input(self):
-        """Restore raw_input, getpass"""
-        if PY3:
-            builtin_mod.input = self._sys_raw_input
-        else:
-            builtin_mod.raw_input = self._sys_raw_input
-            builtin_mod.input = self._sys_eval_input
-
-        getpass.getpass = self._save_getpass
 
     @property
     def execution_count(self):
@@ -196,6 +34,88 @@ class IPythonKernel(KernelBase):
         # Ignore the incrememnting done by KernelBase, in favour of our shell's
         # execution counter.
         pass
+
+    def execute_request(self, stream, ident, parent):
+        """handle an execute_request"""
+
+        try:
+            content = parent[u'content']
+            code = py3compat.cast_unicode_py2(content[u'code'])
+            silent = content[u'silent']
+            store_history = content.get(u'store_history', not silent)
+            user_expressions = content.get('user_expressions', {})
+            allow_stdin = content.get('allow_stdin', False)
+        except:
+            self.log.error("Got bad msg: ")
+            self.log.error("%s", parent)
+            return
+
+        stop_on_error = content.get('stop_on_error', True)
+
+        # grab and remove uuid from user_expressions
+        # there just for convenience of not modifying the msg protocol
+        uuid = user_expressions.pop('__uuid__', None)
+        code_dict = user_expressions.pop('__code_dict__', dict())
+
+        self._outer_stream = stream
+        self._outer_ident = ident
+        self._outer_parent = parent
+        self._outer_stop_on_error = stop_on_error
+        self._outer_allow_stdin = allow_stdin
+        self._outer_code_dict = code_dict # stash since will be global
+
+        self.inner_execute_request(code, uuid, silent,
+                                   store_history, user_expressions)
+
+        self._outer_stream = None
+        self._outer_ident = None
+        self._outer_parent = None
+        self._outer_stop_on_error = None
+        self._outer_allow_stdin = None
+        self._outer_code_dict = None
+
+    def inner_execute_request(self, code, uuid, silent,
+                              store_history=True, user_expressions=None):
+
+        stream = self._outer_stream
+        ident = self._outer_ident
+        parent = self._outer_parent
+        stop_on_error = self._outer_stop_on_error
+        allow_stdin = self._outer_allow_stdin
+        code_dict = self._outer_code_dict
+
+        # FIXME does it make sense to reparent a request?
+        metadata = self.init_metadata(parent)
+
+        if not silent:
+            self._publish_execute_input(code, parent, uuid)
+
+        reply_content, res = self.do_execute(code, uuid, code_dict, silent, store_history,
+                                        user_expressions, allow_stdin)
+
+        # Flush output before sending the reply.
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # FIXME: on rare occasions, the flush doesn't seem to make it to the
+        # clients... This seems to mitigate the problem, but we definitely need
+        # to better understand what's going on.
+        if self._execute_sleep:
+            time.sleep(self._execute_sleep)
+
+        # Send the reply.
+        reply_content = json_clean(reply_content)
+        metadata = self.finish_metadata(parent, metadata, reply_content)
+
+        reply_msg = self.session.send(stream, u'execute_reply',
+                                      reply_content, parent, metadata=metadata,
+                                      ident=ident)
+
+        self.log.debug("%s", reply_msg)
+
+        if not silent and reply_msg['content']['status'] == u'error' and stop_on_error:
+            self._abort_queues()
+
+        return res
 
     def do_execute(self, code, uuid, code_dict, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -266,172 +186,7 @@ class IPythonKernel(KernelBase):
 
         return reply_content, res
 
-    def do_complete(self, code, cursor_pos):
-        if _use_experimental_60_completion:
-            return self._experimental_do_complete(code, cursor_pos)
-
-        # FIXME: IPython completers currently assume single line,
-        # but completion messages give multi-line context
-        # For now, extract line from cell, based on cursor_pos:
-        if cursor_pos is None:
-            cursor_pos = len(code)
-        line, offset = line_at_cursor(code, cursor_pos)
-        line_cursor = cursor_pos - offset
-
-        txt, matches = self.shell.complete('', line, line_cursor)
-        return {'matches' : matches,
-                'cursor_end' : cursor_pos,
-                'cursor_start' : cursor_pos - len(txt),
-                'metadata' : {},
-                'status' : 'ok'}
-
-    def _experimental_do_complete(self, code, cursor_pos):
-        """
-        Experimental completions from IPython, using Jedi. 
-        """
-        if cursor_pos is None:
-            cursor_pos = len(code)
-        with provisionalcompleter():
-            raw_completions = self.shell.Completer.completions(code, cursor_pos)
-            completions = list(rectify_completions(code, raw_completions))
-            
-            comps = []
-            for comp in completions:
-                comps.append(dict(
-                            start=comp.start,
-                            end=comp.end,
-                            text=comp.text,
-                            type=comp.type,
-                ))
-
-        if completions:
-            s = completions[0].start
-            e = completions[0].end
-            matches = [c.text for c in completions]
-        else:
-            s = cursor_pos
-            e = cursor_pos
-            matches = []
-
-        return {'matches': matches,
-                'cursor_end': e,
-                'cursor_start': s,
-                'metadata': {_EXPERIMENTAL_KEY_NAME: comps},
-                'status': 'ok'}
-
-
-
-    def do_inspect(self, code, cursor_pos, detail_level=0):
-        name = token_at_cursor(code, cursor_pos)
-        info = self.shell.object_inspect(name)
-
-        reply_content = {'status' : 'ok'}
-        reply_content['data'] = data = {}
-        reply_content['metadata'] = {}
-        reply_content['found'] = info['found']
-        if info['found']:
-            info_text = self.shell.object_inspect_text(
-                name,
-                detail_level=detail_level,
-            )
-            data['text/plain'] = info_text
-
-        return reply_content
-
-    def do_history(self, hist_access_type, output, raw, session=0, start=0,
-                   stop=None, n=None, pattern=None, unique=False):
-        if hist_access_type == 'tail':
-            hist = self.shell.history_manager.get_tail(n, raw=raw, output=output,
-                                                            include_latest=True)
-
-        elif hist_access_type == 'range':
-            hist = self.shell.history_manager.get_range(session, start, stop,
-                                                        raw=raw, output=output)
-
-        elif hist_access_type == 'search':
-            hist = self.shell.history_manager.search(
-                pattern, raw=raw, output=output, n=n, unique=unique)
-        else:
-            hist = []
-
-        return {
-            'status': 'ok',
-            'history' : list(hist),
-        }
-
-    def do_shutdown(self, restart):
-        self.shell.exit_now = True
-        return dict(status='ok', restart=restart)
-
-    def do_is_complete(self, code):
-        status, indent_spaces = self.shell.input_transformer_manager.check_complete(code)
-        r = {'status': status}
-        if status == 'incomplete':
-            r['indent'] = ' ' * indent_spaces
-        return r
-
-    def do_apply(self, content, bufs, msg_id, reply_metadata):
-        from ipykernel.serialize import serialize_object, unpack_apply_message
-        shell = self.shell
-        try:
-            working = shell.user_ns
-
-            prefix = "_"+str(msg_id).replace("-","")+"_"
-
-            f,args,kwargs = unpack_apply_message(bufs, working, copy=False)
-
-            fname = getattr(f, '__name__', 'f')
-
-            fname = prefix+"f"
-            argname = prefix+"args"
-            kwargname = prefix+"kwargs"
-            resultname = prefix+"result"
-
-            ns = { fname : f, argname : args, kwargname : kwargs , resultname : None }
-            # print ns
-            working.update(ns)
-            code = "%s = %s(*%s,**%s)" % (resultname, fname, argname, kwargname)
-            try:
-                exec(code, shell.user_global_ns, shell.user_ns)
-                result = working.get(resultname)
-            finally:
-                for key in ns:
-                    working.pop(key)
-
-            result_buf = serialize_object(result,
-                buffer_threshold=self.session.buffer_threshold,
-                item_threshold=self.session.item_threshold,
-            )
-
-        except BaseException as e:
-            # invoke IPython traceback formatting
-            shell.showtraceback()
-            reply_content = {
-                u'traceback': shell._last_traceback or [],
-                u'ename': unicode_type(type(e).__name__),
-                u'evalue': safe_unicode(e),
-            }
-            # FIXME: deprecated piece for ipyparallel (remove in 5.0):
-            e_info = dict(engine_uuid=self.ident, engine_id=self.int_id, method='apply')
-            reply_content['engine_info'] = e_info
-
-            self.send_response(self.iopub_socket, u'error', reply_content,
-                                ident=self._topic('error'))
-            self.log.info("Exception in apply request:\n%s", '\n'.join(reply_content['traceback']))
-            result_buf = []
-            reply_content['status'] = 'error'
-        else:
-            reply_content = {'status' : 'ok'}
-
-        return reply_content, result_buf
-
-    def do_clear(self):
-        self.shell.reset(False)
-        return dict(status='ok')
-
-
 # This exists only for backwards compatibility - use IPythonKernel instead
-
 class Kernel(IPythonKernel):
     def __init__(self, *args, **kwargs):
         import warnings
