@@ -20,7 +20,7 @@ from ipython_genutils.py3compat import unicode_type
 from dfkernel.displayhook import ZMQShellDisplayHook
 from collections import defaultdict, namedtuple
 from traitlets import (
-    Integer, Instance, Type, validate
+    Integer, Instance, Type, Unicode, validate
 )
 from warnings import warn
 
@@ -337,7 +337,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     execution_count = Integer(0)
     # UUID passed from notebook interface
-    uuid = Integer()
+    uuid = Unicode()
     dataflow_history_manager = Instance(DataflowHistoryManager)
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
@@ -535,7 +535,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 old_result = self.displayhook.exec_result
                 self.displayhook.exec_result = result
                 old_uuid = self.uuid
-                self.uuid = int(uuid,16)
+                self.uuid = uuid
 
                 # Execute the user code
                 interactivity = "none" if silent else self.ast_node_interactivity
