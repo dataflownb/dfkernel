@@ -66,12 +66,14 @@ define([
             } else if (start < 0) {
                 start = end + start;
             }
-        } else {
-            // handle surrogate pairs
-            var text = this.editor.getValue();
-            end = utils.char_idx_to_js_idx(end, text);
-            start = utils.char_idx_to_js_idx(start, text);
         }
+        // FIXME from newer version than "shipping"
+        // } else {
+        //     // handle surrogate pairs
+        //     var text = this.editor.getValue();
+        //     end = utils.char_idx_to_js_idx(end, text);
+        //     start = utils.char_idx_to_js_idx(start, text);
+        // }
 
         var results = CodeMirror.contextHint(this.editor);
         var filtered_results = [];
