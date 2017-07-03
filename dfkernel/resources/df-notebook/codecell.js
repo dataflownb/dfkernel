@@ -285,7 +285,7 @@ define([
                         cell.set_input_prompt('*');
                         cell.element.addClass("running");
                         cell.render();
-                        this.events.trigger('execute.CodeCell', {cell: cell});
+                        that.events.trigger('execute.CodeCell', {cell: cell});
                     }
                 }
             },
