@@ -303,6 +303,8 @@ define([
         if (!cell) {
             cell = this;
         }
+        cell.set_input_prompt(msg.content.execution_count);
+        cell.element.removeClass("running");
         if (cell == this) {
             var that = this;
             msg.content.upstream_deps.forEach(function (cid) {
@@ -332,8 +334,6 @@ define([
                 $('.downstream-deps', that.cell_info_area).show();
             });
         }
-        cell.set_input_prompt(msg.content.execution_count);
-        cell.element.removeClass("running");
         cell.events.trigger('set_dirty.Notebook', {value: true});
     };
 
