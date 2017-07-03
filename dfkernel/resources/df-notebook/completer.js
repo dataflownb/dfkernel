@@ -1,11 +1,14 @@
 define([
     'jquery',
+    'notebook/js/completer',
     'base/js/utils',
     'base/js/keyboard',
     'notebook/js/contexthint',
     'codemirror/lib/codemirror',
-], function($, utils, keyboard, CodeMirror) {
+], function($, completer, utils, keyboard, CodeMirror) {
     "use strict";
+
+    var Completer = completer.Completer;
     
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);

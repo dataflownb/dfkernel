@@ -1,10 +1,12 @@
 define([
+    'services/kernels/kernel',
     'jquery',
     'base/js/utils',
-    './comm',
-    './serialize',
+    'services/kernels/comm',
+    'services/kernels/serialize',
     'base/js/events'
-], function($, utils, comm, serialize, events) {
+], function(kernel, $, utils, comm, serialize, events) {
+    var Kernel = kernel.Kernel;
     "use strict";
 
      /**

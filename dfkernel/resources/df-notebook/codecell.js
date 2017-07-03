@@ -1,5 +1,6 @@
 define([
     'jquery',
+    'notebook/js/codecell',
     'base/js/namespace',
     'base/js/utils',
     'base/js/keyboard',
@@ -13,6 +14,7 @@ define([
     'notebook/js/codemirror-ipython'
 ], function(
     $,
+    codecell,
     IPython,
     utils,
     keyboard,
@@ -25,56 +27,79 @@ define([
     cmpython,
     cmip
     ) {
-	
-	
-	var CodeCell = function (kernel, options) {
-        /**
-         * Constructor
-         *
-         * A Cell conceived to write code.
-         *
-         * Parameters:
-         *  kernel: Kernel instance
-         *      The kernel doesn't have to be set at creation time, in that case
-         *      it will be null and set_kernel has to be called later.
-         *  options: dictionary
-         *      Dictionary of keyword arguments.
-         *          events: $(Events) instance
-         *          config: dictionary
-         *          keyboard_manager: KeyboardManager instance
-         *          notebook: Notebook instance
-         *          tooltip: Tooltip instance
-         */
-        this.kernel = kernel || null;
-        this.notebook = options.notebook;
-        this.collapsed = false;
-        this.events = options.events;
-        this.tooltip = options.tooltip;
-        this.config = options.config;
-        this.class_config = new configmod.ConfigWithDefaults(this.config,
-                                        CodeCell.options_default, 'CodeCell');
 
-        // create all attributed in constructor function
-        // even if null for V8 VM optimisation
-        this.input_prompt_number = null;
-        this.celltoolbar = null;
-        this.output_area = null;
+    var CodeCell = codecell.CodeCell;
+    var Cell = cell.Cell;
+	
+    // var CodeCell = function (kernel, options) {
+    //     /**
+    //      * Constructor
+    //      *
+    //      * A Cell conceived to write code.
+    //      *
+    //      * Parameters:
+    //      *  kernel: Kernel instance
+    //      *      The kernel doesn't have to be set at creation time, in that case
+    //      *      it will be null and set_kernel has to be called later.
+    //      *  options: dictionary
+    //      *      Dictionary of keyword arguments.
+    //      *          events: $(Events) instance
+    //      *          config: dictionary
+    //      *          keyboard_manager: KeyboardManager instance
+    //      *          notebook: Notebook instance
+    //      *          tooltip: Tooltip instance
+    //      */
+    //     this.kernel = kernel || null;
+    //     this.notebook = options.notebook;
+    //     this.collapsed = false;
+    //     this.events = options.events;
+    //     this.tooltip = options.tooltip;
+    //     this.config = options.config;
+    //     this.class_config = new configmod.ConfigWithDefaults(this.config,
+    //                                     CodeCell.options_default, 'CodeCell');
+    //
+    //     // create all attributed in constructor function
+    //     // even if null for V8 VM optimisation
+    //     this.input_prompt_number = null;
+    //     this.celltoolbar = null;
+    //     this.output_area = null;
+    //     this.cell_info_area = null;
+    //     this.cell_upstream_deps = null;
+    //     this.cell_downstream_deps = null;
+    //
+    //     this.last_msg_id = null;
+    //     this.completer = null;
+    //
+    //     Cell.apply(this,[{
+    //         config: options.config,
+    //         keyboard_manager: options.keyboard_manager,
+    //         events: this.events}]);
+    //
+    //     // Attributes we want to override in this subclass.
+    //     this.cell_type = "code";
+    //
+    //     // create uuid
+    //     // from http://guid.us/GUID/JavaScript
+    //     function S4() {
+    //         return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+    //     }
+    //     // TODO fix this, just shortening for ease of testing
+    //     //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
+    //     this.uuid = S4() + S4().substr(0,2);
+    //     this.was_changed = true;
+    //
+    //     var that  = this;
+    //     this.element.focusout(
+    //         function() { that.auto_highlight(); }
+    //     );
+    // };
+
+	CodeCell.prototype.init_dfnb = function () {
         this.cell_info_area = null;
         this.cell_upstream_deps = null;
         this.cell_downstream_deps = null;
 
-        this.last_msg_id = null;
-        this.completer = null;
-
-        Cell.apply(this,[{
-            config: options.config,
-            keyboard_manager: options.keyboard_manager,
-            events: this.events}]);
-
-        // Attributes we want to override in this subclass.
-        this.cell_type = "code";
-
-        // create uuid
+	    // create uuid
         // from http://guid.us/GUID/JavaScript
         function S4() {
             return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
@@ -84,12 +109,8 @@ define([
         this.uuid = S4() + S4().substr(0,2);
         this.was_changed = true;
 
-        var that  = this;
-        this.element.focusout(
-            function() { that.auto_highlight(); }
-        );
     };
-	
+
 	/** @method create_element */
     CodeCell.prototype.create_element = function () {
         Cell.prototype.create_element.apply(this, arguments);
@@ -220,6 +241,12 @@ define([
         }
         this.set_input_prompt('*');
         this.element.addClass("running");
+
+        if (! ("last_executed_i" in this.notebook)) {
+            this.notebook.last_executed_iii = null;
+            this.notebook.last_executed_ii = null;
+            this.notebook.last_executed_i = null;
+        }
 
         this.notebook.last_executed_iii = this.notebook.last_executed_ii;
         this.notebook.last_executed_ii = this.notebook.last_executed_i;
@@ -433,7 +460,5 @@ define([
         }
         return data;
     };
-
-
 		
-	});
+});

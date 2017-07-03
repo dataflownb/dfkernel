@@ -3,33 +3,35 @@
  */
 define([
     'jquery',
+    'notebook/js/notebook',
     'base/js/namespace',
     'underscore',
     'base/js/utils',
     'base/js/dialog',
-    './cell',
-    './textcell',
-    './codecell',
+    'notebook/js/cell',
+    'notebook/js/textcell',
+    'notebook/js/codecell',
     'moment',
     'services/config',
     'services/sessions/session',
-    './celltoolbar',
+    'notebook/js/celltoolbar',
     'components/marked/lib/marked',
     'codemirror/lib/codemirror',
     'codemirror/addon/runmode/runmode',
-    './mathjaxutils',
+    'notebook/js/mathjaxutils',
     'base/js/keyboard',
-    './tooltip',
-    './celltoolbarpresets/default',
-    './celltoolbarpresets/rawcell',
-    './celltoolbarpresets/slideshow',
-    './celltoolbarpresets/attachments',
-    './celltoolbarpresets/tags',
-    './scrollmanager',
-    './commandpalette',
-    './shortcuteditor',
+    'notebook/js/tooltip',
+    'notebook/js/celltoolbarpresets/default',
+    'notebook/js/celltoolbarpresets/rawcell',
+    'notebook/js/celltoolbarpresets/slideshow',
+    'notebook/js/celltoolbarpresets/attachments',
+    'notebook/js/celltoolbarpresets/tags',
+    'notebook/js/scrollmanager',
+    'notebook/js/commandpalette',
+    'notebook/js/shortcuteditor'
 ], function (
     $,
+    notebook,
     IPython,
     _,
     utils,
@@ -57,190 +59,203 @@ define([
     shortcuteditor
 ) {
 
-    var ShortcutEditor = shortcuteditor.ShortcutEditor;
-    /**
-     * Contains and manages cells.
-     * @class Notebook
-     * @param {string}          selector
-     * @param {object}          options - Dictionary of keyword arguments.
-     * @param {jQuery}          options.events - selector of Events
-     * @param {KeyboardManager} options.keyboard_manager
-     * @param {Contents}        options.contents
-     * @param {SaveWidget}      options.save_widget
-     * @param {object}          options.config
-     * @param {string}          options.base_url
-     * @param {string}          options.notebook_path
-     * @param {string}          options.notebook_name
-     */
-    function Notebook(selector, options) {
-        this.config = options.config;
-        this.class_config = new configmod.ConfigWithDefaults(this.config,
-                                        Notebook.options_default, 'Notebook');
-        this.base_url = options.base_url;
-        this.notebook_path = options.notebook_path;
-        this.notebook_name = options.notebook_name;
-        this.events = options.events;
-        this.keyboard_manager = options.keyboard_manager;
-        this.contents = options.contents;
-        this.save_widget = options.save_widget;
-        this.tooltip = new tooltip.Tooltip(this.events);
-        this.ws_url = options.ws_url;
-        this._session_starting = false;
-        this.last_modified = null;
-        // debug 484
-        this._last_modified = 'init';
-        // Firefox workaround
-        this._ff_beforeunload_fired = false;
+    var Notebook = notebook.Notebook;
 
-        //  Create default scroll manager.
-        this.scroll_manager = new scrollmanager.ScrollManager(this);
+    // var ShortcutEditor = shortcuteditor.ShortcutEditor;
+    // /**
+    //  * Contains and manages cells.
+    //  * @class Notebook
+    //  * @param {string}          selector
+    //  * @param {object}          options - Dictionary of keyword arguments.
+    //  * @param {jQuery}          options.events - selector of Events
+    //  * @param {KeyboardManager} options.keyboard_manager
+    //  * @param {Contents}        options.contents
+    //  * @param {SaveWidget}      options.save_widget
+    //  * @param {object}          options.config
+    //  * @param {string}          options.base_url
+    //  * @param {string}          options.notebook_path
+    //  * @param {string}          options.notebook_name
+    //  */
+    // function Notebook(selector, options) {
+    //     this.config = options.config;
+    //     this.class_config = new configmod.ConfigWithDefaults(this.config,
+    //                                     Notebook.options_default, 'Notebook');
+    //     this.base_url = options.base_url;
+    //     this.notebook_path = options.notebook_path;
+    //     this.notebook_name = options.notebook_name;
+    //     this.events = options.events;
+    //     this.keyboard_manager = options.keyboard_manager;
+    //     this.contents = options.contents;
+    //     this.save_widget = options.save_widget;
+    //     this.tooltip = new tooltip.Tooltip(this.events);
+    //     this.ws_url = options.ws_url;
+    //     this._session_starting = false;
+    //     this.last_modified = null;
+    //     // debug 484
+    //     this._last_modified = 'init';
+    //     // Firefox workaround
+    //     this._ff_beforeunload_fired = false;
+    //
+    //     //  Create default scroll manager.
+    //     this.scroll_manager = new scrollmanager.ScrollManager(this);
+    //
+    //     // TODO: This code smells (and the other `= this` line a couple lines down)
+    //     // We need a better way to deal with circular instance references.
+    //     this.keyboard_manager.notebook = this;
+    //     this.save_widget.notebook = this;
+    //
+    //     mathjaxutils.init();
+    //
+    //     if (marked) {
+    //         marked.setOptions({
+    //             gfm : true,
+    //             tables: true,
+    //             // FIXME: probably want central config for CodeMirror theme when we have js config
+    //             langPrefix: "cm-s-ipython language-",
+    //             highlight: function(code, lang, callback) {
+    //                 if (!lang) {
+    //                     // no language, no highlight
+    //                     if (callback) {
+    //                         callback(null, code);
+    //                         return;
+    //                     } else {
+    //                         return code;
+    //                     }
+    //                 }
+    //                 utils.requireCodeMirrorMode(lang, function (spec) {
+    //                     var el = document.createElement("div");
+    //                     var mode = CodeMirror.getMode({}, spec);
+    //                     if (!mode) {
+    //                         console.log("No CodeMirror mode: " + lang);
+    //                         callback(null, code);
+    //                         return;
+    //                     }
+    //                     try {
+    //                         CodeMirror.runMode(code, spec, el);
+    //                         callback(null, el.innerHTML);
+    //                     } catch (err) {
+    //                         console.log("Failed to highlight " + lang + " code", err);
+    //                         callback(err, code);
+    //                     }
+    //                 }, function (err) {
+    //                     console.log("No CodeMirror mode: " + lang);
+    //                     console.log("Require CodeMirror mode error: " + err);
+    //                     callback(null, code);
+    //                 });
+    //             }
+    //         });
+    //     }
+    //
+    //     this.element = $(selector);
+    //     this.element.scroll();
+    //     this.element.data("notebook", this);
+    //     this.session = null;
+    //     this.kernel = null;
+    //     this.kernel_busy = false;
+    //     this.clipboard = null;
+    //     this.clipboard_attachments = null;
+    //     this.undelete_backup_stack = [];
+    //     this.paste_enabled = false;
+    //     this.paste_attachments_enabled = false;
+    //     this.writable = false;
+    //     // It is important to start out in command mode to match the intial mode
+    //     // of the KeyboardManager.
+    //     this.mode = 'command';
+    //     this.set_dirty(false);
+    //     this.metadata = {};
+    //     this._checkpoint_after_save = false;
+    //     this.last_checkpoint = null;
+    //     this.checkpoints = [];
+    //     this.autosave_interval = 0;
+    //     this.autosave_timer = null;
+    //     // autosave *at most* every two minutes
+    //     this.minimum_autosave_interval = 120000;
+    //     this.notebook_name_blacklist_re = /[\/\\:]/;
+    //     this.nbformat = 4; // Increment this when changing the nbformat
+    //     this.nbformat_minor = this.current_nbformat_minor = 1; // Increment this when changing the nbformat
+    //     this.codemirror_mode = 'text';
+    //     this.create_elements();
+    //     this.bind_events();
+    //     this.kernel_selector = null;
+    //     this.dirty = null;
+    //     this.trusted = null;
+    //     this._changed_on_disk_dialog = null;
+    //     this._fully_loaded = false;
+    //
+    //     this.last_executed_i = null;
+    //     this.last_executed_ii = null;
+    //     this.last_executed_iii = null;
+    //
+    //     // Trigger cell toolbar registration.
+    //     default_celltoolbar.register(this);
+    //     rawcell_celltoolbar.register(this);
+    //     slideshow_celltoolbar.register(this);
+    //     attachments_celltoolbar.register(this);
+    //     tags_celltoolbar.register(this);
+    //
+    //     var that = this;
+    //
+    //     Object.defineProperty(this, 'line_numbers', {
+    //         get: function() {
+    //             var d = that.config.data || {};
+    //             var cmc =  (d['Cell'] || {}) ['cm_config'] || {};
+    //             return cmc['lineNumbers'] || false;
+    //         },
+    //         set: function(value) {
+    //             that.config.update({
+    //                 'Cell': {
+    //                     'cm_config': {
+    //                         'lineNumbers':value
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     });
+    //
+    //     Object.defineProperty(this, 'header', {
+    //         get: function() {
+    //             return that.class_config.get_sync('Header');
+    //         },
+    //         set: function(value) {
+    //             that.class_config.set('Header', value);
+    //         }
+    //     });
+    //
+    //     Object.defineProperty(this, 'toolbar', {
+    //         get: function() {
+    //             return that.class_config.get_sync('Toolbar');
+    //         },
+    //         set: function(value) {
+    //             that.class_config.set('Toolbar', value);
+    //         }
+    //     });
+    //
+    //     this.class_config.get('Header').then(function(header) {
+    //         if (header === false) {
+    //             that.keyboard_manager.actions.call('jupyter-notebook:hide-header');
+    //         }
+    //     });
+    //
+    //     this.class_config.get('Toolbar').then(function(toolbar) {
+    //       if (toolbar === false) {
+    //           that.keyboard_manager.actions.call('jupyter-notebook:hide-toolbar');
+    //       }
+    //     });
+    //
+    //     // prevent assign to miss-typed properties.
+    //     Object.seal(this);
+    // };
 
-        // TODO: This code smells (and the other `= this` line a couple lines down)
-        // We need a better way to deal with circular instance references.
-        this.keyboard_manager.notebook = this;
-        this.save_widget.notebook = this;
-
-        mathjaxutils.init();
-
-        if (marked) {
-            marked.setOptions({
-                gfm : true,
-                tables: true,
-                // FIXME: probably want central config for CodeMirror theme when we have js config
-                langPrefix: "cm-s-ipython language-",
-                highlight: function(code, lang, callback) {
-                    if (!lang) {
-                        // no language, no highlight
-                        if (callback) {
-                            callback(null, code);
-                            return;
-                        } else {
-                            return code;
-                        }
-                    }
-                    utils.requireCodeMirrorMode(lang, function (spec) {
-                        var el = document.createElement("div");
-                        var mode = CodeMirror.getMode({}, spec);
-                        if (!mode) {
-                            console.log("No CodeMirror mode: " + lang);
-                            callback(null, code);
-                            return;
-                        }
-                        try {
-                            CodeMirror.runMode(code, spec, el);
-                            callback(null, el.innerHTML);
-                        } catch (err) {
-                            console.log("Failed to highlight " + lang + " code", err);
-                            callback(err, code);
-                        }
-                    }, function (err) {
-                        console.log("No CodeMirror mode: " + lang);
-                        console.log("Require CodeMirror mode error: " + err);
-                        callback(null, code);
-                    });
-                }
-            });
-        }
-
-        this.element = $(selector);
-        this.element.scroll();
-        this.element.data("notebook", this);
-        this.session = null;
-        this.kernel = null;
-        this.kernel_busy = false;
-        this.clipboard = null;
-        this.clipboard_attachments = null;
-        this.undelete_backup_stack = [];
-        this.paste_enabled = false;
-        this.paste_attachments_enabled = false;
-        this.writable = false;
-        // It is important to start out in command mode to match the intial mode
-        // of the KeyboardManager.
-        this.mode = 'command';
-        this.set_dirty(false);
-        this.metadata = {};
-        this._checkpoint_after_save = false;
-        this.last_checkpoint = null;
-        this.checkpoints = [];
-        this.autosave_interval = 0;
-        this.autosave_timer = null;
-        // autosave *at most* every two minutes
-        this.minimum_autosave_interval = 120000;
-        this.notebook_name_blacklist_re = /[\/\\:]/;
-        this.nbformat = 4; // Increment this when changing the nbformat
-        this.nbformat_minor = this.current_nbformat_minor = 1; // Increment this when changing the nbformat
-        this.codemirror_mode = 'text';
-        this.create_elements();
-        this.bind_events();
-        this.kernel_selector = null;
-        this.dirty = null;
-        this.trusted = null;
-        this._changed_on_disk_dialog = null;
-        this._fully_loaded = false;
-
-        this.last_executed_i = null;
-        this.last_executed_ii = null;
-        this.last_executed_iii = null;
-
-        // Trigger cell toolbar registration.
-        default_celltoolbar.register(this);
-        rawcell_celltoolbar.register(this);
-        slideshow_celltoolbar.register(this);
-        attachments_celltoolbar.register(this);
-        tags_celltoolbar.register(this);
-
-        var that = this;
-
-        Object.defineProperty(this, 'line_numbers', {
-            get: function() {
-                var d = that.config.data || {};
-                var cmc =  (d['Cell'] || {}) ['cm_config'] || {};
-                return cmc['lineNumbers'] || false;
-            },
-            set: function(value) {
-                that.config.update({
-                    'Cell': {
-                        'cm_config': {
-                            'lineNumbers':value
-                        }
-                    }
-                });
+    // Could also consider doing this via the JS events (cell.Create)...
+    // want to ensure that codecell gets a uuid
+    (function(_super) {
+        Notebook.prototype.insert_cell_at_index = function (type, index) {
+            cell = _super.call(this, type, index);
+            if (cell instanceof codecell.CodeCell) {
+                cell.init_dfnb();
             }
-        });
-
-        Object.defineProperty(this, 'header', {
-            get: function() {
-                return that.class_config.get_sync('Header');
-            },
-            set: function(value) {
-                that.class_config.set('Header', value);
-            }
-        });
-
-        Object.defineProperty(this, 'toolbar', {
-            get: function() {
-                return that.class_config.get_sync('Toolbar');
-            },
-            set: function(value) {
-                that.class_config.set('Toolbar', value);
-            }
-        });
-
-        this.class_config.get('Header').then(function(header) {
-            if (header === false) {
-                that.keyboard_manager.actions.call('jupyter-notebook:hide-header');
-            }
-        });
-
-        this.class_config.get('Toolbar').then(function(toolbar) {
-          if (toolbar === false) {
-              that.keyboard_manager.actions.call('jupyter-notebook:hide-toolbar');
-          }
-        });
-
-        // prevent assign to miss-typed properties.
-        Object.seal(this);
-    };
+        };
+    }(Notebook.prototype.insert_cell_at_index));
 
     /**
      * Get all the code text from all CodeCells in the notebook
