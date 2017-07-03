@@ -305,7 +305,7 @@ define([
         }
         cell.set_input_prompt(msg.content.execution_count);
         cell.element.removeClass("running");
-        if (cell == this) {
+        if (cell == this && msg.metadata.status != "error") {
             var that = this;
             msg.content.upstream_deps.forEach(function (cid) {
                 var new_item = $('<li></li>');
