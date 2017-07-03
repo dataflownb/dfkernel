@@ -431,7 +431,7 @@ define([
         //     data.execution_count = null;
         // }
         data.execution_count = parseInt(this.uuid,16);
-        delete data.uuid;
+        // delete data.uuid;
         //data.uuid = "none";
 
         var outputs = this.output_area.toJSON();
@@ -441,8 +441,8 @@ define([
             console.log(outputs[0].uuid)
             console.log(outputs[0].execution_count)
             //outputs[0].uuid = "none";
-            delete outputs[0].uuid;
-            if(outputs.output_type === "execute_result"){
+            // delete outputs[0].uuid;
+            if(outputs[0].output_type === "execute_result"){
                 outputs[0].execution_count = data.execution_count;
             }
         }

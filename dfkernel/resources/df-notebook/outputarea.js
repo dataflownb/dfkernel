@@ -22,9 +22,9 @@ define([
             json.name = content.name;
             break;
         case "execute_result":
-            // json.execution_count = content.execution_count;
-            json.execution_count = null;
-            json.uuid = content.execution_count
+            json.execution_count = content.execution_count;
+            // json.execution_count = null;
+            // json.uuid = content.execution_count
         case "update_display_data":
         case "display_data":
             json.transient = content.transient;
@@ -44,8 +44,8 @@ define([
     };
 
     OutputArea.prototype.append_execute_result = function (json) {
-        // var n = json.execution_count || ' ';
-        var n = json.uuid || ' ';
+        var n = json.execution_count || ' ';
+        // var n = json.uuid || ' ';
         var toinsert = this.create_output_area();
         this._record_display_id(json, toinsert);
         if (this.prompt_area) {
