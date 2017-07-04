@@ -246,6 +246,13 @@ define([
     //     Object.seal(this);
     // };
 
+    Notebook.prototype.reload_notebook = function(data) {
+        var kernelspec = this.metadata.kernelspec;
+        var res = this.load_notebook_success(data);
+        this.metadata.kernelspec = kernelspec;
+        return res;
+    }
+
     /**
      * Get all the code text from all CodeCells in the notebook
      *
