@@ -107,7 +107,7 @@ define([
             }
             // TODO fix this, just shortening for ease of testing
             //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
-            this.uuid = S4() + S4().substr(0,2);
+            this.uuid = ("000000" + (S4() + S4().substr(0,2))).substr(-6);
             this.was_changed = true;
          }
     };
@@ -412,7 +412,7 @@ define([
                 this.code_mirror.clearHistory();
                 this.auto_highlight();
             }
-            this.uuid = (data.execution_count).toString(16);
+            this.uuid = ("000000" + (data.execution_count).toString(16)).substr(-6);
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
