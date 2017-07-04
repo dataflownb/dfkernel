@@ -95,24 +95,32 @@ define([
     // };
 
 	CodeCell.prototype.init_dfnb = function () {
-        this.cell_info_area = null;
-        this.cell_upstream_deps = null;
-        this.cell_downstream_deps = null;
+	    if (!("uuid" in this)) {
+            this.cell_info_area = null;
+            this.cell_upstream_deps = null;
+            this.cell_downstream_deps = null;
 
-	    // create uuid
-        // from http://guid.us/GUID/JavaScript
-        function S4() {
-            return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-        }
-        // TODO fix this, just shortening for ease of testing
-        //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
-        this.uuid = S4() + S4().substr(0,2);
-        this.was_changed = true;
-
+            // create uuid
+            // from http://guid.us/GUID/JavaScript
+            function S4() {
+                return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+            }
+            // TODO fix this, just shortening for ease of testing
+            //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
+            this.uuid = S4() + S4().substr(0,2);
+            this.was_changed = true;
+         }
     };
 
 	/** @method create_element */
     CodeCell.prototype.create_element = function () {
+        // we know this is called by the constructor right
+        // so we will do the init_dfnb code here
+        // (cannot patch the CodeCell constructor...I think)
+        if (!("uuid" in this)) {
+            this.init_dfnb();
+        }
+
         Cell.prototype.create_element.apply(this, arguments);
         var that = this;
 

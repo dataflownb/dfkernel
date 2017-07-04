@@ -246,17 +246,6 @@ define([
     //     Object.seal(this);
     // };
 
-    // Could also consider doing this via the JS events (cell.Create)...
-    // want to ensure that codecell gets a uuid
-    (function(_super) {
-        Notebook.prototype.insert_cell_at_index = function (type, index) {
-            cell = _super.call(this, type, index);
-            if (cell instanceof codecell.CodeCell) {
-                cell.init_dfnb();
-            }
-        };
-    }(Notebook.prototype.insert_cell_at_index));
-
     /**
      * Get all the code text from all CodeCells in the notebook
      *
