@@ -424,11 +424,12 @@ define([
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
             this.element.append(aname);
-            if(data.outputs.length > 0) {
-                data.outputs[0].uuid = this.uuid;
-                //this.output_area.uuid = this.uuid;
-            }
-            // this.set_input_prompt(data.execution_count);
+            var cell = this;
+            data.outputs.forEach(function(out) {
+                if (out.output_type === "execute_result") {
+                    out.execution_count = cell.uuid;
+                }
+            });
             this.set_input_prompt();
             this.output_area.trusted = data.metadata.trusted || false;
             this.output_area.fromJSON(data.outputs, data.metadata);
@@ -446,22 +447,14 @@ define([
         //     data.execution_count = null;
         // }
         data.execution_count = parseInt(this.uuid,16);
-        // delete data.uuid;
-        //data.uuid = "none";
 
         var outputs = this.output_area.toJSON();
-        console.log(outputs.length);
-        if(outputs.length > 0)
-        {
-            console.log(outputs[0].uuid)
-            console.log(outputs[0].execution_count)
-            //outputs[0].uuid = "none";
-            // delete outputs[0].uuid;
-            if(outputs[0].output_type === "execute_result"){
-                outputs[0].execution_count = data.execution_count;
+        outputs.forEach(function(out) {
+            if (out.output_type === "execute_result") {
+                out.execution_count = data.execution_count;
             }
-        }
-        data.outputs = outputs
+        });
+        data.outputs = outputs;
         data.metadata.trusted = this.output_area.trusted;
         if (this.output_area.collapsed) {
             data.metadata.collapsed = this.output_area.collapsed;
