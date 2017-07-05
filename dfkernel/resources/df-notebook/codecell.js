@@ -94,6 +94,11 @@ define([
     //     );
     // };
 
+    CodeCell.prototype.pad_str_left = function(s, len, pad_char) {
+        pad_char = (typeof pad_char !== 'undefined') ?  pad_char : "0";
+        return (pad_char.repeat(len) + s).substr(-len);
+    }
+
 	CodeCell.prototype.init_dfnb = function () {
 	    if (!("uuid" in this)) {
             this.cell_info_area = null;
@@ -106,8 +111,10 @@ define([
                 return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
             }
             // TODO fix this, just shortening for ease of testing
+            // !!! Use max integer if serializing to int !!!
+            // !!! Check for existence in notebook and regen if already exists
             //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
-            this.uuid = ("000000" + (S4() + S4().substr(0,2))).substr(-6);
+            this.uuid = this.pad_str_left(S4() + S4().substr(0,2), 6)
             this.was_changed = true;
          }
     };
@@ -387,7 +394,7 @@ define([
         this.events.trigger('set_dirty.Notebook', {value: true});
     };
 
-        CodeCell.prototype.clear_output = function (wait, ignore_queue) {
+    CodeCell.prototype.clear_output = function (wait, ignore_queue) {
         this.events.trigger('clear_output.CodeCell', {cell: this});
         this.output_area.clear_output(wait, ignore_queue);
         this.set_input_prompt();
@@ -412,7 +419,7 @@ define([
                 this.code_mirror.clearHistory();
                 this.auto_highlight();
             }
-            this.uuid = ("000000" + (data.execution_count).toString(16)).substr(-6);
+            this.uuid = this.pad_str_left(data.execution_count.toString(16), 6);
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
