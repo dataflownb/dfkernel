@@ -74,7 +74,7 @@ define([
             this.mode = 'edit';
         }
         return res;
-    }
+    };
 
     /**
      * Get all the code text from all CodeCells in the notebook
@@ -90,7 +90,7 @@ define([
             }
         });
         return code_dict;
-    }
+    };
 
     Notebook.prototype.invalidate_cells = function() {
         this.get_cells().forEach(function (d) {
@@ -98,14 +98,25 @@ define([
                 d.was_changed = true;
             }
         });
-    }
+    };
 
     Notebook.prototype.get_code_cell = function(uid) {
         var retval = this.get_cells().filter(function (d) {
             return (d.cell_type == 'code' && d.uuid == uid);
         });
         return (retval.length > 0) ? retval[0] : null;
-    }
+    };
+
+    Notebook.prototype.get_code_cell_index = function(uid) {
+        var result = null;
+        this.get_cell_elements().filter(function (index) {
+            if ($(this).data("cell").cell_type == "code" &&
+                $(this).data("cell").uuid == uid) {
+                result = index;
+            }
+        });
+        return result;
+    };
 
     /**
      * Programmatically select a cell.
@@ -116,34 +127,8 @@ define([
      * @return {Notebook} This notebook
      */
     Notebook.prototype.select_by_id = function (uuid, moveanchor) {
-        moveanchor = (moveanchor===undefined)? true : moveanchor;
-
-        var cell = this.get_code_cell(uuid);
-        if (cell) {
-            var sindex = this.get_selected_index();
-            var old_scell = this.get_cell(sindex);
-            if (cell != old_scell) {
-                if (this.mode !== 'command') {
-                    this.command_mode();
-                }
-                this.get_cell(sindex).unselect(moveanchor);
-            }
-            if(moveanchor){
-                this.get_cell(this.get_anchor_index()).unselect(moveanchor);
-            }
-            cell.select(moveanchor);
-            this.update_soft_selection();
-            if (cell.cell_type === 'heading') {
-                this.events.trigger('selected_cell_type_changed.Notebook',
-                    {'cell_type':cell.cell_type, level:cell.level}
-                );
-            } else {
-                this.events.trigger('selected_cell_type_changed.Notebook',
-                    {'cell_type':cell.cell_type}
-                );
-            }
-        }
-        return this;
+        var index = this.get_code_cell_index(uuid);
+        this.select(index, moveanchor);
     };
 
     Notebook.prototype.select_cells_by_id = function (cids) {
@@ -161,7 +146,7 @@ define([
     /**
      * Execute cells corresponding to the given ids.
      *
-     * @param {list} ids - ids of the cells to execute
+     * @param {list} cids - ids of the cells to execute
      */
     Notebook.prototype.execute_cells_by_id = function (cids) {
         if (cids.length === 0) {
@@ -179,4 +164,4 @@ define([
     };
 
 
-})
+});
