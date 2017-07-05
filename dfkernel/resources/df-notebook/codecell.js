@@ -319,7 +319,7 @@ define([
                 },
                 execute_input : function() {
                     var cid = arguments[0].content.execution_count;
-                    // console.log("CID:", cid);
+                    // console.log("EXECUTE INPUT CALLED", cid);
                     var cell = that.notebook.get_code_cell(cid);
                     if (cell) {
                         // cell.output_area.clear_output(false, true);

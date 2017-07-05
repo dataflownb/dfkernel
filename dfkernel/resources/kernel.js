@@ -18,6 +18,11 @@ define(["jquery",
                 $.proxy(nb.reload_notebook, nb),
                 $.proxy(nb.load_notebook_error, nb)
             );
+
+            // the kernel was already created, but $.proxy settings will
+            // reference old handlers so relink them
+            // needed to get execute_input messages
+            nb.session.kernel.init_iopub_handlers();
         };
 
         return {onload:onload}
