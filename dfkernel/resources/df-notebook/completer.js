@@ -12,7 +12,7 @@ define([
     
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);
-        console.log('SEARCHING FOR "' + piece + '"');
+        console.log('SEARCHING FOR "' + piece + '"', this.cell.notebook);
         // take the notebook and lookup starts of uuids
         // add Out['[cell_id]'] to completions list
         var notebook = this.cell.notebook;
@@ -23,14 +23,14 @@ define([
 
         if (piece.startsWith('_')) {
             var retval = [];
-            if (((piece == '_') || (piece == '__') || (piece == '___')) && notebook.last_executed_iii) {
-                retval.push(notebook.last_executed_iii)
+            if (((piece == '_') || (piece == '__') || (piece == '___')) && notebook.session.last_executed_iii) {
+                retval.push(notebook.session.last_executed_iii)
             }
-            if (((piece == '_') || (piece == '__')) && notebook.last_executed_ii) {
-                retval.push(notebook.last_executed_ii)
+            if (((piece == '_') || (piece == '__')) && notebook.session.last_executed_ii) {
+                retval.push(notebook.session.last_executed_ii)
             }
-            if (((piece == '_')) && notebook.last_executed_i) {
-                retval.push(notebook.last_executed_i);
+            if (((piece == '_')) && notebook.session.last_executed_i) {
+                retval.push(notebook.session.last_executed_i);
             }
 
             return retval;

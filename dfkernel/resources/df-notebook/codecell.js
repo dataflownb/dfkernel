@@ -257,15 +257,15 @@ define([
         this.set_input_prompt('*');
         this.element.addClass("running");
 
-        if (! ("last_executed_i" in this.notebook)) {
-            this.notebook.last_executed_iii = null;
-            this.notebook.last_executed_ii = null;
-            this.notebook.last_executed_i = null;
+        if (! ("last_executed_i" in this.notebook.session)) {
+            this.notebook.session.last_executed_iii = null;
+            this.notebook.session.last_executed_ii = null;
+            this.notebook.session.last_executed_i = null;
         }
 
-        this.notebook.last_executed_iii = this.notebook.last_executed_ii;
-        this.notebook.last_executed_ii = this.notebook.last_executed_i;
-        this.notebook.last_executed_i = this.uuid;
+        this.notebook.session.last_executed_iii = this.notebook.session.last_executed_ii;
+        this.notebook.session.last_executed_ii = this.notebook.session.last_executed_i;
+        this.notebook.session.last_executed_i = this.uuid;
 
         var callbacks = this.get_callbacks();
 
