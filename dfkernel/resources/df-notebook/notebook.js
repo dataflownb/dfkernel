@@ -250,6 +250,13 @@ define([
         var kernelspec = this.metadata.kernelspec;
         var res = this.load_notebook_success(data);
         this.metadata.kernelspec = kernelspec;
+        if (this.ncells() === 1 && this.get_cell(0).get_text() == "") {
+            // Hack that seems to work to get the first cell into edit mode
+            this.mode = 'command';
+            this.select(0);
+            this.edit_mode();
+            this.mode = 'edit';
+        }
         return res;
     }
 
