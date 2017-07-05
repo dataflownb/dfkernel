@@ -19,6 +19,11 @@ define(["jquery",
                 $.proxy(nb.load_notebook_error, nb)
             );
 
+            // add event to be notified when cells need to be resent to kernel
+            nb.events.on('kernel_ready.Kernel', function(event, data) {
+                nb.invalidate_cells();
+            });
+
             // the kernel was already created, but $.proxy settings will
             // reference old handlers so relink them
             // needed to get execute_input messages

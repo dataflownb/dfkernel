@@ -276,6 +276,14 @@ define([
         return code_dict;
     }
 
+    Notebook.prototype.invalidate_cells = function() {
+        this.get_cells().forEach(function (d) {
+            if (d.cell_type == 'code') {
+                d.was_changed = true;
+            }
+        });
+    }
+
     Notebook.prototype.get_code_cell = function(uid) {
         var retval = this.get_cells().filter(function (d) {
             return (d.cell_type == 'code' && d.uuid == uid);
