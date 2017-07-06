@@ -89,11 +89,16 @@ class FunctionMagics(Magics):
     def func(self, line, cell):
         #FIXME better argument parsing (-i and -o, intelligent split)
         arr = line.split('-o')
+        ivars = [v.strip() for v in (arr[0].split(',')
+                                     if arr[0].strip() != ""
+                                     else [])]
         self.shell.dataflow_function_manager.set_cell_ivars(self.shell.uuid,
-                                                            arr[0])
-        if len(arr) > 1:
-            self.shell.dataflow_function_manager.set_cell_ovars(self.shell.uuid,
-                                                                arr[1])
+                                                            ivars)
+        ovars = [v.strip() for v in (arr[1].split(',')
+                                     if len(arr) > 1 and arr[1].strip() != ""
+                                     else [])]
+        self.shell.dataflow_function_manager.set_cell_ovars(self.shell.uuid,
+                                                            ovars)
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
 

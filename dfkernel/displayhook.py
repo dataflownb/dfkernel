@@ -14,4 +14,4 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
 
     @property
     def prompt_count(self):
-            return self.shell.uuid
+        return self.shell.uuid

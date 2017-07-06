@@ -180,10 +180,10 @@ class DataflowFunctionManager(object):
         self.cell_ovars = {}
 
     def set_cell_ivars(self, uid, ivars):
-        self.cell_ivars[uid] = [x.strip() for x in ivars.split(',')]
+        self.cell_ivars[uid] = ivars
 
     def set_cell_ovars(self, uid, ovars):
-        self.cell_ovars[uid] = [x.strip() for x in ovars.split(',')]
+        self.cell_ovars[uid] = ovars
 
     def __getitem__(self, k):
         # need to pass vars through to function
