@@ -11,7 +11,8 @@ define([
     'notebook/js/celltoolbar',
     'codemirror/lib/codemirror',
     'codemirror/mode/python/python',
-    'notebook/js/codemirror-ipython'
+    'notebook/js/codemirror-ipython',
+    '/kernelspecs/dfpython3/df-notebook/utils.js'
 ], function(
     $,
     codecell,
@@ -25,97 +26,21 @@ define([
     celltoolbar,
     CodeMirror,
     cmpython,
-    cmip
+    cmip,
+    dfutils
     ) {
 
     var CodeCell = codecell.CodeCell;
     var Cell = cell.Cell;
-	
-    // var CodeCell = function (kernel, options) {
-    //     /**
-    //      * Constructor
-    //      *
-    //      * A Cell conceived to write code.
-    //      *
-    //      * Parameters:
-    //      *  kernel: Kernel instance
-    //      *      The kernel doesn't have to be set at creation time, in that case
-    //      *      it will be null and set_kernel has to be called later.
-    //      *  options: dictionary
-    //      *      Dictionary of keyword arguments.
-    //      *          events: $(Events) instance
-    //      *          config: dictionary
-    //      *          keyboard_manager: KeyboardManager instance
-    //      *          notebook: Notebook instance
-    //      *          tooltip: Tooltip instance
-    //      */
-    //     this.kernel = kernel || null;
-    //     this.notebook = options.notebook;
-    //     this.collapsed = false;
-    //     this.events = options.events;
-    //     this.tooltip = options.tooltip;
-    //     this.config = options.config;
-    //     this.class_config = new configmod.ConfigWithDefaults(this.config,
-    //                                     CodeCell.options_default, 'CodeCell');
-    //
-    //     // create all attributed in constructor function
-    //     // even if null for V8 VM optimisation
-    //     this.input_prompt_number = null;
-    //     this.celltoolbar = null;
-    //     this.output_area = null;
-    //     this.cell_info_area = null;
-    //     this.cell_upstream_deps = null;
-    //     this.cell_downstream_deps = null;
-    //
-    //     this.last_msg_id = null;
-    //     this.completer = null;
-    //
-    //     Cell.apply(this,[{
-    //         config: options.config,
-    //         keyboard_manager: options.keyboard_manager,
-    //         events: this.events}]);
-    //
-    //     // Attributes we want to override in this subclass.
-    //     this.cell_type = "code";
-    //
-    //     // create uuid
-    //     // from http://guid.us/GUID/JavaScript
-    //     function S4() {
-    //         return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-    //     }
-    //     // TODO fix this, just shortening for ease of testing
-    //     //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
-    //     this.uuid = S4() + S4().substr(0,2);
-    //     this.was_changed = true;
-    //
-    //     var that  = this;
-    //     this.element.focusout(
-    //         function() { that.auto_highlight(); }
-    //     );
-    // };
-
-    CodeCell.prototype.pad_str_left = function(s, len, pad_char) {
-        pad_char = (typeof pad_char !== 'undefined') ?  pad_char : "0";
-        return (pad_char.repeat(len) + s).substr(-len);
-    }
 
 	CodeCell.prototype.init_dfnb = function () {
 	    if (!("uuid" in this)) {
+	        this.uuid = this.notebook.get_new_id();
+	        this.was_changed = true;
+
             this.cell_info_area = null;
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
-
-            // create uuid
-            // from http://guid.us/GUID/JavaScript
-            function S4() {
-                return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-            }
-            // TODO fix this, just shortening for ease of testing
-            // !!! Use max integer if serializing to int !!!
-            // !!! Check for existence in notebook and regen if already exists
-            //this.uuid = (S4() + S4() + S4() + "4" + S4().substr(0,3) + S4() + S4() + S4() + S4()).toLowerCase();
-            this.uuid = this.pad_str_left(S4() + S4().substr(0,2), 6)
-            this.was_changed = true;
          }
     };
 
@@ -419,7 +344,8 @@ define([
                 this.code_mirror.clearHistory();
                 this.auto_highlight();
             }
-            this.uuid = this.pad_str_left(data.execution_count.toString(16), 6);
+            this.uuid = dfutils.pad_str_left(data.execution_count.toString(16),
+                this.notebook.get_default_id_length());
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
@@ -440,12 +366,7 @@ define([
     CodeCell.prototype.toJSON = function () {
         var data = Cell.prototype.toJSON.apply(this);
         data.source = this.get_text();
-        // is finite protect against undefined and '*' value
-        // if (isFinite(this.input_prompt_number)) {
-        //     data.execution_count = this.input_prompt_number;
-        // } else {
-        //     data.execution_count = null;
-        // }
+        // FIXME check that this won't exceed the size of int
         data.execution_count = parseInt(this.uuid,16);
 
         var outputs = this.output_area.toJSON();

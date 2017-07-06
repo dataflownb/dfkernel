@@ -28,7 +28,8 @@ define([
     'notebook/js/celltoolbarpresets/tags',
     'notebook/js/scrollmanager',
     'notebook/js/commandpalette',
-    'notebook/js/shortcuteditor'
+    'notebook/js/shortcuteditor',
+    '/kernelspecs/dfpython3/df-notebook/utils.js'
 ], function (
     $,
     notebook,
@@ -56,11 +57,13 @@ define([
     tags_celltoolbar,
     scrollmanager,
     commandpalette,
-    shortcuteditor
+    shortcuteditor,
+    dfutils
 ) {
 
     var Notebook = notebook.Notebook;
     var _SOFT_SELECTION_CLASS = 'jupyter-soft-selected';
+    var _DEFAULT_ID_LENGTH = 6;
 
     Notebook.prototype.reload_notebook = function(data) {
         var kernelspec = this.metadata.kernelspec;
@@ -90,6 +93,28 @@ define([
             }
         });
         return code_dict;
+    };
+
+    Notebook.prototype.has_id = function(id) {
+        return this.get_cells().some(function (d) {
+            return (d.cell_type == 'code' && d.uuid == id);
+        });
+    };
+
+    Notebook.prototype.get_new_id = function(len) {
+        len = (typeof len !== 'undefined') ? len : this.get_default_id_length();
+
+        // just generate until we don't overlap
+        // (shouldn't be an issue for most notebooks)
+        var new_id = null;
+        do {
+            new_id = dfutils.random_hex_str(len);
+        } while (this.has_id(new_id));
+        return new_id;
+    };
+
+    Notebook.prototype.get_default_id_length = function() {
+        return _DEFAULT_ID_LENGTH;
     };
 
     Notebook.prototype.invalidate_cells = function() {
@@ -141,7 +166,6 @@ define([
             cell.element.addClass(_SOFT_SELECTION_CLASS);
         });
     };
-
 
     /**
      * Execute cells corresponding to the given ids.
