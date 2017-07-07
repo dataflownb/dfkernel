@@ -44,57 +44,15 @@ define([
          }
     };
 
-	/** @method create_element */
-    CodeCell.prototype.create_element = function () {
-        // we know this is called by the constructor right
-        // so we will do the init_dfnb code here
-        // (cannot patch the CodeCell constructor...I think)
-        if (!("uuid" in this)) {
-            this.init_dfnb();
-        }
-
-        Cell.prototype.create_element.apply(this, arguments);
-        var that = this;
-
-        var cell =  $('<div></div>').addClass('cell code_cell');
-        cell.attr('tabindex','2');
-
-        var input = $('<div></div>').addClass('input');
-        this.input = input;
-        var prompt = $('<div/>').addClass('prompt input_prompt');
-        var inner_cell = $('<div/>').addClass('inner_cell');
-        this.celltoolbar = new celltoolbar.CellToolbar({
-            cell: this,
-            notebook: this.notebook});
-        inner_cell.append(this.celltoolbar.element);
-        var input_area = $('<div/>').addClass('input_area');
-        this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
-        // In case of bugs that put the keyboard manager into an inconsistent state,
-        // ensure KM is enabled when CodeMirror is focused:
-        this.code_mirror.on('focus', function () {
-            if (that.keyboard_manager) {
-                that.keyboard_manager.enable();
-            }
-
-            that.code_mirror.setOption('readOnly', !that.is_editable());
-        });
-        this.code_mirror.on('keydown', $.proxy(this.handle_keyevent,this));
-        this.code_mirror.on('change', function() {
-            that.was_changed = true;
-        })
-        $(this.code_mirror.getInputField()).attr("spellcheck", "false");
-        inner_cell.append(input_area);
-        input.append(prompt).append(inner_cell);
-
-        var output = $('<div></div>');
-
+	CodeCell.prototype.create_df_info = function() {
+	    var that = this;
         var info = $('<div></div>').addClass("cellinfo");
         var downstream_h = $('<h5>Downstream Dependencies </h5>').addClass('downstream-deps');
         var downstream_button = $('<span/>').addClass("ui-button ui-icon ui-icon-triangle-1-e");
         downstream_h.prepend(downstream_button);
         var select_downstream = $('<a>Select All</a>');
         var update_downstream = $('<a>Update All</a>');
-        downstream_h.append(select_downstream)
+        downstream_h.append(select_downstream);
         downstream_h.append("&nbsp;");
         downstream_h.append(update_downstream);
         var downstream_list = $('<ul></ul>');
@@ -126,35 +84,48 @@ define([
         });
 
 
-	    info.children('h5').click(function() {
-	        $(this).children('.ui-icon').toggleClass("ui-icon-triangle-1-e ui-icon-triangle-1-s");
-		    $(this).next().toggle();
-		    return false;
-	    }).next().hide();
+        info.children('h5').click(function() {
+            $(this).children('.ui-icon').toggleClass("ui-icon-triangle-1-e ui-icon-triangle-1-s");
+            $(this).next().toggle();
+            return false;
+        }).next().hide();
 
-	    $('.upstream-deps', info).hide();
-	    $('.downstream-deps', info).hide();
+        $('.upstream-deps', info).hide();
+        $('.downstream-deps', info).hide();
 
-	    this.cell_info_area = info;
-	    this.cell_upstream_deps = upstream_list;
-	    this.cell_downstream_deps = downstream_list;
+        this.cell_info_area = info;
+        this.cell_upstream_deps = upstream_list;
+        this.cell_downstream_deps = downstream_list;
 
-        //info.hide();
-        cell.append(input).append(output).append(info);
-        this.element = cell;
-        this.element.attr('id', this.uuid);
-        var aname = $('<a/>');
-        aname.attr('name', this.uuid);
-        this.element.append(aname);
-        this.output_area = new outputarea.OutputArea({
-            config: this.config,
-            selector: output,
-            prompt_area: true,
-            events: this.events,
-            keyboard_manager: this.keyboard_manager,
-        });
-        this.completer = new completer.Completer(this, this.events);
+        this.element.append(info);
     };
+
+    (function(_super) {
+        CodeCell.prototype.create_element = function() {
+            // we know this is called by the constructor right
+            // so we will do the init_dfnb code here
+            // (cannot patch the CodeCell constructor...I think)
+            if (!("uuid" in this)) {
+                this.init_dfnb();
+            }
+
+            var _super_result = _super.apply(this, arguments);
+
+            var that = this;
+            this.code_mirror.on('change', function() {
+                that.was_changed = true;
+            });
+
+            this.create_df_info();
+
+            this.element.attr('id', this.uuid);
+            var aname = $('<a/>');
+            aname.attr('name', this.uuid);
+            this.element.append(aname);
+
+            return _super_result;
+        }
+    }(CodeCell.prototype.create_element));
 
     CodeCell.prototype.execute = function (stop_on_error) {
         if (!this.kernel) {
@@ -167,7 +138,7 @@ define([
         }
 
         // this.output_area.clear_output(false, true);
-        this.clear_output(false, true);
+        this.clear_output_imm(false, true);
         var old_msg_id = this.last_msg_id;
         if (old_msg_id) {
             this.kernel.clear_callbacks_for_msg(old_msg_id);
@@ -216,119 +187,87 @@ define([
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
-     /**
-     * Construct the default callbacks for
-     * @method get_callbacks
-     */
-    CodeCell.prototype.get_callbacks = function () {
-        var that = this;
-        return {
-            clear_on_done: false,
-            shell : {
-                reply : $.proxy(this._handle_execute_reply, this),
-                payload : {
-                    set_next_input : $.proxy(this._handle_set_next_input, this),
-                    page : $.proxy(this._open_with_pager, this)
-                }
-            },
-            iopub : {
-                output : function() {
-                    that.events.trigger('set_dirty.Notebook', {value: true});
-                    var cell = null;
-                    console.log("GOT iopub output msg", arguments[0]);
-                    if (arguments[0].content.execution_count !== undefined) {
-                        cell = that.notebook.get_code_cell(arguments[0].content.execution_count);
-                    }
-                    if (!cell) {
-                        cell = that;
-                    }
-                    cell.output_area.handle_output.apply(cell.output_area, arguments);
-                },
-                clear_output : function() {
-                    that.events.trigger('set_dirty.Notebook', {value: true});
-                    that.output_area.handle_clear_output.apply(that.output_area, arguments);
-                },
-                execute_input : function() {
-                    var cid = arguments[0].content.execution_count;
-                    // console.log("EXECUTE INPUT CALLED", cid);
-                    var cell = that.notebook.get_code_cell(cid);
-                    if (cell) {
-                        // cell.output_area.clear_output(false, true);
-                        cell.clear_output(false, true);
-                        cell.set_input_prompt('*');
-                        cell.element.addClass("running");
-                        cell.render();
-                        that.events.trigger('execute.CodeCell', {cell: cell});
-                    }
-                }
-            },
-            input : $.proxy(this._handle_input_request, this),
-        };
-    };
-
-        /**
-     * @method _handle_execute_reply
-     * @private
-     */
-    CodeCell.prototype._handle_execute_reply = function (msg) {
-        // console.log('EXCUTE_REPLY', msg);
-        var cell = this.notebook.get_code_cell(msg.content.execution_count);
-        if (!cell) {
-            cell = this;
-        }
-        cell.set_input_prompt(msg.content.execution_count);
-        cell.element.removeClass("running");
-        if (cell == this && msg.metadata.status != "error") {
+    (function(_super) {
+        CodeCell.prototype.get_callbacks = function() {
+            var callbacks = _super.apply(this, arguments);
             var that = this;
-            msg.content.upstream_deps.forEach(function (cid) {
-                var new_item = $('<li></li>');
-                var new_ahref = $('<a></a>');
-                new_ahref.attr('href', '#' + cid);
-                new_ahref.text("Cell[" + cid + "]");
-                new_ahref.click(function () {
-                    that.notebook.select_by_id(cid);
-                    return false;
-                })
-                new_item.append(new_ahref);
-                that.cell_upstream_deps.append(new_item);
-                $('.upstream-deps', that.cell_info_area).show();
-            });
-            msg.content.downstream_deps.forEach(function (cid) {
-                var new_item = $('<li></li>');
-                var new_ahref = $('<a></a>');
-                new_ahref.attr('href', '#' + cid);
-                new_ahref.text("Cell[" + cid + "]");
-                new_ahref.click(function () {
-                    that.notebook.select_by_id(cid);
-                    return false;
-                })
-                new_item.append(new_ahref);
-                that.cell_downstream_deps.append(new_item);
-                $('.downstream-deps', that.cell_info_area).show();
-            });
-        }
-        cell.events.trigger('set_dirty.Notebook', {value: true});
-    };
+            callbacks["iopub"]["output"] = function() {
+                that.events.trigger('set_dirty.Notebook', {value: true});
+                var cell = null;
+                if (arguments[0].content.execution_count !== undefined) {
+                    cell = that.notebook.get_code_cell(arguments[0].content.execution_count);
+                }
+                if (!cell) {
+                    cell = that;
+                }
+                cell.output_area.handle_output.apply(cell.output_area, arguments);
+            };
 
-    CodeCell.prototype.set_input_prompt = function (number) {
-        var nline = 1;
-        if (this.code_mirror !== undefined) {
-           nline = this.code_mirror.lineCount();
-        }
-        if (number != '*') {
-            number = this.uuid;
-        }
-        this.input_prompt_number = number;
-        var prompt_html = CodeCell.input_prompt_function(number, nline);
-        // This HTML call is okay because the user contents are escaped.
-        this.element.find('div.input_prompt').html(prompt_html);
-        this.events.trigger('set_dirty.Notebook', {value: true});
-    };
+            callbacks["iopub"]["execute_input"] = function() {
+                var cid = arguments[0].content.execution_count;
+                var cell = that.notebook.get_code_cell(cid);
+                if (cell) {
+                    cell.clear_output_imm(false, true);
+                    cell.set_input_prompt('*');
+                    cell.element.addClass("running");
+                    cell.render();
+                    that.events.trigger('execute.CodeCell', {cell: cell});
+                }
+            }
 
-    CodeCell.prototype.clear_output = function (wait, ignore_queue) {
-        this.events.trigger('clear_output.CodeCell', {cell: this});
-        this.output_area.clear_output(wait, ignore_queue);
-        this.set_input_prompt();
+            return callbacks;
+        }
+    }(CodeCell.prototype.get_callbacks));
+
+    (function(_super) {
+        CodeCell.prototype._handle_execute_reply = function(msg) {
+            var cell = this.notebook.get_code_cell(msg.content.execution_count);
+            if (!cell) {
+                cell = this;
+            }
+            if (cell == this && msg.metadata.status != "error") {
+                var that = this;
+                msg.content.upstream_deps.forEach(function (cid) {
+                    var new_item = $('<li></li>');
+                    var new_ahref = $('<a></a>');
+                    new_ahref.attr('href', '#' + cid);
+                    new_ahref.text("Cell[" + cid + "]");
+                    new_ahref.click(function () {
+                        that.notebook.select_by_id(cid);
+                        return false;
+                    })
+                    new_item.append(new_ahref);
+                    that.cell_upstream_deps.append(new_item);
+                    $('.upstream-deps', that.cell_info_area).show();
+                });
+                msg.content.downstream_deps.forEach(function (cid) {
+                    var new_item = $('<li></li>');
+                    var new_ahref = $('<a></a>');
+                    new_ahref.attr('href', '#' + cid);
+                    new_ahref.text("Cell[" + cid + "]");
+                    new_ahref.click(function () {
+                        that.notebook.select_by_id(cid);
+                        return false;
+                    })
+                    new_item.append(new_ahref);
+                    that.cell_downstream_deps.append(new_item);
+                    $('.downstream-deps', that.cell_info_area).show();
+                });
+            }
+            _super.apply(cell, arguments);
+        }
+    }(CodeCell.prototype._handle_execute_reply));
+
+    (function(_super) {
+        CodeCell.prototype.set_input_prompt = function(number) {
+            if (number != '*') {
+                number = this.uuid;
+            }
+            return _super.call(this, number);
+        };
+    }(CodeCell.prototype.set_input_prompt));
+
+    CodeCell.prototype.clear_df_info = function() {
         $('.upstream-deps', this.cell_info_area).hide();
         $('.downstream-deps', this.cell_info_area).hide();
         $('.ui-icon', this.cell_info_area).removeClass('ui-icon-triangle-1-s').addClass('ui-icon-triangle-1-e');
@@ -338,62 +277,54 @@ define([
         $(this.cell_downstream_deps).hide();
     };
 
-        // JSON serialization
+    CodeCell.prototype.clear_output_imm = function(wait, ignore_queue) {
+        // like clear_output, but without the event
+        this.output_area.clear_output(wait, ignore_queue);
+        this.clear_df_info();
+    };
 
-    CodeCell.prototype.fromJSON = function (data) {
-        Cell.prototype.fromJSON.apply(this, arguments);
-        if (data.cell_type === 'code') {
-            if (data.source !== undefined) {
-                this.set_text(data.source);
-                // make this value the starting point, so that we can only undo
-                // to this state, instead of a blank cell
-                this.code_mirror.clearHistory();
-                this.auto_highlight();
-            }
-            this.uuid = dfutils.pad_str_left(data.execution_count.toString(16),
+    (function(_super) {
+        CodeCell.prototype.clear_output = function(wait) {
+            _super.apply(this, arguments);
+            this.clear_df_info();
+        };
+    }(CodeCell.prototype.clear_output));
+
+    (function(_super) {
+        CodeCell.prototype.fromJSON = function(data) {
+            var uuid = dfutils.pad_str_left(data.execution_count.toString(16),
                 this.notebook.get_default_id_length());
+            data.outputs.forEach(function(out) {
+                if (out.output_type === "execute_result") {
+                    out.execution_count = uuid;
+                }
+            });
+
+            _super.call(this, data);
+
+            this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
             this.element.append(aname);
-            var cell = this;
+            this.set_input_prompt();
+            this.was_changed = true;
+
+        }
+    }(CodeCell.prototype.fromJSON));
+
+    (function(_super) {
+        CodeCell.prototype.toJSON = function() {
+            data = _super.apply(this, arguments);
+            // FIXME check that this won't exceed the size of int
+            data.execution_count = parseInt(this.uuid,16);
+
             data.outputs.forEach(function(out) {
                 if (out.output_type === "execute_result") {
-                    out.execution_count = cell.uuid;
+                    out.execution_count = data.execution_count;
                 }
             });
-            this.set_input_prompt();
-            this.output_area.trusted = data.metadata.trusted || false;
-            this.output_area.fromJSON(data.outputs, data.metadata);
-            this.was_changed = true;
+            return data;
         }
-    };
-
-    CodeCell.prototype.toJSON = function () {
-        var data = Cell.prototype.toJSON.apply(this);
-        data.source = this.get_text();
-        // FIXME check that this won't exceed the size of int
-        data.execution_count = parseInt(this.uuid,16);
-
-        var outputs = this.output_area.toJSON();
-        outputs.forEach(function(out) {
-            if (out.output_type === "execute_result") {
-                out.execution_count = data.execution_count;
-            }
-        });
-        data.outputs = outputs;
-        data.metadata.trusted = this.output_area.trusted;
-        if (this.output_area.collapsed) {
-            data.metadata.collapsed = this.output_area.collapsed;
-        } else {
-            delete data.metadata.collapsed;
-        }
-        if (this.output_area.scroll_state === 'auto') {
-            delete data.metadata.scrolled;
-        } else {
-            data.metadata.scrolled = this.output_area.scroll_state;
-        }
-        return data;
-    };
-		
+    }(CodeCell.prototype.toJSON));
 });
