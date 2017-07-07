@@ -61,6 +61,8 @@ class DataflowHistoryManager(object):
         res = False
         for cid in self.dep_parents[k]:
             if(cid in self.dep_children[k]):
+                if(cid == k):
+                    return False
                 continue
             if self.check_upstream(cid):
                 res = True
