@@ -188,9 +188,6 @@ define([
             this.notebook.session.last_executed_i = null;
         }
 
-        this.notebook.session.last_executed_iii = this.notebook.session.last_executed_ii;
-        this.notebook.session.last_executed_ii = this.notebook.session.last_executed_i;
-        this.notebook.session.last_executed_i = this.uuid;
 
         var callbacks = this.get_callbacks();
 
@@ -205,6 +202,12 @@ define([
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
             		that.events.trigger('finished_execute.CodeCell', {cell: that});
                 that.events.off('finished_iopub.Kernel', handleFinished);
+                if(that.output_area.outputs[0].output_type != "error")
+                {
+                    that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;
+                    that.notebook.session.last_executed_ii = that.notebook.session.last_executed_i;
+                    that.notebook.session.last_executed_i = that.uuid;
+                }
       	    }
         }
         this.events.on('finished_iopub.Kernel', handleFinished);
