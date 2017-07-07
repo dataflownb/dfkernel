@@ -56,8 +56,12 @@ class DataflowHistoryManager(object):
 
     # returns True if any upstream cell has changed
     def check_upstream(self, k):
+        #print(k, self.dep_parents[k])
+        #print(self.dep_children[k])
         res = False
         for cid in self.dep_parents[k]:
+            if(cid in self.dep_children[k]):
+                continue
             if self.check_upstream(cid):
                 res = True
         if self.is_stale(k) or k not in self.value_cache:
