@@ -202,7 +202,10 @@ define([
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
             		that.events.trigger('finished_execute.CodeCell', {cell: that});
                 that.events.off('finished_iopub.Kernel', handleFinished);
-                if(that.output_area.outputs[0].output_type != "error")
+                var errflag = true;
+                (that.output_area.outputs).forEach(function(out){ console.log(out); if(out.output_type == "error") {errflag = false}});
+                console.log(errflag)
+                if(errflag)
                 {
                     that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;
                     that.notebook.session.last_executed_ii = that.notebook.session.last_executed_i;
