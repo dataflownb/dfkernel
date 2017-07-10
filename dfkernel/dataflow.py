@@ -134,11 +134,15 @@ class DataflowHistoryManager(object):
         self.shell.uuid = child_uuid
         return retval.result
 
+
     def __getitem__(self, k):
+        class InvalidOutCell(KeyError):
+            '''Called when an Invalid OutCell is called'''
         # print("CALLING OUT[{}]".format(k))
         if k not in self.code_stale:
+            #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
             # print("  KEY ERROR")
-            raise KeyError(k)
+            raise InvalidOutCell("Out['"+k + "'] is an Invalid Out Cell Reference")
 
         # need to update regardless of whether we have value cached
         self.update_dependencies(k, self.shell.uuid)
