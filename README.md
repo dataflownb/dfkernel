@@ -14,3 +14,8 @@ This package provides the Dataflow Python kernel for Jupyter.
 4. `python -m dfkernel install [--user|--sys-prefix]`
 
 Note that --sys-prefix works best for conda environments.
+
+
+## Convert dfkernel notebooks to ipykernel notebooks
+
+https://github.com/dataflownb/dfconvert
