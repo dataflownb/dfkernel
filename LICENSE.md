@@ -1,4 +1,4 @@
-BSD 3-Clause License
+## BSD 3-Clause License ###
 
 Copyright (c) 2017, Dataflow Notebook Development Team
 All rights reserved.
@@ -30,4 +30,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## IPython and Jupyter Dependencies ##
 
-This code extends the IPython and Jupyter projects. In a few cases, that code is duplicated in this repository. That code remains subject to those licenses.
+This code extends the IPython and Jupyter projects. In a few cases, code from those projects is included in this repository. That code remains subject to those licenses.
