@@ -17,7 +17,7 @@ import sys
 
 v = sys.version_info
 if v[:2] < (3,3):
-    error = "ERROR: %s requires Python version 2.7 or 3.3 or above." % name
+    error = "ERROR: %s requires Python version 3.3 or above." % name
     print(error, file=sys.stderr)
     sys.exit(1)
 
@@ -43,7 +43,9 @@ for d, _, _ in os.walk(pjoin(here, name)):
         packages.append(d[len(here)+1:].replace(os.path.sep, '.'))
 
 package_data = {
-    'dfkernel': ['resources/*.*'],
+    'dfkernel': ['resources/*.js',
+                 'resources/*.png',
+                 'resources/df-notebook/*.js'],
 }
 
 version_ns = {}
@@ -64,8 +66,9 @@ setup_args = dict(
     url             = 'http://dataflownb.github.io/',
     license         = 'BSD',
     platforms       = "Linux, Mac OS X, Windows",
-    keywords        = ['Interactive', 'Interpreter', 'Shell', 'Web'],
+    keywords        = ['Dataflow', 'Interactive', 'Interpreter', 'Shell', 'Web'],
     classifiers     = [
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
@@ -97,7 +100,8 @@ if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):
     write_kernel_spec(dest, overrides={'argv': argv})
 
     setup_args['data_files'] = [
-        (pjoin('share', 'jupyter', 'kernels', KERNEL_NAME), glob(pjoin(dest, '*'))),
+        (pjoin('share', 'jupyter', 'kernels', KERNEL_NAME), [f for f in glob(pjoin(dest, '*')) if not os.path.isdir(f)]),
+        (pjoin('share', 'jupyter', 'kernels', KERNEL_NAME, 'df-notebook'), glob(pjoin(dest, 'df-notebook', '*'))),
     ]
 
 extras_require = setuptools_args['extras_require'] = {
