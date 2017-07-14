@@ -1,6 +1,6 @@
 # Dataflow Python Kernel for Jupyter
 
-This package provides the Dataflow Python kernel for Jupyter. This kernel modifies ipykernel and the notebook in two key ways: (1) it changes the numeric cell ids to persistent, unique ids for each cell, and (2) it implements a recursive dataflow mechanism for cell execution: if a cell references the output of another cell, we will check if cell is up-to-date and execute it if it is not. For example:
+This package provides the Dataflow Python kernel for Jupyter. This kernel modifies ipykernel and the notebook in two key ways: (1) it changes the numeric cell ids to persistent, unique ids for each cell, and (2) it implements a recursive dataflow mechanism for cell execution: if a cell references the output of another cell, the kernel will check if cell is up-to-date and execute it if it is not. For example:
 
 ```
 In [34bc1f]: 1 + 1
