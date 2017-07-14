@@ -25,7 +25,7 @@ Modifying the first cell to be 1 + 2, but executing only the second cell will ca
 3. `pip install -e .`
 4. `python -m dfkernel install [--user|--sys-prefix]`
 
-Note that --sys-prefix works best for conda environments.
+Note that `--sys-prefix` works best for conda environments.
 
 ## Usage
 
