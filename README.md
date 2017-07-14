@@ -12,11 +12,13 @@ Out[51428f]: 1024
 
 Modifying the first cell to be 1 + 2, but executing only the second cell will cause the first cell to be re-evaluated because it changed.
 
-## Installation from PyPI
+## Installation
+
+### PyPI
 
 `pip install dfkernel`
 
-## Installation from source
+### From source
 
 1. Clone the repository
 2. `cd dfkernel`
