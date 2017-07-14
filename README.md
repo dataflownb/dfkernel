@@ -29,7 +29,7 @@ Note that `--sys-prefix` works best for conda environments.
 
 ## Usage
 
-dfkernel allows the same python code in each cell that ipykernel does. It adds two additional features to the interface: tab completion of outputs and dependency lists.
+dfkernel allows the same python code in each cell that ipykernel does. It adds two additional features to the interface: tab completion of output references and an interface that shows cell dependencies
 
 ### Tab Completion
 
