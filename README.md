@@ -25,7 +25,20 @@ Modifying the first cell to be 1 + 2, but executing only the second cell will ca
 
 Note that --sys-prefix works best for conda environments.
 
+## Usage
+
+dfkernel allows the same python code in each cell that ipykernel does. It adds two additional features to the interface: tab completion of outputs and dependency lists.
+
+### Tab Completion
+
+You can complete a cell output reference by typing the first couple characters of the cell id. For example, typing `34<TAB>` will complete to `Out['34bc1f']`. In addition, typing `_<TAB>` will offer completions of the three most recently executed cells at the top of the list.
+
+### Dependency Selection and Updates
+
+After a cell is executed, a list of both its upstream and downstream dependencies is listed below its output. This allows you to see  which cells impact that cell's output and which cells that cell impacts. For downstream dependencies, an "Execute All" link allows users to update all dependent cells.
 
 ## Convert dfkernel notebooks to ipykernel notebooks
+
+You can work in dfkernel and convert your notebook to an ipykernel notebook that executes top-down using the dfconvert tool.
 
 https://github.com/dataflownb/dfconvert
