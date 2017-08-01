@@ -187,5 +187,56 @@ define([
         this.set_dirty(true);
     };
 
+    Notebook.prototype.remap_pasted_ids = function() {
+        if (this.clipboard !== null && this.paste_enabled) {
+            var remap = {};
+            var cell_data, i;
+            // TODO make copy of the text on the clipboard?
+            for (i = 0; i < this.clipboard.length; i++) {
+                cell_data = this.clipboard[i];
+                var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
+                    this.get_default_id_length());
+                if (this.has_id(uuid)) {
+                    // need new id
+                    var new_id = this.get_new_id();
+                    remap[uuid] = new_id;
+                    cell_data.execution_count = new_id;
+                    cell_data.outputs.forEach(function (out) {
+                        if (out.output_type === "execute_result") {
+                            out.execution_count = uuid;
+                        }
+                    });
+                }
+            }
+
+            for (i = 0; i < this.clipboard.length; i++) {
+                cell_data = this.clipboard[i];
+                if (cell_data.source !== undefined) {
+                    cell_data.source = dfutils.rewrite_code_ids(cell_data.source, remap);
+                }
+            }
+        }
+    };
+
+    (function(_super) {
+        Notebook.prototype.paste_cell_above = function () {
+            this.remap_pasted_ids();
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.paste_cell_above));
+
+    (function(_super) {
+        Notebook.prototype.paste_cell_below = function () {
+            this.remap_pasted_ids();
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.paste_cell_below));
+
+    (function(_super) {
+        Notebook.prototype.paste_cell_replace = function () {
+            this.remap_pasted_ids();
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.paste_cell_replace));
 
 });
