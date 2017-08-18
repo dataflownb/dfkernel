@@ -47,8 +47,12 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
                 format_dict = {}
                 md_dict = {}
                 for i, res in enumerate(result):
+                    res_tag = i
+                    if hasattr(result, '_fields'):
+                        res_tag = result._fields[i]
                     res_format_dict, res_md_dict = self.compute_format_data(res)
                     format_dict[i] = res_format_dict
+                    res_md_dict['__cell_tag__'] = res_tag
                     md_dict[i] = res_md_dict
             else:
                 format_dict, md_dict = self.compute_format_data(result)
@@ -66,9 +70,10 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
         if self.msg['content']['data']:
             if 0 in self.msg['content']['data']:
                 format_data = self.msg['content']['data']
-                md_data = self.msg['content']['data']
+                md_data = self.msg['content']['metadata']
                 for i in format_data:
-                    self.write_output_prompt(str(i))
+                    tag = md_data[i].pop("__cell_tag__")
+                    self.write_output_prompt(tag)
                     self.msg['content']['data'] = format_data[i]
                     self.msg['content']['metadata'] = md_data[i]
                     self.session.send(self.pub_socket, self.msg, ident=self.topic)

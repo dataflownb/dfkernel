@@ -194,12 +194,12 @@ define([
             callbacks["iopub"]["output"] = function() {
                 that.events.trigger('set_dirty.Notebook', {value: true});
                 var cell = null;
+                var cell_id = null;
                 var cell_tag = null;
                 if (arguments[0].content.execution_count !== undefined) {
                     var execution_count = arguments[0].content.execution_count;
                     var id_arr = execution_count.split('.');
-                    console.log("ID ARR:", id_arr);
-                    var cell_id = id_arr[0];
+                    cell_id = id_arr[0];
                     cell_tag = id_arr[1];
                     cell = that.notebook.get_code_cell(cell_id);
                 }
