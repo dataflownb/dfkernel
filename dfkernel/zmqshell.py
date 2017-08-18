@@ -6,6 +6,7 @@ from __future__ import print_function
 from ipykernel.zmqshell import *
 import ipykernel.zmqshell
 
+import ast
 import sys
 
 from IPython.core.interactiveshell import InteractiveShellABC
@@ -102,6 +103,70 @@ class FunctionMagics(Magics):
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
 
+# TODO move to its own package
+def expr2id(node):
+    """Convert ast node to valid python identifier.
+
+    If the expression is just an identifier, return the identifier.
+    If the expression contains a function, return the function name.
+    If the expression contains an operator, return the name of the operator followed by the subexpressions.
+    """
+    if isinstance(node, str):
+        node = ast.parse(node)
+        if len(node.body) != 1:
+            raise ValueError("Node should have only one expression")
+        if not isinstance(node.body[0], ast.Expr):
+            raise ValueError("Node must be an expression")
+        node = node.body[0]
+
+    if isinstance(node, ast.Name):
+        return node.id
+    elif isinstance(node, ast.Attribute):
+        # really want to concatenate...
+        return expr2id(node.value) + "_" + node.attr
+    elif isinstance(node, ast.Subscript):
+        return expr2id(node.value) + "_" + expr2id(node.slice)
+    elif isinstance(node, ast.Index):
+        return expr2id(ast.value)
+    else:
+        return "UNKNOWN"
+
+class OutputTransformer(object):
+    def visit(self, node):
+        if len(node.body) > 0:
+            last_node = node.body[-1]
+            if isinstance(last_node, ast.Expr):
+                if isinstance(last_node.value, ast.Tuple):
+                    template = "import collections as _dfkernel_collections; _dfkernel_collections.namedtuple('namedtuple', ids)(args)"
+                    parsed_raw = ast.parse(template)
+                    new_nodes = parsed_raw.body
+                    # new_nodes = ast.parse(template).body
+                    new_node = new_nodes[-1].value
+                    ids = []
+                    for elt in last_node.value.elts:
+                        ids.append(expr2id(elt))
+                    # FIXME need to check for duplicate ids and resolve
+
+                    new_node.args = last_node.value.elts
+                    new_node.func.args[1] = ast.Str(','.join(ids))
+                    del node.body[-1]
+                    node.body.extend(new_nodes)
+                    print(ast.dump(node))
+                    return node
+        return node
+
+# FIXME should mix the pprint for seq and dict
+# FIXME use normal printer if _fields doesn't exist
+def tuple_formatter(arg, p, cycle):
+    with p.group(1, '(', ')'):
+        for i in range(len(arg)):
+            if hasattr(arg, '_fields'):
+                p.text(arg._fields[i] + ": ")
+            p.pretty(arg[i])
+            if i != len(arg) - 1:
+                p.text(',')
+                p.breakable()
+
 class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     """A subclass of InteractiveShell for ZMQ."""
 
@@ -114,6 +179,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     dataflow_history_manager = Instance(DataflowHistoryManager)
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ast_transformers.append(OutputTransformer())
+        self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
