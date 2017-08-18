@@ -111,6 +111,7 @@ def expr2id(node):
     If the expression contains a function, return the function name.
     If the expression contains an operator, return the name of the operator followed by the subexpressions.
     """
+    # print("expr2id", ast.dump(node))
     if isinstance(node, str):
         node = ast.parse(node)
         if len(node.body) != 1:
@@ -121,13 +122,17 @@ def expr2id(node):
 
     if isinstance(node, ast.Name):
         return node.id
+    elif isinstance(node, ast.Num):
+        return node.n
+    elif isinstance(node, ast.Str):
+        return node.s
     elif isinstance(node, ast.Attribute):
         # really want to concatenate...
         return expr2id(node.value) + "_" + node.attr
     elif isinstance(node, ast.Subscript):
         return expr2id(node.value) + "_" + expr2id(node.slice)
     elif isinstance(node, ast.Index):
-        return expr2id(ast.value)
+        return expr2id(node.value)
     else:
         return "UNKNOWN"
 
@@ -151,7 +156,7 @@ class OutputTransformer(object):
                     new_node.func.args[1] = ast.Str(','.join(ids))
                     del node.body[-1]
                     node.body.extend(new_nodes)
-                    print(ast.dump(node))
+                    # print(ast.dump(node))
                     return node
         return node
 
