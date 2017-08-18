@@ -8,12 +8,16 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
     def get_execution_count(self):
         raise NotImplementedError()
 
-    def write_output_prompt(self):
+    def write_output_prompt(self, tag=None):
         """Write the output prompt."""
-        self.msg['content']['execution_count'] = self.get_execution_count()
+        if tag is not None:
+            self.msg['content']['execution_count'] = \
+                "{}.{}".format(self.get_execution_count(), tag)
+        else:
+            self.msg['content']['execution_count'] = self.get_execution_count()
 
     def write_format_data(self, format_dict, md_dict=None):
-        print("WRITING FORMAT DATA:", format_dict)
+        # print("WRITING FORMAT DATA:", format_dict)
         if 0 in format_dict:
             # have multiple outputs
             new_format_dict = {}
@@ -64,6 +68,7 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
                 format_data = self.msg['content']['data']
                 md_data = self.msg['content']['data']
                 for i in format_data:
+                    self.write_output_prompt(str(i))
                     self.msg['content']['data'] = format_data[i]
                     self.msg['content']['metadata'] = md_data[i]
                     self.session.send(self.pub_socket, self.msg, ident=self.topic)
