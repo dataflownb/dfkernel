@@ -9,7 +9,17 @@ define([
     "use strict";
 
     var Completer = completer.Completer;
-    
+
+    var _existing_completion = function(item, completion_array){
+        for( var i=0; i < completion_array.length; i++) {
+            if (completion_array[i].trim().substr(-item.length) == item) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);
         // take the notebook and lookup starts of uuids
