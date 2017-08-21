@@ -7,6 +7,7 @@ from ipykernel.zmqshell import *
 import ipykernel.zmqshell
 
 import ast
+import collections
 import sys
 
 from IPython.core.interactiveshell import InteractiveShellABC
@@ -123,18 +124,23 @@ def expr2id(node):
     if isinstance(node, ast.Name):
         return node.id
     elif isinstance(node, ast.Num):
-        return node.n
+        return 'c' # node.n
     elif isinstance(node, ast.Str):
-        return node.s
+        return 'c' # node.s
     elif isinstance(node, ast.Attribute):
         # really want to concatenate...
         return expr2id(node.value) + "_" + node.attr
     elif isinstance(node, ast.Subscript):
-        return expr2id(node.value) + "_" + expr2id(node.slice)
+        slice = ""
+        if isinstance(node.slice.value, ast.Num):
+            slice = "_{}".format(node.slice.value.n)
+        elif isinstance(node.slice.value, ast.Str):
+            slice = "_{}".format(node.slice.value.s)
+        return expr2id(node.value) + slice
     elif isinstance(node, ast.Index):
         return expr2id(node.value)
     else:
-        return "UNKNOWN"
+        return 'x'
 
 class OutputTransformer(object):
     def visit(self, node):
@@ -151,9 +157,18 @@ class OutputTransformer(object):
                     for elt in last_node.value.elts:
                         ids.append(expr2id(elt))
                     # FIXME need to check for duplicate ids and resolve
-
+                    dup_ids = dict((k, c)
+                                   for k, c in collections.Counter(ids).items()
+                                   if c > 1)
+                    new_ids = []
+                    for id in reversed(ids):
+                        if id in dup_ids:
+                            id += dup_ids[id]
+                            dup_ids[id] -= 1
+                        new_ids.append(id)
+                    new_ids.reverse()
                     new_node.args = last_node.value.elts
-                    new_node.func.args[1] = ast.Str(','.join(ids))
+                    new_node.func.args[1] = ast.Str(','.join(new_ids))
                     del node.body[-1]
                     node.body.extend(new_nodes)
                     # print(ast.dump(node))
