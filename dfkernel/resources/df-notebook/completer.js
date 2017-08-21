@@ -12,22 +12,21 @@ define([
     
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);
-        console.log('SEARCHING FOR "' + piece + '"', this.cell.notebook);
         // take the notebook and lookup starts of uuids
         // add Out['[cell_id]'] to completions list
         var notebook = this.cell.notebook;
+        var retval = [];
 
         if (piece == '') {
-            return [];
+            return retval;
         }
 
         if (piece.startsWith('_')) {
-            var retval = [];
             if (((piece == '_') || (piece == '__') || (piece == '___')) && notebook.session.last_executed_iii) {
-                retval.push(notebook.session.last_executed_iii)
+                retval.push(notebook.session.last_executed_iii);
             }
             if (((piece == '_') || (piece == '__')) && notebook.session.last_executed_ii) {
-                retval.push(notebook.session.last_executed_ii)
+                retval.push(notebook.session.last_executed_ii);
             }
             if (((piece == '_')) && notebook.session.last_executed_i) {
                 retval.push(notebook.session.last_executed_i);
@@ -37,12 +36,41 @@ define([
         }
 
         // be slow here
-        var retval = notebook.get_cells()
+        retval = notebook.get_cells()
             .filter(function (d) {
                 return (d.cell_type == 'code' && d.uuid.startsWith(piece)); })
             .map(function(d) { return d.uuid; });
         return retval;
-    }
+    };
+
+    Completer.prototype.find_output_tags = function(cell_str, start, end) {
+        var piece = cell_str.slice(start, end);
+
+        var notebook = this.cell.notebook;
+
+        if (piece == '') {
+            return [];
+        }
+
+        var retval = notebook.get_cells()
+            .reduce(function(a, b) {
+                if (b.cell_type == 'code') {
+                    return a.concat(b.output_area.outputs.filter(function(d) {
+                        // console.log("OUT:", d);
+                        return (d.metadata.output_tag &&
+                        d.metadata.output_tag.startsWith(piece));
+                    }).map(function (d) {
+                        return {
+                            cell_id: b.uuid,
+                            output_tag: d.metadata.output_tag
+                        };
+                    }));
+                } else {
+                    return a;
+                }
+            }, []);
+        return retval;
+    };
 
     Completer.prototype.finish_completing = function (msg) {
         /**
@@ -105,6 +133,16 @@ define([
             filtered_results.unshift({
                 str: "Out['" + cid + "']",
                 type: "cell_id",
+                from: from,
+                to: to
+            });
+        });
+
+        var tag_matches = this.find_output_tags(this.editor.getValue(), start, end);
+        tag_matches.forEach(function(obj) {
+            filtered_results.unshift({
+                str: "Out['" + obj.cell_id + "']." + obj.output_tag,
+                type: "output_tag",
                 from: from,
                 to: to
             });
