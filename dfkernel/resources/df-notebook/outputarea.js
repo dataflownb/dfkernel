@@ -24,36 +24,6 @@ define([
     var MIME_PDF = 'application/pdf';
     var MIME_TEXT = 'text/plain';
 
-    OutputArea.prototype.handle_output = function(msg, cell_tag) {
-        var json = {};
-        var msg_type = json.output_type = msg.header.msg_type;
-        var content = msg.content;
-        switch(msg_type) {
-        case "stream" :
-            json.text = content.text;
-            json.name = content.name;
-            break;
-        case "execute_result":
-            json.execution_count = content.execution_count;
-            json.cell_tag = cell_tag;
-        case "update_display_data":
-        case "display_data":
-            json.transient = content.transient;
-            json.data = content.data;
-            json.metadata = content.metadata;
-            break;
-        case "error":
-            json.ename = content.ename;
-            json.evalue = content.evalue;
-            json.traceback = content.traceback;
-            break;
-        default:
-            console.error("unhandled output message", msg);
-            return;
-        }
-        this.append_output(json);
-    };
-
     OutputArea.prototype.append_execute_result = function (json) {
         var n = json.execution_count || ' ';
         var toinsert = this.create_output_area();
@@ -65,8 +35,8 @@ define([
                     .append(
                       $('<bdi>').text('Out')
                     );
-            if (json.cell_tag) {
-               p.append('[' + n + ']<br>.' + json.cell_tag + ':');
+            if (json.metadata.output_tag) {
+                p.append('[' + n + ']<br>.' + json.metadata.output_tag + ':');
             } else {
                 p.append('[' + n + ']:');
             }

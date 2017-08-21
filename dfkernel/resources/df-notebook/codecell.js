@@ -194,26 +194,14 @@ define([
             callbacks["iopub"]["output"] = function() {
                 that.events.trigger('set_dirty.Notebook', {value: true});
                 var cell = null;
-                var cell_id = null;
-                var cell_tag = null;
                 if (arguments[0].content.execution_count !== undefined) {
                     var execution_count = arguments[0].content.execution_count;
-                    var id_arr = execution_count.split('.');
-                    cell_id = id_arr[0];
-                    cell_tag = id_arr[1];
-                    cell = that.notebook.get_code_cell(cell_id);
+                    cell = that.notebook.get_code_cell(execution_count);
                 }
                 if (!cell) {
                     cell = that;
                 }
-                if (cell_tag) {
-                    var args = Array.apply(null, arguments);
-                    args[0].content.execution_count = cell_id;
-                    args.push(cell_tag);
-                    cell.output_area.handle_output.apply(cell.output_area, args);
-                } else {
-                    cell.output_area.handle_output.apply(cell.output_area, arguments);
-                }
+                cell.output_area.handle_output.apply(cell.output_area, arguments);
             };
 
             callbacks["iopub"]["execute_input"] = function() {
