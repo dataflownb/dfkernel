@@ -9,11 +9,20 @@ define(function() {
         return (pad_char.repeat(len) + s).substr(-len);
     };
 
-    var random_hex_str = function(len) {
+    var random_hex_str = function(len, start_letter) {
+        var num;
         len = (typeof len !== 'undefined') ? len : 6;
-        // generate value in [1, 0xf...f]
-        var num = Math.floor(Math.random() * parseInt("f".repeat(len), 16)) + 1;
-        return pad_str_left(num.toString(16), len);
+        if (start_letter || (start_letter === undefined)) {
+            var start_num = parseInt("a" + "0".repeat(len-1), 16);
+             num = Math.floor(Math.random() *
+                    (parseInt("f".repeat(len), 16) - start_num)) + start_num;
+            // no need to pad
+            return num.toString(16);
+        } else {
+            // generate value in [1, 0xf...f]
+            num = Math.floor(Math.random() * parseInt("f".repeat(len), 16)) + 1;
+            return pad_str_left(num.toString(16), len);
+        }
     };
 
     var CODE_REGEX = /(^|[^A-Za-z0-9_])Out\[[\'\"]([0-9a-f]+)[\'\"]\]/g;
