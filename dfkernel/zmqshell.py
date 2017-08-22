@@ -187,6 +187,19 @@ def tuple_formatter(arg, p, cycle):
                 p.text(',')
                 p.breakable()
 
+class CellIdTransformer(ast.NodeTransformer):
+    def visit_Subscript(self, node):
+        super().generic_visit(node)
+        if (isinstance(node.value, ast.Name) and
+                    node.value.id == "Out" and
+                isinstance(node.slice, ast.Index) and
+                isinstance(node.slice.value, ast.Name)):
+            return ast.copy_location(ast.Subscript(
+                value=ast.Name(id=node.value.id, ctx=node.value.ctx),
+                slice=ast.Index(value=ast.Str(s=node.slice.value.id)),
+                ctx=node.ctx), node)
+        return node
+
 class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     """A subclass of InteractiveShell for ZMQ."""
 
@@ -202,6 +215,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ast_transformers.append(OutputTransformer())
+        self.ast_transformers.append(CellIdTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
