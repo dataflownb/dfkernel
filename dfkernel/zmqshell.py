@@ -6,6 +6,7 @@ from __future__ import print_function
 from ipykernel.zmqshell import *
 import ipykernel.zmqshell
 
+import ast
 import sys
 
 from IPython.core.interactiveshell import InteractiveShellABC
@@ -102,6 +103,19 @@ class FunctionMagics(Magics):
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
 
+class CellIdTransformer(ast.NodeTransformer):
+    def visit_Subscript(self, node):
+        super().generic_visit(node)
+        if (isinstance(node.value, ast.Name) and
+                    node.value.id == "Out" and
+                isinstance(node.slice, ast.Index) and
+                isinstance(node.slice.value, ast.Name)):
+            return ast.copy_location(ast.Subscript(
+                value=ast.Name(id=node.value.id, ctx=node.value.ctx),
+                slice=ast.Index(value=ast.Str(s=node.slice.value.id)),
+                ctx=node.ctx), node)
+        return node
+
 class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     """A subclass of InteractiveShell for ZMQ."""
 
@@ -114,6 +128,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     dataflow_history_manager = Instance(DataflowHistoryManager)
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ast_transformers.append(CellIdTransformer())
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
