@@ -103,7 +103,7 @@ define([
         var cell_matches = this.add_cell_ids(this.editor.getValue(), start, end);
         cell_matches.forEach(function(cid) {
             filtered_results.unshift({
-                str: "Out['" + cid + "']",
+                str: "Out[" + cid + "]",
                 type: "cell_id",
                 from: from,
                 to: to
