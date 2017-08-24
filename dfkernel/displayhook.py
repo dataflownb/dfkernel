@@ -49,6 +49,17 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
                     format_dict[i] = res_format_dict
                     res_md_dict['output_tag'] = res_tag
                     md_dict[i] = res_md_dict
+            # FIXME better way to check this (factor nameddict out)
+            elif result.__class__.__name__ == "nameddict":
+                # compute format for each result
+                format_dict = {}
+                md_dict = {}
+                for i, res_tag in enumerate(result._fields):
+                    res = result[res_tag]
+                    res_format_dict, res_md_dict = self.compute_format_data(res)
+                    format_dict[i] = res_format_dict
+                    res_md_dict['output_tag'] = res_tag
+                    md_dict[i] = res_md_dict
             else:
                 format_dict, md_dict = self.compute_format_data(result)
             self.update_user_ns(result)

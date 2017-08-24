@@ -8,12 +8,16 @@ import ipykernel.zmqshell
 
 import ast
 import collections
+import re
+import string
 import sys
 
+from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC
 from IPython.core.interactiveshell import ExecutionResult
 from IPython.core.compilerop import CachingCompiler
-from IPython.core.magic import magics_class, Magics, cell_magic
+from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
+    needs_local_scope
 from IPython.core.history import HistoryManager
 from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
@@ -103,6 +107,164 @@ class FunctionMagics(Magics):
                                                             ovars)
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
+
+class nameddict(collections.Mapping):
+    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
+    ILLEGAL_ATTRIBUTES = ('if', 'elif', 'else', 'for', 'from', 'as', 'import',
+                          'in', 'not', 'is', 'def', 'class', 'return', 'yield',
+                          'except', 'while', 'raise')
+    _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+    _all_cap_re = re.compile('([a-z0-9])([A-Z])')
+
+    def __init__(self, *args, **kwargs):
+        self.__raw_mapping__ = {}
+        self._fields = []
+        self.__field_mapping__ = {}
+
+    def __getattr__(self, item):
+        if item in self._fields:
+            return self.__field_mapping__[item]
+        return getattr(self.__raw_mapping__, item)
+
+    def __getitem__(self, key):
+        if key in self._fields:
+            return self.__field_mapping__[key]
+        return self.__raw_mapping__[key]
+
+    def __iter__(self):
+        return iter(self.__raw_mapping__)
+
+    def __len__(self):
+        return len(self.__raw_mapping__)
+
+    @staticmethod
+    def from_mapping(mapping):
+        nd = nameddict()
+        nd.__raw_mapping__ = nd
+        for key, value in sorted(mapping.items(), key=lambda x: str(x[0])):
+            safe_attr = nd._safe_attr(key)
+            nd._fields.append(safe_attr)
+            nd.__field_mapping__[safe_attr] = value
+        return nd
+
+    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
+    def _safe_key(self, key):
+        try:
+            return str(key)
+        except UnicodeEncodeError:
+            return key.encode(encoding="utf-8", errors="ignore")
+
+    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
+    def _safe_attr(self, attr, camel_killer=False):
+        """Convert a key into something that is accessible as an attribute"""
+        allowed = string.ascii_letters + string.digits + '_'
+
+        attr = self._safe_key(attr)
+
+        if camel_killer:
+            attr = self._camel_killer(attr)
+
+        attr = attr.replace(' ', '_')
+
+        out = ''
+        for character in attr:
+            out += character if character in allowed else "_"
+        out = out.strip("_")
+
+        try:
+            int(out[0])
+        except (ValueError, IndexError):
+            pass
+        else:
+            out = 'x{0}'.format(out)
+
+        if out in self.ILLEGAL_ATTRIBUTES:
+            out = 'x{0}'.format(out)
+
+        return re.sub('_+', '_', out)
+
+    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
+    def _camel_killer(self, attr):
+        """
+        CamelKiller, qu'est-ce que c'est?
+        Taken from http://stackoverflow.com/a/1176023/3244542
+        """
+        try:
+            attr = str(attr)
+        except UnicodeEncodeError:
+            attr = attr.encode(encoding="utf-8", errors="ignore")
+
+        s1 = self._first_cap_re.sub(r'\1_\2', attr)
+        s2 = self._all_cap_re.sub(r'\1_\2', s1)
+        return re.sub('_+', '_', s2.casefold() if hasattr(s2, 'casefold') else
+        s2.lower())
+
+@magics_class
+class DisplayMagics(Magics):
+    @magic_arguments.magic_arguments()
+    @magic_arguments.argument(
+        '-n', '--names', default="",
+        help="""Specify output names."""
+    )
+    @magic_arguments.argument('expr', nargs='*',
+        help="""Expression to output"""
+    )
+
+    @needs_local_scope
+    @line_magic
+    def display(self, line, local_ns=None):
+        args = magic_arguments.parse_argstring(self.display, line)
+
+        names = args.names
+        if (names and
+                ((names.startswith('"') and names.endswith('"'))
+                or (names.startswith("'") and names.endswith("'")))):
+            names = names[1:-1]
+        names = [x.strip() for x in names.split(',') if x.strip() != ""]
+
+        line = ' '.join(args.expr)
+
+        # follow %time code...
+        expr = self.shell.input_transformer_manager.transform_cell(line)
+        expr_ast = self.shell.compile.ast_parse(expr)
+        expr_ast = self.shell.transform_ast(expr_ast)
+        if len(expr_ast.body)==1 and isinstance(expr_ast.body[0], ast.Expr):
+            mode = 'eval'
+            source = '<display eval>'
+            expr_ast = ast.Expression(expr_ast.body[0].value)
+        else:
+            mode = 'exec'
+            source = '<display exec>'
+        code = self.shell.compile(expr_ast, source, mode)
+
+        glob = self.shell.user_ns
+        if mode=='eval':
+            try:
+                out = eval(code, glob, local_ns)
+            except:
+                self.shell.showtraceback()
+                return
+        else:
+            try:
+                exec(code, glob, local_ns)
+            except:
+                self.shell.showtraceback()
+                return
+            out = None
+
+        # wrap out according to names
+        # if is dictionary-like
+        if isinstance(out, collections.Mapping):
+            # use mapping to mimic dict -- could use Box here
+            # want to have access to the original mapping in later code
+            # plus the new attr keys
+            return nameddict.from_mapping(out)
+        else:
+            if len(names) < 1:
+                names = ['res']
+            return collections.namedtuple('namedtuple', ' '.join(names))(out)
+        return out
+
 
 # TODO move to its own package
 def expr2id(node):
@@ -251,6 +413,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     def init_magics(self):
         super(ZMQInteractiveShell, self).init_magics()
         self.register_magics(FunctionMagics)
+        self.register_magics(DisplayMagics)
 
     # FIXME hack to be notified of change before it happens?
     @validate('uuid')
