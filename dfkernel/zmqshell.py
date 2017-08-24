@@ -8,8 +8,7 @@ import ipykernel.zmqshell
 
 import ast
 import collections
-import re
-import string
+import copy
 import sys
 
 from IPython.core import magic_arguments
@@ -536,6 +535,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 old_uuid = self.uuid
                 self.uuid = uuid
 
+                user_ns = copy.copy(self.user_ns)
+
                 # Execute the user code
                 interactivity = "none" if silent else self.ast_node_interactivity
                 has_raised = self.run_ast_nodes(code_ast.body, cell_name,
@@ -547,6 +548,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # ExecutionResult
                 self.displayhook.exec_result = old_result
                 self.uuid = old_uuid
+
+                self.user_ns = user_ns
 
                 self.events.trigger('post_execute')
                 if not silent:
@@ -603,7 +606,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             try:
                 self.hooks.pre_run_code_hook()
                 # rprint('Running code', repr(code_obj)) # dbg
-                exec(code_obj, self.user_global_ns, self.user_ns)
+                user_global_ns = {}
+                exec(code_obj, user_global_ns, self.user_ns)
             finally:
                 # Reset our crash handler in place
                 sys.excepthook = old_excepthook
