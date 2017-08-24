@@ -67,7 +67,8 @@ define([
                 if (b.cell_type == 'code') {
                     return a.concat(b.output_area.outputs.filter(function(d) {
                         // console.log("OUT:", d);
-                        return (d.metadata.output_tag &&
+                        return (d.output_type == 'execute_result' &&
+                        d.metadata.output_tag &&
                         d.metadata.output_tag.startsWith(piece));
                     }).map(function (d) {
                         return {
