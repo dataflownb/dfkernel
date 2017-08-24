@@ -24,6 +24,7 @@ from ipykernel.jsonutil import json_clean, encode_images
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import unicode_type
 from dfkernel.displayhook import ZMQShellDisplayHook
+from dfkernel.safe_attr import safe_attr
 from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )
@@ -109,13 +110,6 @@ class FunctionMagics(Magics):
                                                                cell)
 
 class nameddict(collections.Mapping):
-    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
-    ILLEGAL_ATTRIBUTES = ('if', 'elif', 'else', 'for', 'from', 'as', 'import',
-                          'in', 'not', 'is', 'def', 'class', 'return', 'yield',
-                          'except', 'while', 'raise')
-    _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
-    _all_cap_re = re.compile('([a-z0-9])([A-Z])')
-
     def __init__(self, *args, **kwargs):
         self.__raw_mapping__ = {}
         self._fields = []
@@ -142,65 +136,13 @@ class nameddict(collections.Mapping):
         nd = nameddict()
         nd.__raw_mapping__ = nd
         for key, value in sorted(mapping.items(), key=lambda x: str(x[0])):
-            safe_attr = nd._safe_attr(key)
-            nd._fields.append(safe_attr)
-            nd.__field_mapping__[safe_attr] = value
+            attr = safe_attr(key)
+            nd._fields.append(attr)
+            nd.__field_mapping__[attr] = value
         return nd
 
-    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
-    def _safe_key(self, key):
-        try:
-            return str(key)
-        except UnicodeEncodeError:
-            return key.encode(encoding="utf-8", errors="ignore")
-
-    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
-    def _safe_attr(self, attr, camel_killer=False):
-        """Convert a key into something that is accessible as an attribute"""
-        allowed = string.ascii_letters + string.digits + '_'
-
-        attr = self._safe_key(attr)
-
-        if camel_killer:
-            attr = self._camel_killer(attr)
-
-        attr = attr.replace(' ', '_')
-
-        out = ''
-        for character in attr:
-            out += character if character in allowed else "_"
-        out = out.strip("_")
-
-        try:
-            int(out[0])
-        except (ValueError, IndexError):
-            pass
-        else:
-            out = 'x{0}'.format(out)
-
-        if out in self.ILLEGAL_ATTRIBUTES:
-            out = 'x{0}'.format(out)
-
-        return re.sub('_+', '_', out)
-
-    # From Box (https://github.com/cdgriffith/Box/blob/master/box.py)
-    def _camel_killer(self, attr):
-        """
-        CamelKiller, qu'est-ce que c'est?
-        Taken from http://stackoverflow.com/a/1176023/3244542
-        """
-        try:
-            attr = str(attr)
-        except UnicodeEncodeError:
-            attr = attr.encode(encoding="utf-8", errors="ignore")
-
-        s1 = self._first_cap_re.sub(r'\1_\2', attr)
-        s2 = self._all_cap_re.sub(r'\1_\2', s1)
-        return re.sub('_+', '_', s2.casefold() if hasattr(s2, 'casefold') else
-        s2.lower())
-
 @magics_class
-class DisplayMagics(Magics):
+class OutputMagics(Magics):
     @magic_arguments.magic_arguments()
     @magic_arguments.argument(
         '-n', '--names', default="",
@@ -210,8 +152,6 @@ class DisplayMagics(Magics):
         help="""Expression to output"""
     )
 
-    @needs_local_scope
-    @line_magic
     def display(self, line, local_ns=None):
         args = magic_arguments.parse_argstring(self.display, line)
 
@@ -252,19 +192,39 @@ class DisplayMagics(Magics):
                 return
             out = None
 
-        # wrap out according to names
-        # if is dictionary-like
         if isinstance(out, collections.Mapping):
-            # use mapping to mimic dict -- could use Box here
-            # want to have access to the original mapping in later code
-            # plus the new attr keys
+            # wrap out according to names
+            # if is dictionary-like
             return nameddict.from_mapping(out)
+        elif isinstance(out, collections.Sequence):
+            # wrap out according to names or indicies
+            names = [safe_attr(names[i] if i < len(names) else i)
+                     for i in range(len(out))]
+            return collections.namedtuple('namedtuple', ' '.join(names))(*out)
         else:
             if len(names) < 1:
                 names = ['res']
             return collections.namedtuple('namedtuple', ' '.join(names))(out)
         return out
 
+    @needs_local_scope
+    @line_magic
+    def split_out(self, line, local_ns=None):
+        """Takes an output and splits into multiple outputs.
+        mapping -> each key-value pair becomes a separate output
+        tuple -> each tuple becomes a separate output
+        list -> each entry becomes a separate output
+        """
+        return self.display(line, local_ns)
+
+    @needs_local_scope
+    @line_magic
+    def name_out(self, line, local_ns=None):
+        """Adds names to an output.
+        Mirrors split_out except that this makes sense for a single output.
+        object -> adds a name to the output
+        """
+        return self.display(line, local_ns)
 
 # TODO move to its own package
 def expr2id(node):
@@ -413,7 +373,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     def init_magics(self):
         super(ZMQInteractiveShell, self).init_magics()
         self.register_magics(FunctionMagics)
-        self.register_magics(DisplayMagics)
+        self.register_magics(OutputMagics)
 
     # FIXME hack to be notified of change before it happens?
     @validate('uuid')
