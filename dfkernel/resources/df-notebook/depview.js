@@ -1,9 +1,9 @@
 define(["jquery",
     "base/js/namespace",
     '/kernelspecs/dfpython3/df-notebook/d3.v3.min.js',
-    '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
+    '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js'
     ],
-    function($, Jupyter, d3, dagreD3, graphlib) {
+    function($, Jupyter, d3, dagreD3) {
     "use strict";
 
         var create_dep_div = function() {
@@ -75,7 +75,7 @@ define(["jquery",
         var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
         inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
         svg.attr("height", g.graph().height + 40);
-        
+
 
         svg.selectAll("g.node").on("click", function(){
             var dep_div = $('.dep-div')[0];
