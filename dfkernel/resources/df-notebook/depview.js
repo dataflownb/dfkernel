@@ -35,7 +35,7 @@ define(["jquery",
         var cell_links = [],
             cell_list = [],
             cell_child_nums = [];
-        IPython.notebook.get_cells().forEach(function(a) {
+        Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
