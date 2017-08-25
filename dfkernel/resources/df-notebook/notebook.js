@@ -143,6 +143,11 @@ define([
         return result;
     };
 
+    Notebook.prototype.scroll_to_cell_id = function(uid, time) {
+        var index = this.get_code_cell_index(uid);
+        return this.scroll_to_cell(index, time);
+    };
+
     /**
      * Programmatically select a cell.
      *
