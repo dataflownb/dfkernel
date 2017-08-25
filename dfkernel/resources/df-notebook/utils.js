@@ -31,7 +31,7 @@ define(function() {
         // replace allows a function that passes parenthesized submatches
         return code.replace(CODE_REGEX, function(s, g1, g2) {
             if (g2 in map) {
-                return g1 + "Out['" + map[g2] + "']";
+                return g1 + "Out[" + map[g2] + "]";
             } else {
                 return s;
             }
