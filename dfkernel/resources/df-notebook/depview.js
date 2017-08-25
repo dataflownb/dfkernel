@@ -95,6 +95,10 @@ define(["jquery",
                 var node = d3.select(this),
                 cellid = node.select('tspan').text();
             return (Jupyter.notebook.get_code_cell(cellid)).get_text();
+        }).on("mouseover",function(){
+            d3.select(this).select("rect").style({"stroke":"green"});
+        }).on("mouseout",function(){
+            d3.select(this).select("rect").style({"stroke":"#999"});
         });
 
         $("g.node").tooltip();
