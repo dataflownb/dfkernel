@@ -75,13 +75,23 @@ define(["jquery",
         var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
         inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
         svg.attr("height", g.graph().height + 40);
+        
 
         svg.selectAll("g.node").on("click", function(){
             var dep_div = $('.dep-div')[0];
                 dep_div.style.width = "0%";
                 dep_div.zIndex = '-999';
                 d3.select("div.dep-div svg").transition().delay(1000).remove();
-            Jupyter.notebook.select_by_id(d3.select(this).select('tspan').text())});
+                var node = d3.select(this),
+                cellid = node.select('tspan').text();
+            Jupyter.notebook.select_by_id(cellid);})
+            .attr("title",function () {
+                var node = d3.select(this),
+                cellid = node.select('tspan').text();
+            return (Jupyter.notebook.get_code_cell(cellid)).get_text();
+        });
+
+        $("g.node").tooltip();
     };
 
      return {

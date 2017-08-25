@@ -45,3 +45,7 @@ g text {
   stroke: #333;
   stroke-width: 1.5px;
 }
+
+.ui-tooltip {
+  white-space: pre-line;
+}
