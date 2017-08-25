@@ -88,7 +88,9 @@ define(["jquery",
                 d3.select("div.dep-div svg").transition().delay(1000).remove();
                 var node = d3.select(this),
                 cellid = node.select('tspan').text();
-            Jupyter.notebook.select_by_id(cellid);})
+                Jupyter.notebook.select_by_id(cellid);
+                Jupyter.notebook.scroll_to_cell_id(cellid);
+        })
             .attr("title",function () {
                 var node = d3.select(this),
                 cellid = node.select('tspan').text();
