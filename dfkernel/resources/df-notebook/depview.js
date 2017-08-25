@@ -36,8 +36,12 @@ define(["jquery",
             cell_list = [],
             cell_child_nums = [];
         IPython.notebook.get_cells().forEach(function(a) {
-            cell_list.push({id:a.uuid});
-            a.cell_imm_upstream_deps.forEach(function(b) {cell_links.push({source:b,target:a.uuid});});
+            if (a.cell_type == 'code') {
+                cell_list.push({id: a.uuid});
+                a.cell_imm_upstream_deps.forEach(function (b) {
+                    cell_links.push({source: b, target: a.uuid});
+                });
+            }
         });
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
