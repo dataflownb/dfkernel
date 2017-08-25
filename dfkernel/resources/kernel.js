@@ -1,11 +1,12 @@
 define(["jquery",
     "base/js/namespace",
+    '/kernelspecs/dfpython3/df-notebook/depview.js',
     '/kernelspecs/dfpython3/df-notebook/codecell.js',
     '/kernelspecs/dfpython3/df-notebook/completer.js',
     '/kernelspecs/dfpython3/df-notebook/kernel.js',
     '/kernelspecs/dfpython3/df-notebook/notebook.js',
     ],
-    function($, Jupyter) {
+    function($, Jupyter, depview) {
         var onload = function() {
             // reload the notebook after patching code
             var nb = Jupyter.notebook;
@@ -23,6 +24,18 @@ define(["jquery",
             nb.events.on('kernel_ready.Kernel', function(event, data) {
                 nb.invalidate_cells();
             });
+
+            var depdiv = depview.create_dep_div();
+
+            Jupyter.toolbar.add_buttons_group([
+                  {
+                       'label'   : 'See Cell Dependencies',
+                       'icon'    : 'fa-bar-chart',
+                       'callback': function () {
+                                                     depview.create_dep_view(depdiv);
+
+                       }
+               }]);
 
             // the kernel was already created, but $.proxy settings will
             // reference old handlers so relink them

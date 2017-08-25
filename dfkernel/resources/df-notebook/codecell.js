@@ -39,6 +39,7 @@ define([
 	        this.was_changed = true;
 
             this.cell_info_area = null;
+            this.cell_imm_upstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
          }
@@ -253,6 +254,7 @@ define([
                     that.cell_downstream_deps.append(new_item);
                     $('.downstream-deps', that.cell_info_area).show();
                 });
+                that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
             }
             _super.apply(cell, arguments);
         }
