@@ -65,20 +65,39 @@ define(["jquery",
         });
 
         cell_list.forEach(function(a){
-            g.setNode(a.id, {label: a.id});
+            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:'});
+        });
+
+        g.nodes().forEach(function(v) {
+            var node = g.node(v);
+            // Round the corners of the nodes
+            node.rx = node.ry = 5;
         });
 
         cell_links.forEach(function (a) {
             g.setEdge(a.source,a.target);
         });
 
+        var zoom = d3.behavior.zoom().on("zoom", function() {
+            inner.attr("transform", "translate(" + d3.event.translate + ")" +
+                "scale(" + d3.event.scale + ")");
+        });
+        svg.call(zoom);
+
         var render = new dagreD3.render();
 
         render(d3.select("svg g"),g);
 
-        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-        inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
-        svg.attr("height", g.graph().height + 40);
+        // var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+        // inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
+        // svg.attr("height", g.graph().height + 40);
+
+        var initialScale = 0.75;
+        zoom
+            .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
+            .scale(initialScale)
+            .event(svg);
+        svg.attr('height', g.graph().height * initialScale + 40);
 
 
         svg.selectAll("g.node").on("click", function(){
@@ -93,13 +112,14 @@ define(["jquery",
         })
             .attr("title",function () {
                 var node = d3.select(this),
-                cellid = node.select('tspan').text();
+                cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
             return (Jupyter.notebook.get_code_cell(cellid)).get_text();
         }).on("mouseover",function(){
             d3.select(this).select("rect").style({"stroke":"green"});
         }).on("mouseout",function(){
             d3.select(this).select("rect").style({"stroke":"#999"});
         });
+
 
         $("g.node").tooltip();
     };
