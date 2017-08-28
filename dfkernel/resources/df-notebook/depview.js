@@ -1,7 +1,8 @@
 define(["jquery",
     "base/js/namespace",
     '/kernelspecs/dfpython3/df-notebook/d3.v3.min.js',
-    '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js'
+    '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
+    '/kernelspecs/dfpython3/df-notebook/tooltipsy.min.js'
     ],
     function($, Jupyter, d3, dagreD3) {
     "use strict";
@@ -88,10 +89,6 @@ define(["jquery",
 
         render(d3.select("svg g"),g);
 
-        // var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-        // inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
-        // svg.attr("height", g.graph().height + 40);
-
         var initialScale = 0.75;
         zoom
             .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
@@ -99,6 +96,10 @@ define(["jquery",
             .event(svg);
         svg.attr('height', g.graph().height * initialScale + 40);
 
+
+        var tooltipstyle = function(cellid,source){
+            return "<p class ='cellid'>Cell: " + cellid + "</p><p class='source'>Source:\n" + source + "</p>";
+        };
 
         svg.selectAll("g.node").on("click", function(){
             var dep_div = $('.dep-div')[0];
@@ -113,11 +114,24 @@ define(["jquery",
             .attr("title",function () {
                 var node = d3.select(this),
                 cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
-            return (Jupyter.notebook.get_code_cell(cellid)).get_text();
+            return tooltipstyle(cellid,Jupyter.notebook.get_code_cell(cellid).get_text());
         }).on("mouseover",function(){
             d3.select(this).select("rect").style({"stroke":"green"});
         }).on("mouseout",function(){
             d3.select(this).select("rect").style({"stroke":"#999"});
+        }).each(function () {
+            $(this).tooltipsy({
+                css: {
+                    'padding': '10px',
+                    'color': '#303030',
+                    'background-color': '#000',
+                    'border': '1px solid #999',
+                    '-moz-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                    '-webkit-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                    'box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                    'text-shadow': 'none'
+                }
+            });
         });
 
 
