@@ -15,7 +15,7 @@ class DataflowHistoryManager(object):
         # print("CALLING UPDATE CODE", key)
         if key not in self.code_cache or self.code_cache[key] != code:
             self.code_cache[key] = code
-            self.code_stale[key] = True
+            self.set_stale(key)
             self.func_cached[key] = False
 
     def update_codes(self, code_dict):
@@ -24,6 +24,9 @@ class DataflowHistoryManager(object):
 
     def set_stale(self, key):
         self.code_stale[key] = True
+        # need to make sure everything downstream also gets set to stale
+        for cid in self.all_downstream(key):
+            self.code_stale[cid] = True
 
     def set_not_stale(self, key):
         self.code_stale[key] = False
@@ -146,9 +149,9 @@ class DataflowHistoryManager(object):
 
         # need to update regardless of whether we have value cached
         self.update_dependencies(k, self.shell.uuid)
-        # check all upstream to see if something has changed
-        if not self.check_upstream(k):
-            # print("  VALUE CACHE")
+        # check if we need to recompute
+        if not self.is_stale(k):
+            # print("  VALUE CACHE") 
             return self.value_cache[k]
         else:
             # need to re-execute
