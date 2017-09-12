@@ -286,8 +286,9 @@ class OutputTransformer(object):
                     new_ids = []
                     for id in reversed(ids):
                         if id in dup_ids:
-                            id += dup_ids[id]
-                            dup_ids[id] -= 1
+                            cid = id
+                            id += str(dup_ids[id])
+                            dup_ids[cid] -= 1
                         new_ids.append(id)
                     new_ids.reverse()
                     new_node.args = last_node.value.elts
