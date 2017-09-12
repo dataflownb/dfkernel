@@ -73,7 +73,7 @@ define(["jquery",
         });
 
         cell_list.forEach(function(a){
-            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "")});
+            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None")});
         });
 
         g.nodes().forEach(function(v) {
