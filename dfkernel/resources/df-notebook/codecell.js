@@ -175,8 +175,8 @@ define([
             		that.events.trigger('finished_execute.CodeCell', {cell: that});
                 that.events.off('finished_iopub.Kernel', handleFinished);
                 var errflag = true;
-                (that.output_area.outputs).forEach(function(out){ console.log(out); if(out.output_type == "error") {errflag = false}});
-                console.log(errflag)
+                (that.output_area.outputs).forEach(function(out){ if(out.output_type == "error") {errflag = false}});
+                //console.log(errflag)
                 if(errflag)
                 {
                     that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;

@@ -35,15 +35,22 @@ define(["jquery",
     var create_dep_view = function(depdiv) {
         var cell_links = [],
             cell_list = [],
-            cell_child_nums = [];
+            cell_child_nums = [],
+            output_nodes = [];
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
+                if((a.output_area.outputs).length >= 1) {
+                    output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
+                        return c.concat(d.metadata.output_tag || ("Out[" + a.uuid + "]"));
+                    }, []);
+                }
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
                     cell_links.push({source: b, target: a.uuid});
                 });
             }
         });
+        console.log(output_nodes);
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
 
@@ -66,7 +73,7 @@ define(["jquery",
         });
 
         cell_list.forEach(function(a){
-            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:'});
+            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "")});
         });
 
         g.nodes().forEach(function(v) {
