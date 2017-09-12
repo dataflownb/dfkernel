@@ -39,6 +39,7 @@ define([
 	        this.was_changed = true;
 
             this.cell_info_area = null;
+            this.cell_imm_upstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
          }
@@ -235,6 +236,7 @@ define([
                     new_ahref.text("Cell[" + cid + "]");
                     new_ahref.click(function () {
                         that.notebook.select_by_id(cid);
+                        that.notebook.scroll_to_cell_id(cid);
                         return false;
                     })
                     new_item.append(new_ahref);
@@ -248,12 +250,14 @@ define([
                     new_ahref.text("Cell[" + cid + "]");
                     new_ahref.click(function () {
                         that.notebook.select_by_id(cid);
+                        that.notebook.scroll_to_cell_id(cid);
                         return false;
                     })
                     new_item.append(new_ahref);
                     that.cell_downstream_deps.append(new_item);
                     $('.downstream-deps', that.cell_info_area).show();
                 });
+                that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
             }
             _super.apply(cell, arguments);
         }
