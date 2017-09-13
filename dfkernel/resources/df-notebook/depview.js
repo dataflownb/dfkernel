@@ -68,13 +68,20 @@ define(["jquery",
         inner =  svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        var g = new dagreD3.graphlib.Graph().setGraph({}).setDefaultEdgeLabel(function () {
+        var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
             return {};
         });
 
         cell_list.forEach(function(a){
-            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None")});
+            console.log(a.id);
+            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), class:'parentnode'});
         });
+
+        Object.keys(output_nodes).forEach(function (a) { output_nodes[a].forEach(function (t) {
+            g.setNode(t,{label:'Out['+a+'].'+t, class:'childnode'});
+            g.setParent(t,a);
+            console.log(t,a);
+        }) });
 
         g.nodes().forEach(function(v) {
             var node = g.node(v);
@@ -82,9 +89,9 @@ define(["jquery",
             node.rx = node.ry = 5;
         });
 
-        cell_links.forEach(function (a) {
-            g.setEdge(a.source,a.target);
-        });
+        // cell_links.forEach(function (a) {
+        //     g.setEdge(a.source,a.target);
+        // });
 
         var zoom = d3.behavior.zoom().on("zoom", function() {
             inner.attr("transform", "translate(" + d3.event.translate + ")" +
@@ -108,7 +115,7 @@ define(["jquery",
             return "<p class ='cellid'>Cell: " + cellid + "</p><p class='source'>Source:\n" + source + "</p>";
         };
 
-        svg.selectAll("g.node").on("click", function(){
+        svg.selectAll("g.parentnode, .cluster").on("click", function(){
             var dep_div = $('.dep-div')[0];
                 dep_div.style.width = "0%";
                 dep_div.zIndex = '-999';
@@ -142,7 +149,7 @@ define(["jquery",
         });
 
 
-        $("g.node").tooltip();
+        $("g.parentnode").tooltip();
     };
 
      return {

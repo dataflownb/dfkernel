@@ -60,3 +60,7 @@ g text {
   color: #fff;
   font-size: 1.2em;
 }
+
+.cluster {
+  fill: #f5f5dc;
+}
