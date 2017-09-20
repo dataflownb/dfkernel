@@ -232,8 +232,13 @@ define([
                 msg.content.upstream_deps.forEach(function (cid) {
                     var new_item = $('<li></li>');
                     var new_ahref = $('<a></a>');
+                    var trailing = '';
+                    if(cid.length > 6) {
+                        trailing = '.' + cid.substr(6);
+                        cid = cid.substr(0, 6);
+                    }
                     new_ahref.attr('href', '#' + cid);
-                    new_ahref.text("Cell[" + cid + "]");
+                    new_ahref.text("Cell[" + cid + "]" + trailing);
                     new_ahref.click(function () {
                         that.notebook.select_by_id(cid);
                         that.notebook.scroll_to_cell_id(cid);

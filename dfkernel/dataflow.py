@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple
+import re
 
 class DataflowHistoryManager(object):
     def __init__(self, shell, **kwargs):
@@ -149,6 +150,8 @@ class DataflowHistoryManager(object):
         # check all upstream to see if something has changed
         if not self.check_upstream(k):
             # print("  VALUE CACHE")
+            for i in re.compile(str(k)+'.*\].*?(?=[\s\)\r\n]|$)').findall(self.code_cache[self.shell.uuid]):
+                self.update_dependencies(k + str(i).rsplit(']')[1].strip('.'),self.shell.uuid)
             return self.value_cache[k]
         else:
             # need to re-execute
