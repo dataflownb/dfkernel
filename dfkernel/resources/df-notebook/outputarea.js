@@ -7,8 +7,13 @@ define(['jquery',
 
     var OutputArea = outputarea.OutputArea;
 
-    OutputArea.output_prompt_function = function(prompt_value) {
-        return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'),prompt_value));
+    OutputArea.output_prompt_function = function(prompt_value, metadata) {
+        if (metadata.output_tag) {
+            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]'),prompt_value))
+                .append($('<br>'), '.' + metadata.output_tag + ':');
+        } else {
+            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'),prompt_value));
+        }
     };
 
     // FIXME pull these in instead?
@@ -23,22 +28,16 @@ define(['jquery',
     var MIME_PDF = 'application/pdf';
     var MIME_TEXT = 'text/plain';
 
+    // only change is to pass the metadata to the prompt function!
     OutputArea.prototype.append_execute_result = function (json) {
         var n = json.execution_count || ' ';
         var toinsert = this.create_output_area();
         this._record_display_id(json, toinsert);
         if (this.prompt_area) {
-            var p = toinsert.find('div.prompt')
+            toinsert.find('div.prompt')
                     .addClass('output_prompt')
                     .empty()
-                    .append(
-                      $('<bdi>').text('Out')
-                    );
-            if (json.metadata.output_tag) {
-                p.append('[' + n + ']<br>.' + json.metadata.output_tag + ':');
-            } else {
-                p.append('[' + n + ']:');
-            }
+                    .append(OutputArea.output_prompt_function(n, json.metadata));
         }
         var inserted = this.append_mime_type(json, toinsert);
         if (inserted) {
@@ -52,5 +51,4 @@ define(['jquery',
             this.typeset();
         }
     };
-
 });
