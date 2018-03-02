@@ -1,16 +1,15 @@
-define([
-    'notebook/js/outputarea',
-    'jquery',
-    'base/js/utils',
-    'base/js/security',
-    'base/js/keyboard',
-    'services/config',
-    'notebook/js/mathjaxutils',
-    'components/marked/lib/marked',
-], function(outputarea, $, utils, security, keyboard, configmod, mathjaxutils, marked) {
+define(['jquery',
+        'notebook/js/outputarea',
+        'base/js/utils',
+        'base/js/i18n',
+], function($, outputarea, utils, i18n) {
     "use strict";
 
     var OutputArea = outputarea.OutputArea;
+
+    OutputArea.output_prompt_function = function(prompt_value) {
+        return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'),prompt_value));
+    };
 
     // FIXME pull these in instead?
     // Declare mime type as constants
