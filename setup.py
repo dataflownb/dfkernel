@@ -82,12 +82,12 @@ if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv):
 
 setuptools_args = {}
 install_requires = setuptools_args['install_requires'] = [
-    'ipython>=4.0.0',
+    'ipython>=6.1.0',
     'traitlets>=4.1.0',
     'jupyter_client',
     'tornado>=4.0',
-    'ipykernel>=4.6',
-    'notebook>=5.0'
+    'ipykernel>=4.8.2',
+    'notebook>=5.4'
 ]
 
 if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):

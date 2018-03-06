@@ -1,5 +1,6 @@
 from collections import defaultdict, namedtuple
 import re
+import dfkernel.tuplelib
 
 class DataflowHistoryManager(object):
     def __init__(self, shell, **kwargs):
@@ -183,15 +184,6 @@ class DataflowFunction(object):
         # print("CALLING AS FUNCTION!", self.cell_uuid)
         return self.df_f_manager.run_as_function(self.cell_uuid, *args, **kwargs)
 
-class TupleOutput(namedtuple("Result",["uuid"])):
-    __slots__ = ()
-    def __getattribute__(self, item):
-        print(item)
-        print(self.uuid)
-        return self.uuid
-    def __str__(self):
-        return self.uuid
-
 class DataflowFunctionManager(object):
     def __init__(self, df_hist_manager):
         self.df_hist_manager = df_hist_manager
@@ -206,9 +198,6 @@ class DataflowFunctionManager(object):
 
     def set_cell_ovars(self, uid, ovars):
         self.cell_ovars[uid] = ovars
-
-    def __getattr__(self, item):
-        print(item)
 
     def __getitem__(self, k):
         # need to pass vars through to function
@@ -248,9 +237,10 @@ class DataflowFunctionManager(object):
             if arg_name in self.df_hist_manager.shell.user_ns:
                 res[arg_name] = self.df_hist_manager.shell.user_ns[arg_name]
 
+
         # print("RESULTS:", res)
         if len(self.cell_ovars[uuid]) > 1:
-            res_cls = TupleOutput('Result', self.cell_ovars[uuid])
+            res_cls = dftuple('Result',self.cell_ovars[uuid])
             return res_cls(**res)
         elif len(self.cell_ovars[uuid]) > 0:
             return next(iter(res.values()))

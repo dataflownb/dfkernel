@@ -266,15 +266,15 @@ def expr2id(node):
         return 'x'
 
 class OutputTransformer(object):
+    print(object)
     def visit(self, node):
         if len(node.body) > 0:
             last_node = node.body[-1]
             if isinstance(last_node, ast.Expr):
                 if isinstance(last_node.value, ast.Tuple):
-                    template = "import collections as _dfkernel_collections; _dfkernel_collections.namedtuple('namedtuple', ids)(args)"
+                    template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids)(args)"
                     parsed_raw = ast.parse(template)
                     new_nodes = parsed_raw.body
-                    # new_nodes = ast.parse(template).body
                     new_node = new_nodes[-1].value
                     ids = []
                     for elt in last_node.value.elts:
@@ -294,7 +294,6 @@ class OutputTransformer(object):
                     new_node.func.args[1] = ast.Str(','.join(new_ids))
                     del node.body[-1]
                     node.body.extend(new_nodes)
-                    # print(ast.dump(node))
                     return node
         return node
 
