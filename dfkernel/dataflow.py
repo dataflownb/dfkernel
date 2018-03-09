@@ -145,7 +145,11 @@ class DataflowHistoryManager(object):
             #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
             # print("  KEY ERROR")
             raise InvalidOutCell("Out['"+k + "'] is an Invalid Out Cell Reference")
+        print(eval("self.shell.ns_table['user_global']['_"+k+"']"))
+        print(eval("self.shell.ns_table['user_global']['_"+k+"'].__getcalls__()"))
 
+        #print(self.shell.ns_table['user_global'].keys())
+        #print(self.shell.ns_table['user_global'])
         # need to update regardless of whether we have value cached
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed
@@ -174,6 +178,8 @@ class DataflowHistoryManager(object):
 
     def __iter__(self):
         return self.code_cache.__iter__()
+
+
 
 class DataflowFunction(object):
     def __init__(self, df_f_manager, cell_uuid):

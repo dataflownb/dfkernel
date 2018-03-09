@@ -266,13 +266,14 @@ def expr2id(node):
         return 'x'
 
 class OutputTransformer(object):
-    print(object)
     def visit(self, node):
         if len(node.body) > 0:
             last_node = node.body[-1]
             if isinstance(last_node, ast.Expr):
                 if isinstance(last_node.value, ast.Tuple):
-                    template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids)(args)"
+                    #print(object.__hash__)
+                    #template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids, 1)(args)"
+                    template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids,'"+ str(node.id)+"')(args)"
                     parsed_raw = ast.parse(template)
                     new_nodes = parsed_raw.body
                     new_node = new_nodes[-1].value
@@ -686,6 +687,40 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         # Finally, update the real user's namespace
         self.user_ns.update(ns)
+    def transform_ast(self, node):
+        """Apply the AST transformations from self.ast_transformers
+
+        Parameters
+        ----------
+        node : ast.Node
+          The root node to be transformed. Typically called with the ast.Module
+          produced by parsing user input.
+
+        Returns
+        -------
+        An ast.Node corresponding to the node it was called with. Note that it
+        may also modify the passed object, so don't rely on references to the
+        original AST.
+        """
+        #FIXME: Figure out why you can't access uuid from here and have to use this roundabout method
+        node.id = list(self.parent._outer_code_dict.keys())[0]
+        #node.df_hist = self.history_manager
+        for transformer in self.ast_transformers:
+
+            try:
+                node = transformer.visit(node)
+            except InputRejected:
+                # User-supplied AST transformers can reject an input by raising
+                # an InputRejected.  Short-circuit in this case so that we
+                # don't unregister the transform.
+                raise
+            except Exception:
+                warn("AST transformer %r threw an error. It will be unregistered." % transformer)
+                self.ast_transformers.remove(transformer)
+
+        if self.ast_transformers:
+            ast.fix_missing_locations(node)
+        return node
 
     def init_history(self):
         """Sets up the command history, and starts regular autosaves."""
