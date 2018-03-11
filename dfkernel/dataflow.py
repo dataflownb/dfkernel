@@ -1,6 +1,4 @@
 from collections import defaultdict, namedtuple
-import re
-import dfkernel.tuplelib
 
 class DataflowHistoryManager(object):
     def __init__(self, shell, **kwargs):
@@ -56,15 +54,21 @@ class DataflowHistoryManager(object):
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
 
+    def remove_dependencies(self, parent, child):
+        self.dep_parents[child].remove(parent)
+        self.dep_children[parent].remove(child)
+
     # returns True if any upstream cell has changed
     def check_upstream(self, k):
-        #print(k, self.dep_parents[k])
-        #print(self.dep_children[k])
+        class CyclicalCall(KeyError):
+            '''This error results when the call being made is Cyclical'''
         res = False
         for cid in self.dep_parents[k]:
             if(cid in self.dep_children[k]):
                 if(cid == k):
-                    return False
+                    raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
+                    #Should no longer be nessecary
+                    #return False
                 continue
             if self.check_upstream(cid):
                 res = True
@@ -143,20 +147,20 @@ class DataflowHistoryManager(object):
         # print("CALLING OUT[{}]".format(k))
         if k not in self.code_stale:
             #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
-            # print("  KEY ERROR")
-            raise InvalidOutCell("Out['"+k + "'] is an Invalid Out Cell Reference")
-        print(eval("self.shell.ns_table['user_global']['_"+k+"']"))
-        print(eval("self.shell.ns_table['user_global']['_"+k+"'].__getcalls__()"))
+            raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
 
-        #print(self.shell.ns_table['user_global'].keys())
-        #print(self.shell.ns_table['user_global'])
+        #FIXME: Potentially think about moving this somewhere else
+        #Give dftuple access to DF History Manager so it can update it's own references
+        tup_ref = self.shell.ns_table['user_global']['_'+k]
+        if(type(tup_ref).__name__ == 'dftuple'):
+            tup_ref.__sethist__(self)
+            tup_ref.__setuuid__(k)
+
         # need to update regardless of whether we have value cached
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed
         if not self.check_upstream(k):
             # print("  VALUE CACHE")
-            for i in re.compile(str(k)+'.*\].*?(?=[\s\)\r\n]|$)').findall(self.code_cache[self.shell.uuid]):
-                self.update_dependencies(k + str(i).rsplit(']')[1].strip('.'),self.shell.uuid)
             return self.value_cache[k]
         else:
             # need to re-execute

@@ -1,25 +1,17 @@
-#from dfkernel.dataflow import DataflowHistoryManager
-import dfkernel.zmqshell
-
-
-def dftuple(name, ids, id, args=None):
+def dftuple(name, ids, args=None):
     from collections import namedtuple
-    #ids['id'] = id
-    #print(dfkernel.dataflow.DataFlowHistoryManager)
     df_tuple = namedtuple(name, ids)
     class AttrListenMixin(object):
-        uuid = id
-        storedcalls = []
+        _dfhist = None
+        _uuid = None
         def __getattribute__(self, item):
             if item in ids:
-                self.storedcalls.append({'cell':self.uuid,'namedattribute':item})
-                print("CALLED:{}.{}".format(self.uuid,item))
-                #print(self.df_hist)
-                #print("CALLED:", item)
+                self._dfhist.update_dependencies(self._uuid+item, self._dfhist.shell.uuid)
+                self._dfhist.remove_dependencies(self._uuid, self._dfhist.shell.uuid)
             return object.__getattribute__(self, item)
-        def __clearcalls__(self):
-            storedcalls = []
-        def __getcalls__(self):
-            return self.storedcalls
+        def __sethist__(self,hist):
+            self._dfhist = hist
+        def __setuuid__(self,uuidref):
+            self._uuid = uuidref
 
     return type('dftuple', (AttrListenMixin, df_tuple), {})
