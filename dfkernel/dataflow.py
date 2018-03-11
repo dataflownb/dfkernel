@@ -155,7 +155,6 @@ class DataflowHistoryManager(object):
         if(type(tup_ref).__name__ == 'dftuple'):
             tup_ref.__sethist__(self)
             tup_ref.__setuuid__(k)
-
         # need to update regardless of whether we have value cached
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed

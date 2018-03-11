@@ -24,6 +24,7 @@ define(["jquery",
                 var dep_div = $('.dep-div')[0];
                 dep_div.style.width = "0%";
                 dep_div.zIndex = '-999';
+                d3.selectAll("div.tooltipsy").remove();
                 d3.select("div.dep-div svg").transition().delay(1000).remove();
             };
             depdiv.append(closebtn);
@@ -50,7 +51,7 @@ define(["jquery",
                 });
             }
         });
-        console.log(output_nodes);
+
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
 
@@ -73,14 +74,15 @@ define(["jquery",
         });
 
         cell_list.forEach(function(a){
-            console.log(a.id);
-            g.setNode(a.id, {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), class:'parentnode'});
+            g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), class:'parentnode'});
         });
 
+
         Object.keys(output_nodes).forEach(function (a) { output_nodes[a].forEach(function (t) {
-            g.setNode(t,{label:'Out['+a+'].'+t, class:'childnode'});
-            g.setParent(t,a);
-            console.log(t,a);
+            var uuid = t.substr(4,6);
+            if(uuid != a){var parent = 'Out['+a+']'; g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
+            else{g.setNode(uuid,{label:'Out['+a+']', class:'childnode'}); g.setParent(uuid,t);}
+
         }) });
 
         g.nodes().forEach(function(v) {
@@ -89,9 +91,11 @@ define(["jquery",
             node.rx = node.ry = 5;
         });
 
-        // cell_links.forEach(function (a) {
-        //     g.setEdge(a.source,a.target);
-        // });
+        cell_links.forEach(function (a) {
+            g.setEdge(a.source,a.target);
+        });
+
+
 
         var zoom = d3.behavior.zoom().on("zoom", function() {
             inner.attr("transform", "translate(" + d3.event.translate + ")" +
