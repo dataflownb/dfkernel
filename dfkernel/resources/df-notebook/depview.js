@@ -42,10 +42,10 @@ define(["jquery",
             if (a.cell_type == 'code') {
                 if((a.output_area.outputs).length >= 1) {
                     output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error' && 'output_tag' in d.metadata){
-                        return c.concat(d.metadata.output_tag)};
+                        if(d.output_type != 'error'){
+                        return c.concat(d.metadata.output_tag || ("Out[" + a.uuid + "]"))};
                         return c;
-                    }, [("Out[" + a.uuid + "]")]);
+                    }, []);
                 }
                 else{
                     output_nodes[a.uuid] = [("Out[" + a.uuid + "]")];
