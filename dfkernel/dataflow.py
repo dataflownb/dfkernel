@@ -1,6 +1,8 @@
 from collections import defaultdict, namedtuple
 
 class DataflowHistoryManager(object):
+    storeditems = []
+
     def __init__(self, shell, **kwargs):
         self.shell = shell
         self.flags = dict(kwargs)
@@ -156,6 +158,7 @@ class DataflowHistoryManager(object):
             tup_ref.__sethist__(self)
             tup_ref.__setuuid__(k)
         # need to update regardless of whether we have value cached
+        self.storeditems.append(k)
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed
         if not self.check_upstream(k):
@@ -170,6 +173,8 @@ class DataflowHistoryManager(object):
     def __setitem__(self, key, value):
         self.update_value(key, value)
 
+    #FIXME
+    #Does this function do anything?
     def get(self, k, d=None):
         try:
             return self.__getitem__(self, k)
@@ -249,6 +254,7 @@ class DataflowFunctionManager(object):
 
         # print("RESULTS:", res)
         if len(self.cell_ovars[uuid]) > 1:
+            from dfkernel.tuplelib import dftuple
             res_cls = dftuple('Result',self.cell_ovars[uuid])
             return res_cls(**res)
         elif len(self.cell_ovars[uuid]) > 0:

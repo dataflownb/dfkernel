@@ -272,8 +272,6 @@ class OutputTransformer(object):
             if isinstance(last_node, ast.Expr):
                 if isinstance(last_node.value, ast.Tuple):
                     #print(object.__hash__)
-                    #template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids, 1)(args)"
-                    #template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids,'"+ str(node.id)+"')(args)"
                     template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids)(args)"
                     parsed_raw = ast.parse(template)
                     new_nodes = parsed_raw.body
@@ -550,6 +548,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 self.displayhook.exec_result = old_result
                 self.uuid = old_uuid
 
+                if(not self.last_execution_succeeded):
+                    for j in self.dataflow_history_manager.storeditems:
+                        self.dataflow_history_manager.remove_dependencies(j,uuid)
+
+                self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')
                 if not silent:
                     self.events.trigger('post_run_cell')

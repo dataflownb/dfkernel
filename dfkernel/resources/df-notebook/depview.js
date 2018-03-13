@@ -39,10 +39,12 @@ define(["jquery",
             cell_child_nums = [],
             output_nodes = [];
         Jupyter.notebook.get_cells().forEach(function(a) {
-            if (a.cell_type == 'code') {
+            if (a.cell_type == 'code' && "output_area" in a) {
                 if((a.output_area.outputs).length >= 1) {
                     output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
-                        return c.concat(d.metadata.output_tag || ("Out[" + a.uuid + "]"));
+                        if(d.output_type != 'error'){
+                        return c.concat(d.metadata.output_tag || ("Out[" + a.uuid + "]"))};
+                        return c;
                     }, []);
                 }
                 cell_list.push({id: a.uuid});
