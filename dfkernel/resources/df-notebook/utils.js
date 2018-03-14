@@ -25,13 +25,13 @@ define(function() {
         }
     };
 
-    var CODE_REGEX = /(^|[^A-Za-z0-9_])Out\[[\'\"]([0-9a-f]+)[\'\"]\]/g;
+    var CODE_REGEX = /(^|[^A-Za-z0-9_])Out\[[\'\"]?([0-9a-f]+)[\'\"]?\]/g;
 
     var rewrite_code_ids = function(code, map) {
         // replace allows a function that passes parenthesized submatches
         return code.replace(CODE_REGEX, function(s, g1, g2) {
             if (g2 in map) {
-                return g1 + "Out['" + map[g2] + "']";
+                return g1 + "Out[" + map[g2] + "]";
             } else {
                 return s;
             }

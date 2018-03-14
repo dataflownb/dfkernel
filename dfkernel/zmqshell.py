@@ -249,14 +249,15 @@ def expr2id(node):
     elif isinstance(node, ast.Str):
         return 'c' # node.s
     elif isinstance(node, ast.Attribute):
-        # really want to concatenate...
+        # concatenate?
         return expr2id(node.value) + "_" + node.attr
     elif isinstance(node, ast.Subscript):
         slice = ""
-        if isinstance(node.slice.value, ast.Num):
-            slice = "_{}".format(node.slice.value.n)
-        elif isinstance(node.slice.value, ast.Str):
-            slice = "_{}".format(node.slice.value.s)
+        if isinstance(node.slice, ast.Index):
+            if isinstance(node.slice.value, ast.Num):
+                slice = "_{}".format(node.slice.value.n)
+            elif isinstance(node.slice.value, ast.Str):
+                slice = "_{}".format(node.slice.value.s)
         return expr2id(node.value) + slice
     elif isinstance(node, ast.Index):
         return expr2id(node.value)
@@ -335,8 +336,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ast_transformers.append(OutputTransformer())
         self.ast_transformers.append(CellIdTransformer())
+        self.ast_transformers.append(OutputTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,

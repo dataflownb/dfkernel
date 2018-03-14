@@ -235,6 +235,7 @@ define([
                     new_ahref.text("Cell[" + cid + "]");
                     new_ahref.click(function () {
                         that.notebook.select_by_id(cid);
+                        that.notebook.scroll_to_cell_id(cid);
                         return false;
                     })
                     new_item.append(new_ahref);
@@ -248,6 +249,7 @@ define([
                     new_ahref.text("Cell[" + cid + "]");
                     new_ahref.click(function () {
                         that.notebook.select_by_id(cid);
+                        that.notebook.scroll_to_cell_id(cid);
                         return false;
                     })
                     new_item.append(new_ahref);
