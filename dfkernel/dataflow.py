@@ -1,4 +1,4 @@
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, OrderedDict
 
 class DataflowHistoryManager(object):
     def __init__(self, shell, **kwargs):
@@ -245,3 +245,40 @@ class DataflowFunctionManager(object):
         else:
             return retval
 
+
+class DataflowNamespace(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__links__ = {}
+        self.__rev_links__ = defaultdict(list)
+        self.__do_not_link__ = set()
+
+    def __getitem__(self, k):
+        # print("__getitem__", k)
+        if k not in self.__do_not_link__ and k in self.__links__:
+            # print("getting link", k)
+            cell_id = self.__links__[k]
+            rev_links = self.__rev_links__[cell_id]
+            # FIXME think about local variables...
+            self.__do_not_link__.update(rev_links)
+            df_history = super().__getitem__('_oh')
+            # print("Executing cell", cell_id)
+            res = df_history.execute_cell(cell_id)
+            # print("Got result", res)
+            self.__do_not_link__.difference_update(rev_links)
+            return res[k]
+        return super().__getitem__(k)
+
+        # if k in self.links:
+        #     # run the cell at self.links[k]
+        #     pass
+        # if k in self:
+        #     return super().__getitem__(k)
+
+    # def __setitem__(self, k, v):
+    #     if
+    #     super
+
+    def _add_link(self, name, cell_id):
+        self.__links__[name] = cell_id
+        self.__rev_links__[cell_id].append(name)

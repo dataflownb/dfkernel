@@ -9,8 +9,9 @@ define(['jquery',
 
     OutputArea.output_prompt_function = function(prompt_value, metadata) {
         if (metadata.output_tag) {
-            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]'),prompt_value))
-                .append($('<br>'), '.' + metadata.output_tag + ':');
+            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._(metadata.output_tag + ':')));
+            // return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]'),prompt_value))
+            //     .append($('<br>'), '.' + metadata.output_tag + ':');
         } else {
             return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'),prompt_value));
         }

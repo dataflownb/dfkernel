@@ -12,7 +12,8 @@ import copy
 import sys
 
 from IPython.core import magic_arguments
-from IPython.core.interactiveshell import InteractiveShellABC
+from IPython.core.interactiveshell import InteractiveShellABC, \
+    _assign_nodes, _single_targets_nodes
 from IPython.core.interactiveshell import ExecutionResult
 from IPython.core.compilerop import CachingCompiler
 from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
@@ -28,8 +29,11 @@ from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )
 from warnings import warn
+from typing import List as ListType
+from ast import AST
 
-from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager
+from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, DataflowNamespace
+from dfkernel.dflink import LinkedResult
 
 #-----------------------------------------------------------------------------
 # Functions and classes
@@ -335,6 +339,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
     def __init__(self, *args, **kwargs):
+        if 'user_ns' not in kwargs or kwargs['user_ns'] is None:
+            kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
         self.ast_transformers.append(CellIdTransformer())
         self.ast_transformers.append(OutputTransformer())
@@ -536,7 +542,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 old_uuid = self.uuid
                 self.uuid = uuid
 
-                user_ns = copy.copy(self.user_ns)
+                # user_ns = copy.copy(self.user_ns)
 
                 # Execute the user code
                 interactivity = "none" if silent else self.ast_node_interactivity
@@ -550,7 +556,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 self.displayhook.exec_result = old_result
                 self.uuid = old_uuid
 
-                self.user_ns = user_ns
+                # self.user_ns = user_ns
 
                 self.events.trigger('post_execute')
                 if not silent:
@@ -576,6 +582,41 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
 
         return result
+
+    def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
+                        compiler=compile, result=None):
+        no_link_vars = []
+        if interactivity == 'last_expr_or_assign':
+            if isinstance(nodelist[-1], _assign_nodes):
+                asg = nodelist[-1]
+                if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
+                    target = asg.targets[0]
+                elif isinstance(asg, _single_targets_nodes):
+                    target = asg.target
+                else:
+                    target = None
+                keywords = []
+                create_node = True
+                if isinstance(target, ast.Name):
+                    keywords.append(ast.keyword(target.id, ast.Name(target.id, ast.Load())))
+                    no_link_vars.append(target.id)
+                elif isinstance(target, ast.Tuple):
+                    for elt in target.elts:
+                        if not isinstance(elt, ast.Name):
+                            create_node = False
+                            break
+                        no_link_vars.append(elt.id)
+                        keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
+                if create_node:
+                    nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
+                    ast.fix_missing_locations(nnode)
+                    nodelist.append(nnode)
+                # also need to pull off the values so they don't recurse on themselves
+            interactivity = 'last'
+        self.user_ns.__do_not_link__.update(no_link_vars)
+        res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
+        self.user_ns.__do_not_link__.difference_update(no_link_vars)
+        return res
 
     def run_code(self, code_obj, result=None):
         """Execute a code object.
@@ -607,8 +648,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             try:
                 self.hooks.pre_run_code_hook()
                 # rprint('Running code', repr(code_obj)) # dbg
-                user_global_ns = {}
-                exec(code_obj, user_global_ns, self.user_ns)
+                # user_global_ns = {}
+                exec(code_obj, self.user_global_ns, self.user_ns)
             finally:
                 # Reset our crash handler in place
                 sys.excepthook = old_excepthook
@@ -674,6 +715,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # ns['Out'] = self.history_manager.output_hist
         ns['Out'] = self.dataflow_history_manager
         ns['Func'] = self.dataflow_function_manager
+        ns['LinkedResult'] = LinkedResult
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython
@@ -699,5 +741,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.dataflow_function_manager = \
             DataflowFunctionManager(self.dataflow_history_manager)
         self.configurables.append(self.history_manager)
+
+    # def prepare_user_module(self, user_module=None, user_ns=None):
+    #     print("USER_NS", user_ns, file=sys.__stdout__, flush=True)
+    #
+    #     return super().prepare_user_module(user_module, user_ns)
+
 
 InteractiveShellABC.register(ZMQInteractiveShell)
