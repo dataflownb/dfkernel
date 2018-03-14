@@ -53,6 +53,7 @@ class DataflowHistoryManager(object):
         self.last_calculated_ctr = 0
 
     def update_dependencies(self, parent, child):
+        self.storeditems.append({'parent':parent,'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
 
@@ -158,7 +159,7 @@ class DataflowHistoryManager(object):
             tup_ref.__sethist__(self)
             tup_ref.__setuuid__(k)
         # need to update regardless of whether we have value cached
-        self.storeditems.append(k)
+        #self.storeditems.append(k)
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed
         if not self.check_upstream(k):

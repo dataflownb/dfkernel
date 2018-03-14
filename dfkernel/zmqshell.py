@@ -550,7 +550,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
                 if(not self.last_execution_succeeded):
                     for j in self.dataflow_history_manager.storeditems:
-                        self.dataflow_history_manager.remove_dependencies(j,uuid)
+                        self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
 
                 self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')
