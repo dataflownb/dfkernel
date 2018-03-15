@@ -2,7 +2,7 @@
 
 import ipykernel.displayhook
 from ipykernel.displayhook import *
-from ipykernel.jsonutil import encode_images
+from ipykernel.jsonutil import encode_images, json_clean
 
 from dfkernel.dflink import LinkedResult
 
@@ -19,10 +19,10 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
             # have multiple outputs
             new_format_dict = {}
             for i in format_dict:
-                new_format_dict[i] = encode_images(format_dict[i])
+                new_format_dict[i] = json_clean(encode_images(format_dict[i]))
             self.msg['content']['data'] = new_format_dict
         else:
-            self.msg['content']['data'] = encode_images(format_dict)
+            self.msg['content']['data'] = json_clean(encode_images(format_dict))
         self.msg['content']['metadata'] = md_dict
 
     @property
