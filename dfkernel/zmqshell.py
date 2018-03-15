@@ -345,7 +345,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
         self.ast_transformers.append(CellIdTransformer())
-        self.ast_transformers.append(OutputTransformer())
+        # self.ast_transformers.append(OutputTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
@@ -616,7 +616,24 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     ast.fix_missing_locations(nnode)
                     nodelist.append(nnode)
                 # also need to pull off the values so they don't recurse on themselves
-            interactivity = 'last'
+            elif isinstance(nodelist[-1], ast.Expr):
+                if isinstance(nodelist[-1].value, ast.Tuple):
+                    asg = nodelist[-1].value
+                    keywords = []
+                    create_node = True
+                    for elt in asg.elts:
+                        if not isinstance(elt, ast.Name):
+                            create_node = False
+                            break
+                        no_link_vars.append(elt.id)
+                        keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
+                    if create_node:
+                        nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
+                        ast.fix_missing_locations(nnode)
+                        nodelist.append(nnode)
+
+            interactivity = 'last_expr'
+
         self.user_ns.__do_not_link__.update(no_link_vars)
         res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         self.user_ns.__do_not_link__.difference_update(no_link_vars)
