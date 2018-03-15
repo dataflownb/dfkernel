@@ -139,6 +139,15 @@ define([
             });
         }
 
+        // if we have no results, the experimental completer sends back start = end
+        if (start === end) {
+            var token = this.editor.getTokenAt(from);
+            start = token.start;
+            end = token.end;
+            from = this.editor.posFromIndex(token.start);
+            to = this.editor.posFromIndex(token.end);
+        }
+
         var cell_matches = this.add_cell_ids(this.editor.getValue(), start, end);
         cell_matches.forEach(function(cid) {
             filtered_results.unshift({
