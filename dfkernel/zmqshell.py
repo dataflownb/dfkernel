@@ -31,6 +31,7 @@ from traitlets import (
 from warnings import warn
 from typing import List as ListType
 from ast import AST
+import importlib
 
 from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, DataflowNamespace
 from dfkernel.dflink import LinkedResult
@@ -198,7 +199,8 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return nameddict.from_mapping(out)
+            return LinkedResult(self.shell.uuid, **out)
+            # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
             names = [safe_attr(names[i] if i < len(names) else i)
@@ -541,6 +543,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 self.displayhook.exec_result = result
                 old_uuid = self.uuid
                 self.uuid = uuid
+                self.user_ns._start_uuid(self.uuid)
 
                 # user_ns = copy.copy(self.user_ns)
 
@@ -555,6 +558,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # ExecutionResult
                 self.displayhook.exec_result = old_result
                 self.uuid = old_uuid
+                self.user_ns._revisit_uuid(self.uuid)
 
                 # self.user_ns = user_ns
 
@@ -716,6 +720,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         ns['Out'] = self.dataflow_history_manager
         ns['Func'] = self.dataflow_function_manager
         ns['LinkedResult'] = LinkedResult
+        ns['import_module'] = importlib.import_module
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython

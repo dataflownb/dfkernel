@@ -81,6 +81,7 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
             self.finish_displayhook()
 
     def update_dataflow_ns(self, result):
+        self.shell.user_ns._reset_cell(result.__uuid__)
         for i, (res_tag, res) in enumerate(result.items()):
             self.shell.user_ns._add_link(res_tag, result.__uuid__)
 

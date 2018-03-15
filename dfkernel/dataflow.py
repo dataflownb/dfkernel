@@ -245,6 +245,13 @@ class DataflowFunctionManager(object):
         else:
             return retval
 
+class DuplicateNameError(Exception):
+    def __init__(self, var_name, cell_id):
+        self.var_name = var_name
+        self.cell_id = cell_id
+
+    def __str__(self):
+        return (f"name '{self.var_name}' has already been defined in In[{self.cell_id}]")
 
 class DataflowNamespace(dict):
     def __init__(self, *args, **kwargs):
@@ -252,6 +259,18 @@ class DataflowNamespace(dict):
         self.__links__ = {}
         self.__rev_links__ = defaultdict(list)
         self.__do_not_link__ = set()
+        self.__local_vars__ = defaultdict(dict)
+        self.__cur_uuid__ = None
+
+    # @property
+    # def _cur_uuid(self):
+    #     return self.__cur_uuid__
+    #
+    # @_cur_uuid.setter
+    # def _cur_uuid(self, uuid):
+    #     if self.__cur_uuid__ is not None:
+    #         self._stash_local_vars()
+    #     self.__cur_uuid__ = uuid
 
     def __getitem__(self, k):
         # print("__getitem__", k)
@@ -260,10 +279,11 @@ class DataflowNamespace(dict):
             cell_id = self.__links__[k]
             rev_links = self.__rev_links__[cell_id]
             # FIXME think about local variables...
+            # FIXME do we need to compute difference first?
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history.execute_cell(cell_id)
+            res = df_history[cell_id]
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
@@ -275,10 +295,49 @@ class DataflowNamespace(dict):
         # if k in self:
         #     return super().__getitem__(k)
 
-    # def __setitem__(self, k, v):
-    #     if
-    #     super
+    def __setitem__(self, k, v):
+        # FIXME question is whether to do this or allow local vars
+        if k not in self.__do_not_link__ and k in self.__links__:
+            raise DuplicateNameError(k, self.__links__[k])
+        self.__local_vars__[self.__cur_uuid__][k] = v
+        return super().__setitem__(k, v)
 
     def _add_link(self, name, cell_id):
-        self.__links__[name] = cell_id
-        self.__rev_links__[cell_id].append(name)
+        if name in self.__links__:
+            if self.__links__[name] != cell_id:
+                raise DuplicateNameError(name, self.__links__[name])
+        else:
+            self.__links__[name] = cell_id
+            self.__rev_links__[cell_id].append(name)
+
+    def _reset_cell(self, cell_id):
+        for name in self.__rev_links__[cell_id]:
+            del self.__links__[name]
+        del self.__rev_links__[cell_id]
+
+    def _purge_local_vars(self):
+        for k in list(self.__local_vars__[self.__cur_uuid__].keys()):
+            del self.__local_vars__[self.__cur_uuid__][k]
+            del self[k]
+
+    def _stash_local_vars(self):
+        if self.__cur_uuid__ is not None:
+            for k, v in self.__local_vars__[self.__cur_uuid__].items():
+                del self[k]
+
+    def _unstash_local_vars(self):
+        if self.__cur_uuid__ is not None:
+            for k, v in self.__local_vars__[self.__cur_uuid__].items():
+                # have to watch for variables that have been added by other cells
+                if k not in self.__do_not_link__ and k in self.__links__:
+                    raise DuplicateNameError(k, self.__links__[k])
+                super().__setitem__(k, v)
+
+    def _start_uuid(self, uuid):
+        self._stash_local_vars()
+        self.__cur_uuid__ = uuid
+
+    def _revisit_uuid(self, old_uuid):
+        self._purge_local_vars()
+        self.__cur_uuid__ = old_uuid
+        self._unstash_local_vars()
