@@ -78,15 +78,15 @@ define(["jquery",
             return {};
         });
 
-        cell_list.forEach(function(a){
+        cell_list.forEach(function(a){ console.log(a.id);
             g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), class:'parentnode'});
         });
 
 
         Object.keys(output_nodes).forEach(function (a) { output_nodes[a].forEach(function (t) {
             var uuid = t.substr(4,6);
-            if(uuid != a){var parent = 'Out['+a+']'; g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
-            else{g.setNode(uuid,{label:'Out['+a+']', class:'childnode'}); g.setParent(uuid,t);}
+            if(uuid != a){console.log(a,t); var parent = 'Out['+a+']'; g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
+            else{console.log(uuid,t); g.setNode(uuid,{label:'Out['+a+']', class:'childnode'}); g.setParent(uuid,t);}
 
         }) });
 
@@ -130,7 +130,8 @@ define(["jquery",
                 dep_div.zIndex = '-999';
                 d3.select("div.dep-div svg").transition().delay(1000).remove();
                 var node = d3.select(this),
-                cellid = node.select('tspan').text();
+                cellid = node.select('tspan').text().substr(9,6);
+                d3.selectAll("div.tooltipsy").remove();
                 Jupyter.notebook.select_by_id(cellid);
                 Jupyter.notebook.scroll_to_cell_id(cellid);
         })
