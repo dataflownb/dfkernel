@@ -631,7 +631,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
                         ast.fix_missing_locations(nnode)
                         nodelist.append(nnode)
-
+                elif isinstance(nodelist[-1].value, ast.Name):
+                    elt = nodelist[-1].value
+                    keywords = [ast.keyword(elt.id, ast.Name(elt.id, ast.Load()))]
+                    nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
+                    ast.fix_missing_locations(nnode)
+                    nodelist.append(nnode)
             interactivity = 'last_expr'
 
         self.user_ns.__do_not_link__.update(no_link_vars)
