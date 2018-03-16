@@ -302,6 +302,11 @@ class DataflowNamespace(dict):
         self.__local_vars__[self.__cur_uuid__][k] = v
         return super().__setitem__(k, v)
 
+    def _add_links(self, tag_dict):
+        for (cell_id,tag_list) in tag_dict.items():
+            for tag in tag_list:
+                self._add_link(tag, cell_id)
+
     def _add_link(self, name, cell_id):
         if name in self.__links__:
             if self.__links__[name] != cell_id:

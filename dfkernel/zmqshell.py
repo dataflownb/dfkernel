@@ -393,7 +393,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             sys.stderr.flush()
         return proposal['value']
 
-    def run_cell(self, raw_cell, uuid=None, code_dict={},
+    def run_cell(self, raw_cell, uuid=None, code_dict={}, output_tags={},
                      store_history=False, silent=False, shell_futures=True,
                      update_downstream_deps=False):
         """Run a complete IPython cell.
@@ -427,6 +427,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         if store_history:
             self.dataflow_history_manager.update_codes(code_dict)
+            self.user_ns._add_links(output_tags)
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
@@ -742,7 +743,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         ns['Out'] = self.dataflow_history_manager
         ns['Func'] = self.dataflow_function_manager
         ns['LinkedResult'] = LinkedResult
-        ns['import_module'] = importlib.import_module
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython

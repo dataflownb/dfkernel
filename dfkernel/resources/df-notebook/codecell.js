@@ -162,9 +162,11 @@ define([
 
         var callbacks = this.get_callbacks();
 
+        var code_dict = this.notebook.get_code_dict();
+        var output_tags = this.notebook.get_output_tags(Object.keys(code_dict));
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {silent: false, store_history: true,
             stop_on_error : stop_on_error, user_expressions: {'__uuid__': this.uuid,
-                '__code_dict__': this.notebook.get_code_dict()} });
+                '__code_dict__': code_dict, '__output_tags__': output_tags} });
         CodeCell.msg_cells[this.last_msg_id] = this;
         this.render();
         this.events.trigger('execute.CodeCell', {cell: this});
