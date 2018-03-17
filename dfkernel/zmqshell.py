@@ -552,6 +552,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     for j in self.dataflow_history_manager.storeditems:
                         self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
 
+                if (type(result.result).__name__ == 'dftuple'):
+                    result.result.__sethist__(self.dataflow_history_manager)
+                    result.result.__setuuid__(old_uuid)
+
                 self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')
                 if not silent:

@@ -2,6 +2,7 @@ from collections import defaultdict, namedtuple
 
 class DataflowHistoryManager(object):
     storeditems = []
+    tup_flag = False
 
     def __init__(self, shell, **kwargs):
         self.shell = shell
@@ -58,8 +59,9 @@ class DataflowHistoryManager(object):
         self.dep_children[parent].add(child)
 
     def remove_dependencies(self, parent, child):
-        self.dep_parents[child].remove(parent)
-        self.dep_children[parent].remove(child)
+        if parent in self.dep_parents[child]:
+            self.dep_parents[child].remove(parent)
+            self.dep_children[parent].remove(child)
 
     # returns True if any upstream cell has changed
     def check_upstream(self, k):
@@ -152,14 +154,6 @@ class DataflowHistoryManager(object):
             #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
             raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
 
-        #FIXME: Potentially think about moving this somewhere else
-        #Give dftuple access to DF History Manager so it can update it's own references
-        tup_ref = self.shell.ns_table['user_global']['_'+k]
-        if(type(tup_ref).__name__ == 'dftuple'):
-            tup_ref.__sethist__(self)
-            tup_ref.__setuuid__(k)
-        # need to update regardless of whether we have value cached
-        #self.storeditems.append(k)
         self.update_dependencies(k, self.shell.uuid)
         # check all upstream to see if something has changed
         if not self.check_upstream(k):

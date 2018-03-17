@@ -57,6 +57,9 @@ define(["jquery",
             }
         });
 
+        console.log(cell_links);
+        console.log(cell_list);
+        console.log(output_nodes);
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
 
