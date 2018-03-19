@@ -554,7 +554,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
                 if (type(result.result).__name__ == 'dftuple'):
                     result.result.__sethist__(self.dataflow_history_manager)
-                    result.result.__setuuid__(old_uuid)
+                    result.result.__setuuid__(uuid)
 
                 self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')

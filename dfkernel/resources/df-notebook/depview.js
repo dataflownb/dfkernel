@@ -40,26 +40,33 @@ define(["jquery",
             output_nodes = [];
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
-                if((a.output_area.outputs).length >= 1) {
+                var outnames = [];
+                output_nodes[a.uuid] = [];
+                if((a.output_area.outputs).length > 1) {
                     output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
                         if(d.output_type != 'error'){
-                        return c.concat(d.metadata.output_tag || ("Out[" + a.uuid + "]"))};
+                            outnames.push(d.metadata.output_tag);
+                            return c.concat(d.metadata.output_tag);}
                         return c;
                     }, []);
                 }
-                else{
+                else if((a.output_area.outputs).length == 1){
                     output_nodes[a.uuid] = [("Out[" + a.uuid + "]")];
+                    outnames.push(a.uuid);
                 }
+
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
-                    cell_links.push({source: b, target: a.uuid});
+                    if(outnames.includes(a.uuid)){
+                        cell_links.push({source: b, target: a.uuid});
+                    }
+                    else{
+                        cell_links.push({source: b, target: ("Cell[" + a.uuid + "]")})
+                    }
                 });
             }
         });
 
-        console.log(cell_links);
-        console.log(cell_list);
-        console.log(output_nodes);
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
 
@@ -81,15 +88,23 @@ define(["jquery",
             return {};
         });
 
-        cell_list.forEach(function(a){ console.log(a.id);
-            g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), class:'parentnode'});
+
+        cell_list.forEach(function(a){
+            g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});
         });
 
-
-        Object.keys(output_nodes).forEach(function (a) { output_nodes[a].forEach(function (t) {
-            var uuid = t.substr(4,6);
-            if(uuid != a){console.log(a,t); var parent = 'Out['+a+']'; g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
-            else{console.log(uuid,t); g.setNode(uuid,{label:'Out['+a+']', class:'childnode'}); g.setParent(uuid,t);}
+        console.log(output_nodes);
+        console.log(cell_links);
+        console.log(cell_list);
+        Object.keys(output_nodes).forEach(function (a) {
+            var cell = 'Cell['+a+']';
+            var parent = 'Out['+a+']';
+            g.setNode(cell,{label:cell,class:'childnode'});
+            g.setParent(cell,parent);
+            output_nodes[a].forEach(function (t) {
+                var uuid = t.substr(4,6);
+                if(uuid != a){g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
+                else{g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);}
 
         }) });
 
@@ -114,6 +129,8 @@ define(["jquery",
         var render = new dagreD3.render();
 
         render(d3.select("svg g"),g);
+
+
 
         var initialScale = 0.75;
         zoom
@@ -160,6 +177,15 @@ define(["jquery",
                 }
             });
         });
+
+        // $("g.parentnode, .cluster rect")
+        //     .append("rect")
+        //     .attr("x",function(t) {console.log(d3.select(this)[0][0]); return (d3.select(this)[0][0]).x;})
+        //     .attr("y",function (t) { return (d3.select(this)[0][0]).y;})
+        //     .attr("height",3)
+        //     .attr("width",function (t) { return (d3.select(this)[0][0]).width;})
+        //     .attr("fill","blue");
+        //d3.selectAll("g.parentnode, .cluster")
 
 
         $("g.parentnode").tooltip();
