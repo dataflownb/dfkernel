@@ -2,7 +2,9 @@
 
 import ipykernel.displayhook
 from ipykernel.displayhook import *
-from ipykernel.jsonutil import encode_images
+from ipykernel.jsonutil import encode_images, json_clean
+
+from dfkernel.dflink import LinkedResult
 
 class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
     def get_execution_count(self):
@@ -17,10 +19,10 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
             # have multiple outputs
             new_format_dict = {}
             for i in format_dict:
-                new_format_dict[i] = encode_images(format_dict[i])
+                new_format_dict[i] = json_clean(encode_images(format_dict[i]))
             self.msg['content']['data'] = new_format_dict
         else:
-            self.msg['content']['data'] = encode_images(format_dict)
+            self.msg['content']['data'] = json_clean(encode_images(format_dict))
         self.msg['content']['metadata'] = md_dict
 
     @property
@@ -37,7 +39,16 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
         if result is not None and not self.quiet():
             self.start_displayhook()
             self.write_output_prompt()
-            if isinstance(result, tuple):
+            if isinstance(result, LinkedResult):
+                self.update_dataflow_ns(result)
+                format_dict = {}
+                md_dict = {}
+                for i, (res_tag, res) in enumerate(result.items()):
+                    res_format_dict, res_md_dict = self.compute_format_data(res)
+                    format_dict[i] = res_format_dict
+                    res_md_dict['output_tag'] = res_tag
+                    md_dict[i] = res_md_dict
+            elif isinstance(result, tuple):
                 # compute format for each result
                 format_dict = {}
                 md_dict = {}
@@ -68,6 +79,11 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
                 self.write_format_data(format_dict, md_dict)
                 self.log_output(format_dict)
             self.finish_displayhook()
+
+    def update_dataflow_ns(self, result):
+        self.shell.user_ns._reset_cell(result.__uuid__)
+        for i, (res_tag, res) in enumerate(result.items()):
+            self.shell.user_ns._add_link(res_tag, result.__uuid__)
 
     def finish_displayhook(self):
         """Finish up all displayhook activities."""

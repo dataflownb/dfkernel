@@ -56,6 +56,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # there just for convenience of not modifying the msg protocol
         uuid = user_expressions.pop('__uuid__', None)
         code_dict = user_expressions.pop('__code_dict__', dict())
+        output_tags = user_expressions.pop('__output_tags__', dict())
 
         self._outer_stream = stream
         self._outer_ident = ident
@@ -63,6 +64,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_stop_on_error = stop_on_error
         self._outer_allow_stdin = allow_stdin
         self._outer_code_dict = code_dict # stash since will be global
+        self._outer_output_tags = output_tags
 
         self.inner_execute_request(code, uuid, silent,
                                    store_history, user_expressions)
@@ -73,6 +75,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_stop_on_error = None
         self._outer_allow_stdin = None
         self._outer_code_dict = None
+        self._outer_output_tags = None
 
     def inner_execute_request(self, code, uuid, silent,
                               store_history=True, user_expressions=None):
@@ -83,6 +86,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         stop_on_error = self._outer_stop_on_error
         allow_stdin = self._outer_allow_stdin
         code_dict = self._outer_code_dict
+        output_tags = self._outer_output_tags
 
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
@@ -90,7 +94,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if not silent:
             self._publish_execute_input(code, parent, uuid)
 
-        reply_content, res = self.do_execute(code, uuid, code_dict, silent, store_history,
+        reply_content, res = self.do_execute(code, uuid, code_dict, output_tags, silent, store_history,
                                         user_expressions, allow_stdin)
 
         # Flush output before sending the reply.
@@ -117,7 +121,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return res
 
-    def do_execute(self, code, uuid, code_dict, silent, store_history=True,
+    def do_execute(self, code, uuid, code_dict, output_tags, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         shell = self.shell # we'll need this a lot here
 
@@ -127,7 +131,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         res = None
         try:
-            res = shell.run_cell(code, uuid=uuid, code_dict=code_dict,
+            res = shell.run_cell(code, uuid=uuid, code_dict=code_dict, output_tags=output_tags,
                                  store_history=store_history, silent=silent)
         finally:
             self._restore_input()

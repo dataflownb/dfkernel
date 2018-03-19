@@ -87,12 +87,41 @@ define([
     Notebook.prototype.get_code_dict = function () {
         var code_dict = {};
         this.get_cells().forEach(function (d) {
-            if (d.cell_type == 'code' && d.was_changed) {
+            if (d.cell_type === 'code' && d.was_changed) {
                 code_dict[d.uuid] = d.get_text();
                 d.was_changed = false;
             }
         });
         return code_dict;
+    };
+
+    Notebook.prototype.get_cell_output_tags = function(uid) {
+        var output_tags = [];
+        var cell = this.get_code_cell(uid);
+        console.log(cell);
+        if (cell) {
+            return cell.output_area.outputs.map(function (d) {
+                if (d.output_type === 'execute_result') {
+                    var metadata = d.metadata;
+                    if (metadata.output_tag) {
+                        return metadata.output_tag;
+                    }
+                }
+                return null;
+            }).filter(function (d) {
+                return d !== null
+            });
+        }
+        return [];
+    };
+
+    Notebook.prototype.get_output_tags = function(uids) {
+        var output_tags = {};
+        var that = this;
+        uids.forEach(function(uid) {
+            output_tags[uid] = that.get_cell_output_tags(uid);
+        });
+        return output_tags;
     };
 
     Notebook.prototype.has_id = function(id) {
