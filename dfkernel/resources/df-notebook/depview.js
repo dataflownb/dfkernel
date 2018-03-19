@@ -93,9 +93,7 @@ define(["jquery",
             g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});
         });
 
-        console.log(output_nodes);
-        console.log(cell_links);
-        console.log(cell_list);
+        
         Object.keys(output_nodes).forEach(function (a) {
             var cell = 'Cell['+a+']';
             var parent = 'Out['+a+']';
