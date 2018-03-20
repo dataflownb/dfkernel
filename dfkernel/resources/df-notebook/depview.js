@@ -33,11 +33,12 @@ define(["jquery",
             return depdiv;
         };
 
-    var create_dep_view = function(depdiv) {
+    var create_dep_view = function(depdiv,dataflow) {
         var cell_links = [],
             cell_list = [],
             cell_child_nums = [],
             output_nodes = [];
+        if(dataflow){
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
                 var outnames = [];
@@ -50,10 +51,6 @@ define(["jquery",
                         return c;
                     }, []);
                 }
-                // else if((a.output_area.outputs).length == 1){
-                //     output_nodes[a.uuid] = [("Out[" + a.uuid + "]")];
-                //     outnames.push(a.uuid);
-                // }
 
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
@@ -65,7 +62,42 @@ define(["jquery",
                     }
                 });
             }
+        });}
+        else{
+        Jupyter.notebook.get_cells().forEach(function(a) {
+            if (a.cell_type == 'code') {
+                var outnames = [];
+                if((a.output_area.outputs).length >= 1) {
+                    //output_nodes[a.uuid] = [];
+                    output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
+                        if(d.output_type != 'error' && d.output_type != 'stream'){
+                            outnames.push(d.metadata.output_tag || a.uuid);
+                            return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
+                        return c;
+                    }, []);
+                    if(output_nodes[a.uuid].length == 0){
+                        delete output_nodes[a.uuid];
+                    }
+                    cell_list.push({id: a.uuid});
+                    a.cell_imm_upstream_deps.forEach(function (b) {
+                        if(outnames.includes(a.uuid)){
+                            cell_links.push({source: b, target: a.uuid});
+                        }
+                        else{
+                            outnames.forEach(function (t) { cell_links.push({source: b, target: a.uuid+t}); });
+                        }
+                });
+                }
+
+
+            }
+
         });
+        }
+
+        // console.log(cell_links);
+        // console.log(cell_list);
+        // console.log(output_nodes);
 
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
@@ -90,15 +122,19 @@ define(["jquery",
 
 
         cell_list.forEach(function(a){
-            g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});
+            if(output_nodes[a.id]){g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});}
         });
 
 
+
         Object.keys(output_nodes).forEach(function (a) {
-            var cell = 'Cell['+a+']';
             var parent = 'Out['+a+']';
-            g.setNode(cell,{label:cell,class:'childnode'});
-            g.setParent(cell,parent);
+            if(dataflow){
+                var cell = 'Cell['+a+']';
+                g.setNode(cell,{label:cell,class:'childnode'});
+                g.setParent(cell,parent);
+
+            }
             output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
                 //console.log(a,t,uuid);

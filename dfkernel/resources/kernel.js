@@ -33,9 +33,18 @@ define(["jquery",
                        'label'   : 'See Cell Dependencies',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv);
+                                                     depview.create_dep_view(depdiv,true);
 
                        }
+
+               },{
+                       'label'   : 'See Data Dependencies',
+                       'icon'    : 'fa-bar-chart',
+                       'callback': function () {
+                                                     depview.create_dep_view(depdiv,false);
+
+                       }
+
                }]);
 
             // the kernel was already created, but $.proxy settings will
