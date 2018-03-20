@@ -622,16 +622,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     keywords = []
                     for elt in asg.elts:
                         if (not isinstance(elt, ast.Name) or
-                                self.user_ns._is_link(elt.id)):
+                                self.user_ns._is_external_link(elt.id, self.uuid)):
                             create_node = False
                             break
                         no_link_vars.append(elt.id)
                         keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
                 elif isinstance(nodelist[-1].value, ast.Name):
                     elt = nodelist[-1].value
-                    if self.user_ns._is_link(elt.id):
+                    if self.user_ns._is_external_link(elt.id, self.uuid):
                         create_node = False
                     else:
+                        no_link_vars.append(elt.id)
                         keywords = [ast.keyword(elt.id, ast.Name(elt.id, ast.Load()))]
                 else:
                     create_node = False
@@ -648,7 +649,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             interactivity = 'last_expr'
 
-        print("DO NOT LINK", no_link_vars)
+        # print("DO NOT LINK", no_link_vars)
         self.user_ns.__do_not_link__.update(no_link_vars)
         res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         self.user_ns.__do_not_link__.difference_update(no_link_vars)
