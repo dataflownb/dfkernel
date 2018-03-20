@@ -569,6 +569,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 if (type(result.result).__name__ == 'dftuple'):
                     result.result.__sethist__(self.dataflow_history_manager)
                     result.result.__setuuid__(uuid)
+                if (type(result.result).__name__ == 'LinkedResult'):
+                    result.result.__sethist__(self.dataflow_history_manager)
 
                 self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')

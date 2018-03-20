@@ -42,18 +42,18 @@ define(["jquery",
             if (a.cell_type == 'code') {
                 var outnames = [];
                 output_nodes[a.uuid] = [];
-                if((a.output_area.outputs).length > 1) {
+                if((a.output_area.outputs).length >= 1) {
                     output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error'){
-                            outnames.push(d.metadata.output_tag);
-                            return c.concat(d.metadata.output_tag);}
+                        if(d.output_type != 'error' && d.output_type != 'stream'){
+                            outnames.push(d.metadata.output_tag || a.uuid);
+                            return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
                         return c;
                     }, []);
                 }
-                else if((a.output_area.outputs).length == 1){
-                    output_nodes[a.uuid] = [("Out[" + a.uuid + "]")];
-                    outnames.push(a.uuid);
-                }
+                // else if((a.output_area.outputs).length == 1){
+                //     output_nodes[a.uuid] = [("Out[" + a.uuid + "]")];
+                //     outnames.push(a.uuid);
+                // }
 
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
@@ -74,8 +74,8 @@ define(["jquery",
         depdiv.style.width = '100%';
 
         var margin = {top:20, right:120, bottom:20, left: 120},
-            width = 800 - margin.right - margin.left,
-            height = 600 - margin.top - margin.bottom;
+            width = 1200 - margin.right - margin.left,
+            height = 900 - margin.top - margin.bottom;
 
 
         var svg = d3.select("div.dep-div").append("svg")
@@ -93,7 +93,7 @@ define(["jquery",
             g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});
         });
 
-        
+
         Object.keys(output_nodes).forEach(function (a) {
             var cell = 'Cell['+a+']';
             var parent = 'Out['+a+']';
@@ -101,8 +101,15 @@ define(["jquery",
             g.setParent(cell,parent);
             output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
-                if(uuid != a){g.setNode(a+t,{label:parent+'.'+t, class:'childnode'}); g.setParent(a+t,parent);}
-                else{g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);}
+                //console.log(a,t,uuid);
+                if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
+                    g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
+                }
+                else{
+                    g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
+                }
+                // if(uuid != a){g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);}
+                // else{g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);}
 
         }) });
 
