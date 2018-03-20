@@ -346,3 +346,6 @@ class DataflowNamespace(dict):
         self._purge_local_vars()
         self.__cur_uuid__ = old_uuid
         self._unstash_local_vars()
+
+    def _is_link(self, k):
+        return k not in self.__do_not_link__ and k in self.__links__
