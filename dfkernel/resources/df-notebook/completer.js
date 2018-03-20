@@ -161,7 +161,7 @@ define([
         var tag_matches = this.find_output_tags(this.editor.getValue(), start, end);
         tag_matches.forEach(function(obj) {
             filtered_results.unshift({
-                str: "Out['" + obj.cell_id + "']." + obj.output_tag,
+                str: obj.output_tag,
                 type: "output_tag",
                 from: from,
                 to: to

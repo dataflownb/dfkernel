@@ -34,7 +34,7 @@ from ast import AST
 import importlib
 
 from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, DataflowNamespace
-from dfkernel.dflink import LinkedResult
+from dfkernel.dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
 # Functions and classes
@@ -199,7 +199,7 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return LinkedResult(self.shell.uuid, **out)
+            return build_linked_result(self.shell.uuid, **out)
             # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
@@ -602,6 +602,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         compiler=compile, result=None):
         no_link_vars = []
         if interactivity == 'last_expr_or_assign':
+            create_node = True
+            append_node = True
             if isinstance(nodelist[-1], _assign_nodes):
                 asg = nodelist[-1]
                 if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
@@ -611,7 +613,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 else:
                     target = None
                 keywords = []
-                create_node = True
                 if isinstance(target, ast.Name):
                     keywords.append(ast.keyword(target.id, ast.Name(target.id, ast.Load())))
                     no_link_vars.append(target.id)
@@ -622,34 +623,43 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                             break
                         no_link_vars.append(elt.id)
                         keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
-                if create_node:
-                    nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
-                    ast.fix_missing_locations(nnode)
-                    nodelist.append(nnode)
-                # also need to pull off the values so they don't recurse on themselves
+                else:
+                    create_node = False
             elif isinstance(nodelist[-1], ast.Expr):
+                append_node = False
                 if isinstance(nodelist[-1].value, ast.Tuple):
                     asg = nodelist[-1].value
                     keywords = []
-                    create_node = True
                     for elt in asg.elts:
-                        if not isinstance(elt, ast.Name):
+                        if (not isinstance(elt, ast.Name) or
+                                self.user_ns._is_external_link(elt.id, self.uuid)):
                             create_node = False
                             break
                         no_link_vars.append(elt.id)
                         keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
-                    if create_node:
-                        nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
-                        ast.fix_missing_locations(nnode)
-                        nodelist.append(nnode)
                 elif isinstance(nodelist[-1].value, ast.Name):
                     elt = nodelist[-1].value
-                    keywords = [ast.keyword(elt.id, ast.Name(elt.id, ast.Load()))]
-                    nnode = ast.Expr(ast.Call(ast.Name('LinkedResult', ast.Load()), [ast.Str(self.uuid)], keywords))
-                    ast.fix_missing_locations(nnode)
+                    if self.user_ns._is_external_link(elt.id, self.uuid):
+                        create_node = False
+                    else:
+                        no_link_vars.append(elt.id)
+                        keywords = [ast.keyword(elt.id, ast.Name(elt.id, ast.Load()))]
+                else:
+                    create_node = False
+            else:
+                create_node = False
+            if create_node:
+                nnode = ast.Expr(ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords))
+                ast.fix_missing_locations(nnode)
+                if append_node:
                     nodelist.append(nnode)
+                else:
+                    nodelist[-1] = nnode
+                # also need to pull off the values so they don't recurse on themselves
+
             interactivity = 'last_expr'
 
+        # print("DO NOT LINK", no_link_vars)
         self.user_ns.__do_not_link__.update(no_link_vars)
         res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         self.user_ns.__do_not_link__.difference_update(no_link_vars)
@@ -752,7 +762,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # ns['Out'] = self.history_manager.output_hist
         ns['Out'] = self.dataflow_history_manager
         ns['Func'] = self.dataflow_function_manager
-        ns['LinkedResult'] = LinkedResult
+        ns['_build_linked_result'] = build_linked_result
+        ns['_ns'] = self.user_ns
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython
@@ -770,6 +781,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         # Finally, update the real user's namespace
         self.user_ns.update(ns)
+
 
     def init_history(self):
         """Sets up the command history, and starts regular autosaves."""
