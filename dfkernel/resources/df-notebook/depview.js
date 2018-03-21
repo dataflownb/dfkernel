@@ -106,8 +106,8 @@ define(["jquery",
         depdiv.style.width = '100%';
 
         var margin = {top:20, right:120, bottom:20, left: 120},
-            width = 1200 - margin.right - margin.left,
-            height = 900 - margin.top - margin.bottom;
+            width = $(window).width() - margin.right - margin.left,
+            height = $(window).height() - margin.top - margin.bottom;
 
 
         var svg = d3.select("div.dep-div").append("svg")
