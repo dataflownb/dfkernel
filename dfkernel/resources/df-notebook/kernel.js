@@ -27,4 +27,27 @@ define([
         }
     };
 
+    Kernel.prototype._handle_ws_message = function (e) {
+        console.log("Should reach here");
+        var that = this;
+        this._msg_queue = this._msg_queue.then(function() {
+            return serialize.deserialize(e.data);
+        }).then(function(msg) {return that._finish_ws_message(msg);})
+        .catch(function(error) { console.error("Couldn't process kernel message", error); });
+    };
+
+    Kernel.prototype._finish_ws_message = function (msg) {
+        console.log(msg);
+        switch (msg.channel) {
+            case 'shell':
+                return this._handle_shell_reply(msg);
+            case 'iopub':
+                return this._handle_iopub_message(msg);
+            case 'stdin':
+                return this._handle_input_request(msg);
+            default:
+                console.error("unrecognized message channel", msg.channel, msg);
+        }
+    };
+
 })
