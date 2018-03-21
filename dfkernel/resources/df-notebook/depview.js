@@ -182,7 +182,7 @@ define(["jquery",
 
 
         var tooltipstyle = function(cellid,source){
-            return "<p class ='cellid'>Cell: " + cellid + "</p><p class='source'>Source:\n" + source + "</p>";
+            return "<p class ='cellid'>Cell: " + cellid + "</p><pre class='CodeMirror-line'>Source:\n" + source + "</pre>";
         };
 
         svg.selectAll("g.parentnode, .cluster").on("click", function(){
