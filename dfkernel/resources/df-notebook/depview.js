@@ -33,7 +33,7 @@ define(["jquery",
             return depdiv;
         };
 
-    var create_dep_view = function(depdiv,dataflow) {
+    var create_dep_view = function(depdiv,dataflow,selected) {
         var cell_links = [],
             cell_list = [],
             cell_child_nums = [],
@@ -63,6 +63,65 @@ define(["jquery",
                 });
             }
         });}
+        else if(selected){
+            var selected_cell = Jupyter.notebook.get_selected_cell();
+            var upstreams = selected_cell.cell_imm_upstream_deps.concat(selected_cell.uuid);
+            var downstreams = selected_cell.cell_imm_downstream_deps;
+            while(upstreams.length > 0){
+                var up = upstreams.pop();
+                var cell = Jupyter.notebook.get_code_cell(up.substr(0,6));
+                var outnames = [];
+                cell_list.push({id: cell.uuid});
+                output_nodes[cell.uuid] = [];
+                if((cell.output_area.outputs).length >= 1) {
+                    output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
+                        if(d.output_type != 'error' && d.output_type != 'stream'){
+                            outnames.push(d.metadata.output_tag || cell.uuid);
+                            return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
+                        return c;
+                    }, []);
+                }
+                cell.cell_imm_upstream_deps.forEach(function (b) {
+                    if(outnames.includes(cell.uuid)){
+                        cell_links.push({source: b, target: cell.uuid});
+                    }
+                    else{
+                        cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
+                    }
+                });
+                upstreams = [...new Set(upstreams.concat(cell.cell_imm_upstream_deps))];
+            }
+            while(downstreams.length > 0){
+                var down = downstreams.pop();
+                console.log(downstreams);
+                var cell = Jupyter.notebook.get_code_cell(down);
+                var outnames = [];
+                cell_list.push({id: cell.uuid});
+                output_nodes[cell.uuid] = [];
+                if((cell.output_area.outputs).length >= 1) {
+                    output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
+                        if(d.output_type != 'error' && d.output_type != 'stream'){
+                            outnames.push(d.metadata.output_tag || cell.uuid);
+                            return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
+                        return c;
+                    }, []);
+                }
+                cell.cell_imm_upstream_deps.forEach(function (b) {
+                    if(outnames.includes(cell.uuid)){
+                        cell_links.push({source: b, target: cell.uuid});
+                    }
+                    else{
+                        cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
+                    }
+                });
+                downstreams = [...new Set(downstreams.concat(cell.cell_imm_downstream_deps))];
+            }
+            cell_list = [...new Set(cell_list)];
+            cell_links = [...new Set(cell_links)];
+            // console.log(cell_list);
+            // console.log(cell_links);
+            // console.log(output_nodes);
+        }
         else{
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
@@ -129,7 +188,7 @@ define(["jquery",
 
         Object.keys(output_nodes).forEach(function (a) {
             var parent = 'Out['+a+']';
-            if(dataflow){
+            if(dataflow || selected){
                 var cell = 'Cell['+a+']';
                 g.setNode(cell,{label:cell,class:'childnode'});
                 g.setParent(cell,parent);

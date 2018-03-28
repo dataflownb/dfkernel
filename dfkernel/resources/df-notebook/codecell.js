@@ -16,7 +16,7 @@ define([
 ], function(
     $,
     codecell,
-    IPython,
+    Jupyter,
     utils,
     keyboard,
     configmod,
@@ -40,6 +40,7 @@ define([
 
             this.cell_info_area = null;
             this.cell_imm_upstream_deps = [];
+            this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
          }
@@ -245,7 +246,7 @@ define([
                         that.notebook.select_by_id(cid);
                         that.notebook.scroll_to_cell_id(cid);
                         return false;
-                    })
+                    });
                     new_item.append(new_ahref);
                     that.cell_upstream_deps.append(new_item);
                     $('.upstream-deps', that.cell_info_area).show();
@@ -259,12 +260,38 @@ define([
                         that.notebook.select_by_id(cid);
                         that.notebook.scroll_to_cell_id(cid);
                         return false;
-                    })
+                    });
                     new_item.append(new_ahref);
                     that.cell_downstream_deps.append(new_item);
                     $('.downstream-deps', that.cell_info_area).show();
                 });
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
+                if('update_downstreams' in msg.content){
+                    console.log(msg.content.update_downstreams);
+                    msg.content.update_downstreams.forEach(function (t) {
+                       var upcell = Jupyter.notebook.get_code_cell(t['key'].substr(0,6));
+                       if(upcell.cell_imm_downstream_deps){
+                           upcell.cell_imm_downstream_deps = [...new Set(upcell.cell_imm_downstream_deps.concat(t['data']))];
+                        }
+                       else{
+                           upcell.cell_imm_downstream_deps = t['data'];
+                       }
+                });}
+                // if(that.cell_imm_upstream_deps.length > 1) {
+                //     console.log("Makes it here");
+                //     that.cell_imm_upstream_deps.forEach(function (t) {
+                //         t = t.substr(0,6);
+                //         var upcell = Jupyter.notebook.get_code_cell(t);
+                //         if(upcell.cell_imm_downstream_deps){
+                //             upcell.cell_imm_downstream_deps = [...new Set(upcell.cell_imm_downstream_deps.concat(that.uuid))];
+                //         }
+                //         else{
+                //             upcell.cell_imm_downstream_deps = [that.uuid];
+                //         }
+                //
+                //     });
+                // }
+                that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
             _super.apply(cell, arguments);
         }
@@ -311,6 +338,7 @@ define([
                     out.execution_count = uuid;
                 }
             });
+
 
             _super.call(this, data);
 

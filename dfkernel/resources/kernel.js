@@ -12,6 +12,10 @@ define(["jquery",
             // reload the notebook after patching code
             var nb = Jupyter.notebook;
             var kernelspec = nb.metadata.kernelspec;
+            if(nb.metadata.interactive){
+                console.log(true);
+                console.log(Jupyter);
+            }
             console.log("NB PATH:", nb.notebook_path);
             console.log("KERNEL SPEC:", kernelspec);
             // FIXME do the kernelspec patch here instead of
@@ -42,6 +46,14 @@ define(["jquery",
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
                                                      depview.create_dep_view(depdiv,false);
+
+                       }
+
+               },{
+                       'label'   : 'See Semantic View',
+                       'icon'    : 'fa-bar-chart',
+                       'callback': function () {
+                                                     depview.create_dep_view(depdiv,false,true);
 
                        }
 

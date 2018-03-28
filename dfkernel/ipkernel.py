@@ -148,6 +148,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             reply_content[u'downstream_deps'] = res.all_downstream_deps
             reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
             reply_content[u'imm_downstream_deps'] = res.imm_downstream_deps
+            reply_content[u'update_downstreams'] = res.update_downstreams
         else:
             reply_content[u'status'] = u'error'
 
