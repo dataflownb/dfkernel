@@ -267,7 +267,6 @@ define([
                 });
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
                 if('update_downstreams' in msg.content){
-                    console.log(msg.content.update_downstreams);
                     msg.content.update_downstreams.forEach(function (t) {
                        var upcell = Jupyter.notebook.get_code_cell(t['key'].substr(0,6));
                        if(upcell.cell_imm_downstream_deps){

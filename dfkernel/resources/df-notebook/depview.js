@@ -65,13 +65,19 @@ define(["jquery",
         });}
         else if(selected){
             var selected_cell = Jupyter.notebook.get_selected_cell();
-            var upstreams = selected_cell.cell_imm_upstream_deps.concat(selected_cell.uuid);
+            var upstreams = selected_cell.cell_imm_upstream_deps.concat(selected_cell.uuid).reduce(function(a,b){
+                if(!(b.substr(0,6) in a)){ return a.concat(b.substr(0,6));}
+            },[]);
             var downstreams = selected_cell.cell_imm_downstream_deps;
+            var cells_list = new Set(upstreams.concat(downstreams));
             while(upstreams.length > 0){
                 var up = upstreams.pop();
                 var cell = Jupyter.notebook.get_code_cell(up.substr(0,6));
                 var outnames = [];
                 cell_list.push({id: cell.uuid});
+                upstreams = upstreams.concat(cell.cell_imm_upstream_deps).reduce(function(a,b){
+                if(!(b.substr(0,6) in a)){ cells_list.add(b.substr(0,6)); return a.concat(b.substr(0,6));}
+            },[]);
                 output_nodes[cell.uuid] = [];
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
@@ -89,15 +95,15 @@ define(["jquery",
                         cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
                     }
                 });
-                upstreams = [...new Set(upstreams.concat(cell.cell_imm_upstream_deps))];
             }
             while(downstreams.length > 0){
                 var down = downstreams.pop();
-                console.log(downstreams);
                 var cell = Jupyter.notebook.get_code_cell(down);
                 var outnames = [];
                 cell_list.push({id: cell.uuid});
                 output_nodes[cell.uuid] = [];
+                downstreams = [...new Set(downstreams.concat(cell.cell_imm_downstream_deps))];
+                cells_list.add(downstreams);
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
                         if(d.output_type != 'error' && d.output_type != 'stream'){
@@ -107,20 +113,21 @@ define(["jquery",
                     }, []);
                 }
                 cell.cell_imm_upstream_deps.forEach(function (b) {
-                    if(outnames.includes(cell.uuid)){
-                        cell_links.push({source: b, target: cell.uuid});
-                    }
-                    else{
-                        cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
+                    if(cells_list.has(b.substr(0,6))) {
+                        if (outnames.includes(cell.uuid)) {
+                            cell_links.push({source: b, target: cell.uuid});
+                        }
+                        else {
+                            cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
+                        }
                     }
                 });
-                downstreams = [...new Set(downstreams.concat(cell.cell_imm_downstream_deps))];
             }
-            cell_list = [...new Set(cell_list)];
-            cell_links = [...new Set(cell_links)];
-            // console.log(cell_list);
-            // console.log(cell_links);
-            // console.log(output_nodes);
+            //cell_list = [...new Set(cell_list)];
+            //cell_links = [...new Set(cell_links)];
+            console.log(cell_list);
+            console.log(cell_links);
+            console.log(output_nodes);
         }
         else{
         Jupyter.notebook.get_cells().forEach(function(a) {
