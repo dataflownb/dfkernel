@@ -75,9 +75,14 @@ define(["jquery",
                 var cell = Jupyter.notebook.get_code_cell(up.substr(0,6));
                 var outnames = [];
                 cell_list.push({id: cell.uuid});
-                upstreams = upstreams.concat(cell.cell_imm_upstream_deps).reduce(function(a,b){
-                if(!(b.substr(0,6) in a)){ cells_list.add(b.substr(0,6)); return a.concat(b.substr(0,6));}
-            },[]);
+                upstreams = upstreams.concat(cell.cell_imm_upstream_deps.reduce(function(a,b){
+                var bstripped = b.substr(0,6);
+                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
+                    cells_list.add(bstripped);
+                    return a.concat(bstripped);
+                }
+                return a;
+            },[]));
                 output_nodes[cell.uuid] = [];
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
@@ -102,8 +107,14 @@ define(["jquery",
                 var outnames = [];
                 cell_list.push({id: cell.uuid});
                 output_nodes[cell.uuid] = [];
-                downstreams = [...new Set(downstreams.concat(cell.cell_imm_downstream_deps))];
-                cells_list.add(downstreams);
+                downstreams = downstreams.concat(cell.cell_imm_downstream_deps.reduce(function (a,b)
+                {
+                    if(!(cells_list.has(b))){
+                        cells_list.add(downstreams);
+                        return a.concat(b);
+                    }
+                    return a;
+                    },[]));
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
                         if(d.output_type != 'error' && d.output_type != 'stream'){
@@ -123,11 +134,9 @@ define(["jquery",
                     }
                 });
             }
-            //cell_list = [...new Set(cell_list)];
-            //cell_links = [...new Set(cell_links)];
-            console.log(cell_list);
-            console.log(cell_links);
-            console.log(output_nodes);
+            //console.log(cell_list);
+            //console.log(cell_links);
+            //console.log(output_nodes);
         }
         else{
         Jupyter.notebook.get_cells().forEach(function(a) {
