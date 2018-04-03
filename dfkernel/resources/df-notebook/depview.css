@@ -69,3 +69,13 @@ g text {
 .cluster {
   fill: #f5f5dc;
 }
+
+.control-div{
+    width:50%;
+    text-align: center;
+    padding: 20px;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    background-color: #fff;
+    align: center;
+}

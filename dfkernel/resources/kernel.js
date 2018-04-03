@@ -54,6 +54,7 @@ define(["jquery",
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
                                                      depview.create_dep_view(depdiv,false,true);
+                                                     depview.attach_controls(depdiv);
 
                        }
 
