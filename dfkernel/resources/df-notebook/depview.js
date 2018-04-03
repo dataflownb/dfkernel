@@ -67,18 +67,23 @@ define(["jquery",
 
         var recreate_graph = function(up,down){
 
-            $('.dep-div svg').remove();
+            var svg = $('.dep-div svg');
 
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
+
+            svg = d3.select('#svg');
 
             var margin = {top:30, right:120, bottom:20, left: 120},
-            width = $('.dep-div').width() - margin.right - margin.left,
-            height = $('.dep-div').height() - margin.top - margin.bottom;
+            width = svg.width,
+            height = svg.height;
 
 
-        var svg = d3.select("div.dep-div").append("svg")
-                .attr("width", width + margin.right + margin.left)
-                .attr("height", height + margin.top + margin.bottom),
-        inner =  svg.append("g")
+       // var svg = d3.select("div.dep-div").append("svg")
+        //        .attr("width", width + margin.right + margin.left)
+        //        .attr("height", height + margin.top + margin.bottom),
+        var inner =  svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
@@ -86,33 +91,36 @@ define(["jquery",
         });
 
         var updated_cell_list = cell_list.filter(function(a){
-            return a.level >= up && a.level <= down;
-        });
-
+            return a.level <= up && a.level >= down;
+        }).map(function(a){ return a.id;});
 
         updated_cell_list.forEach(function(a){
-            if(output_nodes[a.id]){g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id + '\nOutputs:' + [].concat.apply(output_nodes[a.id] || "None"), text:"Test", class:'parentnode'});}
+            if(output_nodes[a]){g.setNode("Out["+a+"]", {label: "Cell ID: " + a + '\nOutputs:' + [].concat.apply(output_nodes[a] || "None"), text:"Test", class:'parentnode'});}
         });
+
+
 
         var updated_out_nodes = Object.keys(output_nodes).filter(function(a){
            return updated_cell_list.includes(a);
-        }).map(function(a){return output_nodes[a]});
+        });
 
-        Object.keys(updated_out_nodes).forEach(function (a) {
+        console.log(updated_out_nodes);
+
+        updated_out_nodes.forEach(function (a) {
             var parent = 'Out['+a+']';
-            if(dataflow || selected){
-                var cell = 'Cell['+a+']';
-                g.setNode(cell,{label:cell,class:'childnode'});
-                g.setParent(cell,parent);
-
-            }
-            updated_out_nodes[a].forEach(function (t) {
+            var cell = 'Cell['+a+']';
+            g.setNode(cell,{label:cell,class:'childnode'});
+            g.setParent(cell,parent);
+            updated_cell_list.push('Cell['+a+']');
+            output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
                 //console.log(a,t,uuid);
                 if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
+                    updated_cell_list.push(uuid);
                     g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
                 }
                 else{
+                    updated_cell_list.push(a+t);
                     g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
                 }
                 // if(uuid != a){g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);}
@@ -123,10 +131,9 @@ define(["jquery",
         console.log(updated_out_nodes);
         console.log(updated_cell_list);
 
-        var node_list = g.nodes();
-
         cell_links.forEach(function (a) {
-            if(node_list.includes(a.source) && node_list.includes(a.target)) {
+            if(updated_cell_list.includes(a.source) && updated_cell_list.includes(a.target)) {
+                console.log(a.source + " " + a.target);
                 g.setEdge(a.source, a.target);
             }
         });
@@ -375,7 +382,8 @@ define(["jquery",
 
         var svg = d3.select("div.dep-div").append("svg")
                 .attr("width", width + margin.right + margin.left)
-                .attr("height", height + margin.top + margin.bottom),
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("id","svg"),
         inner =  svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
