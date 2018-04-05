@@ -12,6 +12,35 @@ define(["jquery",
             cell_child_nums = [],
             output_nodes = [];
 
+        var tipsy_css = {
+                        'padding': '10px',
+                        'color': '#303030',
+                        'background-color': '#000',
+                        'border': '1px solid #999',
+                        '-moz-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                        '-webkit-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                        'box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
+                        'text-shadow': 'none'
+                    };
+
+        var margin = {top:20, right:120, bottom:20, left: 120},
+            width = $(window).width() - margin.right - margin.left,
+            height = $(window).height() - margin.top - margin.bottom;
+
+        var tooltipstyle = function(cellid,source){
+            return "<p class ='cellid'>Cell: " + cellid + "</p><pre class='CodeMirror-line'>Source:\n" + source + "</pre>";
+        };
+
+        var close_div = function(){
+            var dep_div = $('.dep-div')[0];
+                dep_div.style.width = "0%";
+                dep_div.zIndex = '-999';
+                $('.control-div').remove();
+                d3.selectAll("div.tooltipsy").remove();
+                d3.select("div.dep-div svg").transition().delay(1000).remove();
+        };
+
+
         var create_dep_div = function() {
             var link = document.createElement("link");
             link.type = "text/css";
@@ -25,17 +54,10 @@ define(["jquery",
             closebtn.innerHTML = "&times;";
             var depdiv = document.createElement('div');
             depdiv.setAttribute('class','dep-div');
-            closebtn.onclick = function() {
-                var dep_div = $('.dep-div')[0];
-                dep_div.style.width = "0%";
-                dep_div.zIndex = '-999';
-                $('.control-div').remove();
-                d3.selectAll("div.tooltipsy").remove();
-                d3.select("div.dep-div svg").transition().delay(1000).remove();
-            };
+            //This is a very "goofy" way to have to do this, this seems to be evaluated if you make onclick = close_div()
+            closebtn.onclick = function() { close_div()};
             depdiv.append(closebtn);
             $('body').append(depdiv);
-
             return depdiv;
         };
 
@@ -65,6 +87,57 @@ define(["jquery",
             depdiv.appendChild(control_div);
         };
 
+        var create_graph = function(svg, g,inner){
+
+            g.nodes().forEach(function(v) {
+                var node = g.node(v);
+                // Round the corners of the nodes
+                node.rx = node.ry = 5;
+            });
+
+            var zoom = d3.behavior.zoom().on("zoom", function() {
+                inner.attr("transform", "translate(" + d3.event.translate + ")" +
+                    "scale(" + d3.event.scale + ")");
+            });
+            svg.call(zoom);
+
+            var render = new dagreD3.render();
+
+            render(d3.select("svg g"),g);
+
+            var initialScale = 0.75;
+            zoom
+                .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
+                .scale(initialScale)
+                .event(svg);
+            svg.attr('height', g.graph().height * initialScale + 40);
+
+            svg.selectAll("g.parentnode, .cluster").on("click", function(){
+                    close_div();
+                    var node = d3.select(this),
+                    cellid = node.select('tspan').text().substr(9,6);
+                    Jupyter.notebook.select_by_id(cellid);
+                    Jupyter.notebook.scroll_to_cell_id(cellid);
+            })
+                .attr("title",function () {
+                    var node = d3.select(this),
+                    cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
+                return tooltipstyle(cellid,Jupyter.notebook.get_code_cell(cellid).get_text());
+            }).on("mouseover",function(){
+                d3.select(this).select("rect").style({"stroke":"green"});
+            }).on("mouseout",function(){
+                d3.select(this).select("rect").style({"stroke":"#999"});
+            }).each(function () {
+                $(this).tooltipsy({
+                    css: tipsy_css
+                });
+            });
+
+
+
+            $("g.parentnode").tooltip();
+        };
+
         var recreate_graph = function(up,down){
 
             var svg = $('.dep-div svg');
@@ -79,137 +152,52 @@ define(["jquery",
             width = svg.width,
             height = svg.height;
 
+            var inner =  svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-       // var svg = d3.select("div.dep-div").append("svg")
-        //        .attr("width", width + margin.right + margin.left)
-        //        .attr("height", height + margin.top + margin.bottom),
-        var inner =  svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
+                return {};
+            });
 
-        var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
-            return {};
-        });
+            var updated_cell_list = cell_list.filter(function(a){
+                return a.level <= up && a.level >= down;
+            }).map(function(a){ return a.id;});
 
-        var updated_cell_list = cell_list.filter(function(a){
-            return a.level <= up && a.level >= down;
-        }).map(function(a){ return a.id;});
+            updated_cell_list.forEach(function(a){
+                if(output_nodes[a]){g.setNode("Out["+a+"]", {label: "Cell ID: " + a + '\nOutputs:' + [].concat.apply(output_nodes[a] || "None"), text:"Test", class:'parentnode'});}
+            });
 
-        updated_cell_list.forEach(function(a){
-            if(output_nodes[a]){g.setNode("Out["+a+"]", {label: "Cell ID: " + a + '\nOutputs:' + [].concat.apply(output_nodes[a] || "None"), text:"Test", class:'parentnode'});}
-        });
-
-
-
-        var updated_out_nodes = Object.keys(output_nodes).filter(function(a){
-           return updated_cell_list.includes(a);
-        });
-
-        console.log(updated_out_nodes);
-
-        updated_out_nodes.forEach(function (a) {
-            var parent = 'Out['+a+']';
-            var cell = 'Cell['+a+']';
-            g.setNode(cell,{label:cell,class:'childnode'});
-            g.setParent(cell,parent);
-            updated_cell_list.push('Cell['+a+']');
-            output_nodes[a].forEach(function (t) {
-                var uuid = t.substr(4,6);
-                //console.log(a,t,uuid);
-                if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
-                    updated_cell_list.push(uuid);
-                    g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
-                }
-                else{
-                    updated_cell_list.push(a+t);
-                    g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
-                }
-                // if(uuid != a){g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);}
-                // else{g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);}
-
-        }) });
-
-        console.log(updated_out_nodes);
-        console.log(updated_cell_list);
-
-        cell_links.forEach(function (a) {
-            if(updated_cell_list.includes(a.source) && updated_cell_list.includes(a.target)) {
-                console.log(a.source + " " + a.target);
-                g.setEdge(a.source, a.target);
-            }
-        });
-
-        g.nodes().forEach(function(v) {
-            var node = g.node(v);
-            // Round the corners of the nodes
-            node.rx = node.ry = 5;
-        });
+            var updated_out_nodes = Object.keys(output_nodes).filter(function(a){
+               return updated_cell_list.includes(a);
+            });
 
 
+            updated_out_nodes.forEach(function (a) {
+                var parent = 'Out['+a+']';
+                var cell = 'Cell['+a+']';
+                g.setNode(cell,{label:cell,class:'childnode'});
+                g.setParent(cell,parent);
+                updated_cell_list.push('Cell['+a+']');
+                output_nodes[a].forEach(function (t) {
+                    var uuid = t.substr(4,6);
+                    if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
+                        updated_cell_list.push(uuid);
+                        g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
+                    }
+                    else{
+                        updated_cell_list.push(a+t);
+                        g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
+                    }
+            }) });
 
-
-
-        var zoom = d3.behavior.zoom().on("zoom", function() {
-            inner.attr("transform", "translate(" + d3.event.translate + ")" +
-                "scale(" + d3.event.scale + ")");
-        });
-        svg.call(zoom);
-
-        var render = new dagreD3.render();
-
-        render(d3.select("svg g"),g);
-
-
-
-        var initialScale = 0.75;
-        zoom
-            .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
-            .scale(initialScale)
-            .event(svg);
-        svg.attr('height', g.graph().height * initialScale + 40);
-
-
-        var tooltipstyle = function(cellid,source){
-            return "<p class ='cellid'>Cell: " + cellid + "</p><pre class='CodeMirror-line'>Source:\n" + source + "</pre>";
-        };
-
-        svg.selectAll("g.parentnode, .cluster").on("click", function(){
-            var dep_div = $('.dep-div')[0];
-                dep_div.style.width = "0%";
-                dep_div.zIndex = '-999';
-                d3.select("div.dep-div svg").transition().delay(1000).remove();
-                var node = d3.select(this),
-                cellid = node.select('tspan').text().substr(9,6);
-                d3.selectAll("div.tooltipsy").remove();
-                Jupyter.notebook.select_by_id(cellid);
-                Jupyter.notebook.scroll_to_cell_id(cellid);
-                $('.control-div').remove();
-        })
-            .attr("title",function () {
-                var node = d3.select(this),
-                cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
-            return tooltipstyle(cellid,Jupyter.notebook.get_code_cell(cellid).get_text());
-        }).on("mouseover",function(){
-            d3.select(this).select("rect").style({"stroke":"green"});
-        }).on("mouseout",function(){
-            d3.select(this).select("rect").style({"stroke":"#999"});
-        }).each(function () {
-            $(this).tooltipsy({
-                css: {
-                    'padding': '10px',
-                    'color': '#303030',
-                    'background-color': '#000',
-                    'border': '1px solid #999',
-                    '-moz-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    '-webkit-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    'box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    'text-shadow': 'none'
+            cell_links.forEach(function (a) {
+                if(updated_cell_list.includes(a.source) && updated_cell_list.includes(a.target)) {
+                    g.setEdge(a.source, a.target);
                 }
             });
-        });
 
+            create_graph(svg,g,inner);
 
-
-        $("g.parentnode").tooltip();
         };
 
     var create_dep_view = function(depdiv,dataflow,selected) {
@@ -217,6 +205,9 @@ define(["jquery",
         cell_list = [];
         cell_child_nums = [];
         output_nodes = [];
+        width = $(window).width() - margin.right - margin.left;
+        height = $(window).height() - margin.top - margin.bottom;
+
         if(dataflow){
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
@@ -283,11 +274,12 @@ define(["jquery",
                         cell_links.push({source: b, target: ("Cell[" + cell.uuid + "]")})
                     }
                 });
-                if(!(copied.includes(cell.uuid))){
+                if(!(copied.includes(cell.uuid)) && upstreams.length){
                     levels += 1;
                     copied.concat(upstreams);
                 }
             }
+            cells_list[0] = {id:selected_cell.uuid,level:0};
             max_level = levels;
             levels = -1;
             copied = downstreams.slice(0);
@@ -323,22 +315,18 @@ define(["jquery",
                         }
                     }
                 });
-                if(!(copied.includes(cell.uuid))){
+                if(!(copied.includes(cell.uuid)) && downstreams.length){
                     levels -= 1;
                     copied.concat(downstreams);
                 }
             }
             min_level = levels;
-            //console.log(cell_list);
-            //console.log(cell_links);
-            //console.log(output_nodes);
         }
         else{
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
                 var outnames = [];
                 if((a.output_area.outputs).length >= 1) {
-                    //output_nodes[a.uuid] = [];
                     output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
                         if(d.output_type != 'error' && d.output_type != 'stream'){
                             outnames.push(d.metadata.output_tag || a.uuid);
@@ -364,20 +352,11 @@ define(["jquery",
 
         });
         }
-
-        // console.log(cell_links);
-        //console.log(cell_list);
-        // console.log(output_nodes);
-
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
 
         depdiv.style.zIndex = '100';
         depdiv.style.width = '100%';
-
-        var margin = {top:20, right:120, bottom:20, left: 120},
-            width = $(window).width() - margin.right - margin.left,
-            height = $(window).height() - margin.top - margin.bottom;
 
 
         var svg = d3.select("div.dep-div").append("svg")
@@ -409,15 +388,12 @@ define(["jquery",
             }
             output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
-                //console.log(a,t,uuid);
                 if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
                     g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
                 }
                 else{
                     g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
                 }
-                // if(uuid != a){g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);}
-                // else{g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);}
 
         }) });
 
@@ -425,84 +401,7 @@ define(["jquery",
             g.setEdge(a.source,a.target);
         });
 
-        g.nodes().forEach(function(v) {
-            var node = g.node(v);
-            // Round the corners of the nodes
-            node.rx = node.ry = 5;
-        });
-
-
-
-        var zoom = d3.behavior.zoom().on("zoom", function() {
-            inner.attr("transform", "translate(" + d3.event.translate + ")" +
-                "scale(" + d3.event.scale + ")");
-        });
-        svg.call(zoom);
-
-        var render = new dagreD3.render();
-
-        render(d3.select("svg g"),g);
-
-
-
-        var initialScale = 0.75;
-        zoom
-            .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
-            .scale(initialScale)
-            .event(svg);
-        svg.attr('height', g.graph().height * initialScale + 40);
-
-
-        var tooltipstyle = function(cellid,source){
-            return "<p class ='cellid'>Cell: " + cellid + "</p><pre class='CodeMirror-line'>Source:\n" + source + "</pre>";
-        };
-
-        svg.selectAll("g.parentnode, .cluster").on("click", function(){
-            var dep_div = $('.dep-div')[0];
-                dep_div.style.width = "0%";
-                dep_div.zIndex = '-999';
-                d3.select("div.dep-div svg").transition().delay(1000).remove();
-                var node = d3.select(this),
-                cellid = node.select('tspan').text().substr(9,6);
-                d3.selectAll("div.tooltipsy").remove();
-                Jupyter.notebook.select_by_id(cellid);
-                Jupyter.notebook.scroll_to_cell_id(cellid);
-                $('.control-div').remove();
-        })
-            .attr("title",function () {
-                var node = d3.select(this),
-                cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
-            return tooltipstyle(cellid,Jupyter.notebook.get_code_cell(cellid).get_text());
-        }).on("mouseover",function(){
-            d3.select(this).select("rect").style({"stroke":"green"});
-        }).on("mouseout",function(){
-            d3.select(this).select("rect").style({"stroke":"#999"});
-        }).each(function () {
-            $(this).tooltipsy({
-                css: {
-                    'padding': '10px',
-                    'color': '#303030',
-                    'background-color': '#000',
-                    'border': '1px solid #999',
-                    '-moz-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    '-webkit-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    'box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                    'text-shadow': 'none'
-                }
-            });
-        });
-
-        // $("g.parentnode, .cluster rect")
-        //     .append("rect")
-        //     .attr("x",function(t) {console.log(d3.select(this)[0][0]); return (d3.select(this)[0][0]).x;})
-        //     .attr("y",function (t) { return (d3.select(this)[0][0]).y;})
-        //     .attr("height",3)
-        //     .attr("width",function (t) { return (d3.select(this)[0][0]).width;})
-        //     .attr("fill","blue");
-        //d3.selectAll("g.parentnode, .cluster")
-
-
-        $("g.parentnode").tooltip();
+        create_graph(svg,g,inner);
     };
 
      return {
