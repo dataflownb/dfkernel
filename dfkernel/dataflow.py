@@ -89,16 +89,16 @@ class DataflowHistoryManager(object):
 
     def all_upstream(self, k):
         visited = set()
-        res = []
-        frontier = list(self.dep_parents[k])
+        res = set()
+        frontier = list(self.dep_parents[k[:6]])
         while len(frontier) > 0:
-            cid = frontier.pop(0)
+            cid = frontier.pop(0)[:6]
             visited.add(cid)
-            res.append(cid)
+            res.add(cid)
             for pid in self.dep_parents[cid]:
-                if pid not in visited:
-                    frontier.append(pid)
-        return res
+                if pid[:6] not in visited:
+                    frontier.append(pid[:6])
+        return list(res)
 
     def all_downstream(self, k):
         visited = set()
