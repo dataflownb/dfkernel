@@ -70,6 +70,10 @@ g text {
   fill: #f5f5dc;
 }
 
+#selected {
+    fill:orange;
+}
+
 .control-div{
     width:50%;
     text-align: center;
