@@ -92,7 +92,6 @@ define(["jquery",
             g.nodes().forEach(function(v) {
                 var node = g.node(v);
                 // Round the corners of the nodes
-                console.log(node.id);
                 node.rx = node.ry = 5;
             });
 
@@ -146,7 +145,11 @@ define(["jquery",
                 });
             });
 
-            $("g.parentnode, .cluster").on('mousedown',function(event) {
+            $("g.parentnode, .cluster").css('fill',function(t){
+                var cellid = d3.select(this).select('tspan').text().substr("Cell ID: ".length, 6);
+                if(Jupyter.notebook.get_code_cell(cellid).was_changed){ d3.select(this).style('stroke-dasharray', '10,10').style('stroke-width','4px'); return "yellow";}
+                return;
+            }).on('mousedown',function(event) {
                 if(event.ctrlKey){
                                     var node = d3.select(this),
                     cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
@@ -177,9 +180,8 @@ define(["jquery",
             }).on("contextmenu",function(event){return false;});
 
             $("g.parentnode").tooltip();
-
-            d3.selectAll('.cluster').select('tspan').style('stroke','white');
-            //d3.selectAll('.cluster').select('g.label').attr('fill','black').attr('position','fixed').attr('z-index',999);
+            //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
+            d3.selectAll('.cluster').select('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
         };
 
         var recreate_graph = function(up,down){
@@ -424,23 +426,23 @@ define(["jquery",
             }
         });
 
-
+        var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
 
         Object.keys(output_nodes).forEach(function (a) {
             var parent = 'Out['+a+']';
             if(dataflow || selected){
                 var cell = a+'[Cell]';
-                g.setNode(cell,{label:'Cell['+a+']',class:'childnode'});
+                g.setNode(cell,{label:'Cell['+a+']',class:'childnode', labelStyle:labelstyles});
                 g.setParent(cell,parent);
 
             }
             output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
                 if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
-                    g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
+                    g.setNode(uuid,{label:parent, class:'childnode', labelStyle:labelstyles}); g.setParent(uuid,parent);
                 }
                 else{
-                    g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
+                    g.setNode(a+t,{label:t, class:'childnode', labelStyle:labelstyles}); g.setParent(a+t,parent);
                 }
 
         }) });

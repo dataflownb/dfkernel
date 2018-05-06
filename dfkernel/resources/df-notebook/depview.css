@@ -67,8 +67,20 @@ g text {
 }
 
 .cluster {
-  fill: #f5f5dc;
+  fill: green;
 }
+
+.cluster.stale {
+    fill: yellow;
+}
+
+.cluster rect{
+    fill-opacity: .5;
+    stroke-linejoin: round;
+    rx: 10px;
+    ry: 10px;
+}
+
 
 #selected {
     fill:orange;
