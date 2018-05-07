@@ -185,6 +185,7 @@ define(["jquery",
                     cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
                     Jupyter.notebook.get_code_cell(cellid).execute();
                     Jupyter.notebook.get_code_cell(cellid).was_changed = false;
+                    node.style('fill','red');
                     setTimeout(function (){
                         var newg = create_node_relations(globaldf,globalselect);
                         newg.graph().transition = function(selection) {
