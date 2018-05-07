@@ -220,7 +220,7 @@ define(["jquery",
 
             updated_out_nodes.forEach(function (a) {
                 var parent = 'Out['+a+']';
-                var cell = +a+'[Cell]';
+                var cell = a+'[Cell]';
                 g.setNode(cell,{label:cell,class:'childnode'});
                 g.setParent(cell,parent);
                 updated_cell_list.push(a+'[Cell]');
