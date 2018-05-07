@@ -212,20 +212,20 @@ define(["jquery",
 
         var recreate_graph = function(up,down){
 
-            var svg = $('.dep-div svg');
+            //var svg = $('.dep-div svg');
 
-            while (svg.firstChild) {
-                svg.removeChild(svg.firstChild);
-            }
+            // while (svg.firstChild) {
+            //     svg.removeChild(svg.firstChild);
+            // }
 
-            svg = d3.select('#svg');
+            var svg = d3.select('#svg');
 
             var margin = {top:30, right:120, bottom:20, left: 120},
             width = svg.width,
             height = svg.height;
 
-            var inner =  svg.append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var inner =  svg.select('g');
+            //append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
             var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
                 return {};
