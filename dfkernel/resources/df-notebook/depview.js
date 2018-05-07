@@ -181,7 +181,7 @@ define(["jquery",
 
             $("g.parentnode").tooltip();
             //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
-            d3.selectAll('.cluster').select('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
+            d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
         };
 
         var recreate_graph = function(up,down){
@@ -217,22 +217,22 @@ define(["jquery",
                return updated_cell_list.includes(a);
             });
 
-
+            var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
             updated_out_nodes.forEach(function (a) {
                 var parent = 'Out['+a+']';
                 var cell = a+'[Cell]';
-                g.setNode(cell,{label:cell,class:'childnode'});
+                g.setNode(cell,{label:'Cell['+a+']',class:'childnode',labelStyle:labelstyles});
                 g.setParent(cell,parent);
                 updated_cell_list.push(a+'[Cell]');
                 output_nodes[a].forEach(function (t) {
                     var uuid = t.substr(4,6);
                     if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
                         updated_cell_list.push(uuid);
-                        g.setNode(uuid,{label:parent, class:'childnode'}); g.setParent(uuid,parent);
+                        g.setNode(uuid,{label:parent, class:'childnode',labelStyle:labelstyles}); g.setParent(uuid,parent);
                     }
                     else{
                         updated_cell_list.push(a+t);
-                        g.setNode(a+t,{label:t, class:'childnode'}); g.setParent(a+t,parent);
+                        g.setNode(a+t,{label:t, class:'childnode',labelStyle:labelstyles}); g.setParent(a+t,parent);
                     }
             }) });
 
@@ -286,6 +286,7 @@ define(["jquery",
             var upstreams = selected_cell.cell_imm_upstream_deps.concat(selected_cell.uuid).reduce(function(a,b){
                 if(!(b.substr(0,6) in a)){ return a.concat(b.substr(0,6));}
             },[]);
+            var nextset = [];
             var downstreams = selected_cell.cell_imm_downstream_deps;
             var cells_list = new Set(upstreams.concat(downstreams));
             var levels = 1;
@@ -295,14 +296,7 @@ define(["jquery",
                 var cell = Jupyter.notebook.get_code_cell(up.substr(0,6));
                 var outnames = [];
                 cell_list.push({id: cell.uuid,level:levels});
-                upstreams = upstreams.concat(cell.cell_imm_upstream_deps.reduce(function(a,b){
-                var bstripped = b.substr(0,6);
-                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
-                    cells_list.add(bstripped);
-                    return a.concat(bstripped);
-                }
-                return a;
-            },[]));
+                nextset = nextset.concat(cell.cell_imm_upstream_deps);
                 output_nodes[cell.uuid] = [];
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
@@ -320,11 +314,23 @@ define(["jquery",
                         cell_links.push({source: b, target: (cell.uuid + "[Cell]")})
                     }
                 });
-                if(!(copied.includes(cell.uuid)) && upstreams.length){
-                    levels += 1;
-                    copied.concat(upstreams);
+                if(!(upstreams.length)){
+                    if(nextset.length){
+                        levels += 1;
+                        nextset = nextset.reduce(function(a,b){
+                var bstripped = b.substr(0,6);
+                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
+                    cells_list.add(bstripped);
+                    return a.concat(bstripped);
+                }
+                return a;
+            },[]);
+                        upstreams = nextset;
+                        nextset = [];
+                    }
                 }
             }
+            nextset = [];
             max_level = levels;
             levels = -1;
             copied = downstreams.slice(0);
@@ -334,14 +340,7 @@ define(["jquery",
                 var outnames = [];
                 cell_list.push({id: cell.uuid,level:levels});
                 output_nodes[cell.uuid] = [];
-                downstreams = downstreams.concat(cell.cell_imm_downstream_deps.reduce(function (a,b)
-                {
-                    if(!(cells_list.has(b))){
-                        cells_list.add(downstreams);
-                        return a.concat(b);
-                    }
-                    return a;
-                    },[]));
+                nextset = nextset.concat(cell.cell_imm_downstream_deps);
                 if((cell.output_area.outputs).length >= 1) {
                     output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
                         if(d.output_type != 'error' && d.output_type != 'stream'){
@@ -360,12 +359,28 @@ define(["jquery",
                         }
                     }
                 });
-                if(!(copied.includes(cell.uuid)) && downstreams.length){
-                    levels -= 1;
-                    copied.concat(downstreams);
+                if(!(downstreams.length)){
+                    if(nextset.length){
+                        levels -= 1;
+                        nextset = nextset.reduce(function(a,b){
+                var bstripped = b.substr(0,6);
+                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
+                    cells_list.add(bstripped);
+                    return a.concat(bstripped);
+                }
+                return a;
+            },[]);
+                        upstreams = nextset;
+                        nextset = [];
+                    }
                 }
             }
-            min_level = levels;
+            min_level = cell_list.reduce(function(prev,curr){
+                return prev < curr.level ? prev : curr.level;
+            });
+            max_level = cell_list.reduce(function(prev,curr){
+                return prev > curr.level ? prev : curr.level;
+            });
             cell_list[0] = {id:selected_cell.uuid,level:0};
             console.log(cell_list);
         }
