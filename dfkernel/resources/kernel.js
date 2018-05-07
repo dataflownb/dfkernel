@@ -37,7 +37,7 @@ define(["jquery",
                        'label'   : 'See Cell Dependencies',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv,true);
+                                                     depview.create_dep_view(depdiv,true,false);
 
                        }
 
@@ -45,7 +45,7 @@ define(["jquery",
                        'label'   : 'See Data Dependencies',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv,false);
+                                                     depview.create_dep_view(depdiv,false,false);
 
                        }
 

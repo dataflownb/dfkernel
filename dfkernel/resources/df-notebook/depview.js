@@ -11,6 +11,8 @@ define(["jquery",
             cell_list = [],
             cell_child_nums = [],
             output_nodes = [];
+        var globaldf = false;
+        var globalselect = false;
 
         var tipsy_css = {
                         'padding': '10px',
@@ -150,7 +152,8 @@ define(["jquery",
                 if(Jupyter.notebook.get_code_cell(cellid).was_changed){ d3.select(this).style('stroke-dasharray', '10,10').style('stroke-width','4px'); return "yellow";}
                 return;
             }).on('mousedown',function(event) {
-                if(event.ctrlKey){
+                console.log(event.which);
+                if(event.ctrlKey && event.which == 1){
                                     var node = d3.select(this),
                     cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
                 var visited = [];
@@ -170,18 +173,41 @@ define(["jquery",
                 });
                 render(d3.select("svg g"), g);
                 }
-                else{
+                else if(event.which == 1){
                     close_div();
                     var node = d3.select(this),
                         cellid = node.select('tspan').text().substr(9,6);
                     Jupyter.notebook.select_by_id(cellid);
                     Jupyter.notebook.scroll_to_cell_id(cellid);
                 }
+                else if(event.which == 3 && !globalselect){
+                    var node = d3.select(this),
+                    cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
+                    Jupyter.notebook.get_code_cell(cellid).execute();
+                    Jupyter.notebook.get_code_cell(cellid).was_changed = false;
+                    setTimeout(function (){
+                        var newg = create_node_relations(globaldf,globalselect);
+                        newg.graph().transition = function(selection) {
+                return selection.transition().duration(500);
+            };
+                        render(d3.select("svg g"),newg);
+                        d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
+                                    zoom
+                .translate([(svg.attr("width") - newg.graph().width * initialScale) / 2, 20])
+                .scale(initialScale)
+                .event(svg);
+            svg.attr('height', newg.graph().height * initialScale + 40);
+                    node.style('stroke-width','1.5px').style('stroke-dasharray','none').style('fill','green');
+                    }, 2000);
+
+                    //create_graph(svg,g,inner);
+                }
             }).on("contextmenu",function(event){return false;});
 
             $("g.parentnode").tooltip();
             //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
             d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
+
         };
 
         var recreate_graph = function(up,down){
@@ -242,19 +268,18 @@ define(["jquery",
                 }
             });
 
+
             create_graph(svg,g,inner);
 
         };
 
-    var create_dep_view = function(depdiv,dataflow,selected) {
-        cell_links = [];
+        var create_node_relations = function(dataflow,selected){
+            cell_links = [];
         cell_list = [];
         cell_child_nums = [];
         output_nodes = [];
-        width = $(window).width() - margin.right - margin.left;
-        height = $(window).height() - margin.top - margin.bottom;
 
-        if(dataflow){
+            if(dataflow){
         Jupyter.notebook.get_cells().forEach(function(a) {
             if (a.cell_type == 'code') {
                 var outnames = [];
@@ -416,18 +441,6 @@ define(["jquery",
         }
         cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
         cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
-
-        depdiv.style.zIndex = '100';
-        depdiv.style.width = '100%';
-
-
-        var svg = d3.select("div.dep-div").append("svg")
-                .attr("width", width + margin.right + margin.left)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("id","svg").on('contextmenu',function (){return false;}),
-        inner =  svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
         var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
             return {};
         });
@@ -465,6 +478,33 @@ define(["jquery",
         cell_links.forEach(function (a) {
             g.setEdge(a.source,a.target,{class:a.source.substr(0,6)+a.target.substr(0,6)});
         });
+        console.log(cell_list);
+        console.log(output_nodes);
+        console.log(cell_links);
+        return g;
+        };
+
+    var create_dep_view = function(depdiv,dataflow,selected) {
+
+        width = $(window).width() - margin.right - margin.left;
+        height = $(window).height() - margin.top - margin.bottom;
+        globaldf = dataflow;
+        globalselect = selected;
+
+
+
+        depdiv.style.zIndex = '100';
+        depdiv.style.width = '100%';
+
+
+        var svg = d3.select("div.dep-div").append("svg")
+                .attr("width", width + margin.right + margin.left)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("id","svg").on('contextmenu',function (){return false;}),
+        inner =  svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var g = create_node_relations(dataflow,selected);
 
         create_graph(svg,g,inner);
     };
