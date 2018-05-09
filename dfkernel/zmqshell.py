@@ -14,7 +14,7 @@ import sys
 from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC, \
     _assign_nodes, _single_targets_nodes
-from IPython.core.interactiveshell import ExecutionResult
+from IPython.core.interactiveshell import ExecutionResult, ExecutionInfo
 from IPython.core.compilerop import CachingCompiler
 from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
     needs_local_scope
@@ -435,7 +435,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 silent=silent,
                 shell_futures=shell_futures,
                 update_downstream_deps=update_downstream_deps)
-        result = ExecutionResult()
+
+        info = ExecutionInfo(
+            raw_cell, store_history, silent, shell_futures)
+        result = ExecutionResult(info)
 
         if (not raw_cell) or raw_cell.isspace():
             self.last_execution_succeeded = True
