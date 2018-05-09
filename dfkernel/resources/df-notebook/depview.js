@@ -2,6 +2,7 @@ define(["jquery",
     "base/js/namespace",
     '/kernelspecs/dfpython3/df-notebook/d3.v3.min.js',
     '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
+    '/kernelspecs/dfpython3/df-notebook/jquery-ui.js',
     ],
     function($, Jupyter, d3, dagreD3) {
     "use strict";
@@ -52,30 +53,29 @@ define(["jquery",
         var attach_controls = function(depdiv){
             var control_div = document.createElement("div");
             control_div.className = 'control-div';
-            var up_levels = document.createElement("INPUT");
-            up_levels.setAttribute("type", "range");
-            up_levels.min = 0;
-            up_levels.max = max_level;
-            up_levels.value = max_level;
-            var text_up = document.createTextNode(up_levels.value);
-            control_div.appendChild(document.createTextNode("Upstream Levels Shown: "));
-            control_div.appendChild(text_up);
-            control_div.appendChild(up_levels);
-            var down_levels = document.createElement("INPUT");
-            down_levels.setAttribute("type", "range");
-            down_levels.min = min_level;
-            down_levels.max = 0;
-            down_levels.value = min_level;
-            var text_down = document.createTextNode(down_levels.value);
-            control_div.appendChild(document.createTextNode("Downstream Levels Shown: "));
-            control_div.appendChild(text_down);
-            // var range = document.createElement('slider');
-            // noUiSlider.create(range, {start:[min_level,max_level], range: {'min': min_level,'max': max_level}});
-            down_levels.onchange = function(){text_down.textContent=down_levels.value;recreate_graph(up_levels.value,down_levels.value);};
-            up_levels.onchange = function(){text_up.textContent=up_levels.value; recreate_graph(up_levels.value,down_levels.value);};
-            control_div.appendChild(down_levels);
-            //control_div.appendChild(range);
+
+            var slider = document.createElement("div");
+            slider.setAttribute('id','slider-range');
+
+            var p_ele = document.createElement('p');
+            p_ele.setAttribute('id','up-down');
+            var text_updown = document.createTextNode("Levels Down: " + Math.abs(min_level) + "   Levels Up: " + Math.abs(max_level));
+            p_ele.appendChild(text_updown);
+
+            control_div.appendChild(p_ele);
+            control_div.appendChild(slider);
+
             depdiv.appendChild(control_div);
+            $( "#slider-range" ).slider({
+              range: true,
+              min: min_level,
+              max: max_level,
+              values: [ min_level, max_level ],
+              slide: function( event, ui ) {
+                $( "#up-down" ).text("Levels Down: " + Math.abs(ui.values[ 0 ]) + "   Levels Up: " + Math.abs(ui.values[ 1 ]));
+                recreate_graph(ui.values[1],ui.values[0]);
+              }
+            });
         };
 
         var create_graph = function(svg, g,inner){
@@ -382,13 +382,13 @@ define(["jquery",
                     }
                 }
             }
+            cell_list[0] = {id:selected_cell.uuid,level:0};
             min_level = cell_list.reduce(function(prev,curr){
                 return prev < curr.level ? prev : curr.level;
-            });
+            },0);
             max_level = cell_list.reduce(function(prev,curr){
                 return prev > curr.level ? prev : curr.level;
-            });
-            cell_list[0] = {id:selected_cell.uuid,level:0};
+            },0);
             console.log(cell_list);
         }
         else{
