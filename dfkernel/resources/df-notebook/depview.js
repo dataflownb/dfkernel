@@ -2,7 +2,6 @@ define(["jquery",
     "base/js/namespace",
     '/kernelspecs/dfpython3/df-notebook/d3.v3.min.js',
     '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
-    '/kernelspecs/dfpython3/df-notebook/tooltipsy.min.js'
     ],
     function($, Jupyter, d3, dagreD3) {
     "use strict";
@@ -14,30 +13,17 @@ define(["jquery",
         var globaldf = false;
         var globalselect = false;
 
-        var tipsy_css = {
-                        'padding': '10px',
-                        'color': '#303030',
-                        'background-color': '#000',
-                        'border': '1px solid #999',
-                        '-moz-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                        '-webkit-box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                        'box-shadow': '0 0 10px rgba(0, 0, 0, .5)',
-                        'text-shadow': 'none'
-                    };
 
         var margin = {top:20, right:120, bottom:20, left: 120},
             width = $(window).width() - margin.right - margin.left,
             height = $(window).height() - margin.top - margin.bottom;
-
-        var tooltipstyle = function(cellid,source){
-            return "<p class ='cellid'>Cell: " + cellid + "</p><pre class='CodeMirror-line'>Source:\n" + source + "</pre>";
-        };
 
         var close_div = function(){
             var dep_div = $('.dep-div')[0];
                 dep_div.style.width = "0%";
                 dep_div.zIndex = '-999';
                 $('.control-div').remove();
+                d3.select('#source-code').remove();
                 d3.selectAll("div.tooltipsy").remove();
                 d3.select("div.dep-div svg").transition().delay(1000).remove();
         };
@@ -83,9 +69,12 @@ define(["jquery",
             var text_down = document.createTextNode(down_levels.value);
             control_div.appendChild(document.createTextNode("Downstream Levels Shown: "));
             control_div.appendChild(text_down);
+            // var range = document.createElement('slider');
+            // noUiSlider.create(range, {start:[min_level,max_level], range: {'min': min_level,'max': max_level}});
             down_levels.onchange = function(){text_down.textContent=down_levels.value;recreate_graph(up_levels.value,down_levels.value);};
             up_levels.onchange = function(){text_up.textContent=up_levels.value; recreate_graph(up_levels.value,down_levels.value);};
             control_div.appendChild(down_levels);
+            //control_div.appendChild(range);
             depdiv.appendChild(control_div);
         };
 
@@ -116,16 +105,16 @@ define(["jquery",
                 .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
                 .scale(initialScale)
                 .event(svg);
-            svg.attr('height', g.graph().height * initialScale + 40);
+            svg.attr('height', $(window).height() * .7);
 
             svg.selectAll("g.parentnode, .cluster")
-                .attr("title",function () {
-                    var node = d3.select(this),
-                    cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
-                return tooltipstyle(cellid,Jupyter.notebook.get_code_cell(cellid).get_text());
-            }).on("mouseover",function(){
+                .on("mouseover",function(){
                 var node = d3.select(this),
                     cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
+                d3.select('#source-code').select('p').text("In ["+cellid+"]");
+
+                d3.select('#source-code').select('pre').text(Jupyter.notebook.get_code_cell(cellid).get_text());
+
                 var cell = Jupyter.notebook.get_code_cell(cellid);
                 cell.cell_imm_downstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','red'); svg.selectAll('g.'+cellid+t.substr(0,6)).select('path').style('stroke-width','4px').style('stroke','red'); });
                 cell.cell_imm_upstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','blue'); svg.selectAll('g.'+t.substr(0,6)+cellid).select('path').style('stroke-width','4px').style('stroke','blue'); });
@@ -140,12 +129,8 @@ define(["jquery",
             }).on("contextmenu",function() {
 
                 return false;
-            })
-            .each(function () {
-                $(this).tooltipsy({
-                    css: tipsy_css
-                });
             });
+
 
             $("g.parentnode, .cluster").css('fill',function(t){
                 var cellid = d3.select(this).select('tspan').text().substr("Cell ID: ".length, 6);
@@ -197,7 +182,7 @@ define(["jquery",
                 .translate([(svg.attr("width") - newg.graph().width * initialScale) / 2, 20])
                 .scale(initialScale)
                 .event(svg);
-            svg.attr('height', newg.graph().height * initialScale + 40);
+            //svg.attr('height', newg.graph().height * initialScale + 40);
                     node.style('stroke-width','1.5px').style('stroke-dasharray','none').style('fill','green');
                     }, 2000);
 
@@ -205,7 +190,9 @@ define(["jquery",
                 }
             }).on("contextmenu",function(event){return false;});
 
-            $("g.parentnode").tooltip();
+
+            //$("g.parentnode").tooltip();
+
             //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
             d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
 
@@ -213,11 +200,6 @@ define(["jquery",
 
         var recreate_graph = function(up,down){
 
-            //var svg = $('.dep-div svg');
-
-            // while (svg.firstChild) {
-            //     svg.removeChild(svg.firstChild);
-            // }
 
             var svg = d3.select('#svg');
 
@@ -226,7 +208,6 @@ define(["jquery",
             height = svg.height;
 
             var inner =  svg.select('g');
-            //append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
             var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
                 return {};
@@ -497,13 +478,23 @@ define(["jquery",
         depdiv.style.zIndex = '100';
         depdiv.style.width = '100%';
 
+        var sourcediv = d3.select('div.dep-div').append('div').attr("width", width + margin.right + margin.left).style('top',(150+height * .65 + margin.top + margin.bottom)+"px")
+                .attr("id","source-code").style('background-color','white');
 
-        var svg = d3.select("div.dep-div").append("svg")
+        sourcediv.append('p').attr('class','cellid').text("In []");
+
+        sourcediv.append('pre').style('position','absolute').attr('class','CodeMirror-line pre-scrollable');
+
+        d3.select('#source-code pre').text("Scroll over any cell to see the source code of that cell");
+
+        var svg = d3.select("div.dep-div").append('div').attr('id','svg-div').append("svg")
                 .attr("width", width + margin.right + margin.left)
-                .attr("height", height + margin.top + margin.bottom)
+                .attr("height", height * .65 + margin.top + margin.bottom)
                 .attr("id","svg").on('contextmenu',function (){return false;}),
         inner =  svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
 
         var g = create_node_relations(dataflow,selected);
 

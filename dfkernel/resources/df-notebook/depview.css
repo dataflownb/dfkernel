@@ -1,6 +1,5 @@
 .dep-div {
     height: 100%;
-    display: hidden;
     width: 0%;
     position: absolute;
     z-index: -999;
@@ -14,19 +13,37 @@
 
 .dep-div .closebutton {
     position: absolute;
-    top: 20px;
+    top: 10px;
     right: 45px;
     font-size: 60px;
 }
 
-.dep-div svg {
+#svg-div {
    background-color: #fff;
    text-align: center;
    position:absolute;
-   top:100px;
+   top:75px;
    left:50%;
    transform: translateX(-50%);
    -webkit-transform: translateX(-50%);
+}
+
+#source-code {
+    position: absolute;
+    width:100vw;
+    height:22vh;
+    max-height: 20vh;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    background-color: #fff;
+}
+
+.pre-scrollable{
+    width:100vw;
+    height:20vh;
+    max-height: 20vh;
+    margin: auto;
+    overflow-y:scroll;
 }
 
 g text {
@@ -54,8 +71,8 @@ g text {
 /* This styles the title of the tooltip */
 .cellid {
   font-size: 1.3em;
-  font-weight: bold;
-  color: #60b1fc;
+  font-family: monospace;
+  color: #303F9F;
   margin: 0;
 }
 
