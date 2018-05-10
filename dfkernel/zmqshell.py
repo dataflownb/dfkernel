@@ -314,6 +314,15 @@ def tuple_formatter(arg, p, cycle):
                 p.text(',')
                 p.breakable()
 
+# class NameNodeExtractor(ast.NodeTransformer):
+#     def visit(self,node):
+#         super().generic_visit(node)
+#         if len(node.body) > 0:
+#             if(isinstance(node,ast.Name) and isinstance(node,ast.Store)):
+#                 print(node)
+#         return node
+
+
 class CellIdTransformer(ast.NodeTransformer):
     def visit_Subscript(self, node):
         super().generic_visit(node)
@@ -344,6 +353,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
         self.ast_transformers.append(CellIdTransformer())
+        #self.ast_transformers.append(NameNodeExtractor())
         # self.ast_transformers.append(OutputTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
@@ -538,6 +548,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     #     self.execution_count += 1
                     return error_before_exec(e)
 
+                internalnodes = []
+                for node in ast.walk(code_ast):
+                    if(isinstance(node,ast.Name) and isinstance(node.ctx,ast.Store)):
+                        internalnodes.append(node.id)
+
                 # Give the displayhook a reference to our ExecutionResult so it
                 # can fill in the output value.
 
@@ -594,6 +609,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
+                result.internal_nodes = internalnodes
                 result.imm_upstream_deps = self.dataflow_history_manager.get_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
                 result.update_downstreams = []

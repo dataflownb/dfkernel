@@ -10,7 +10,8 @@ define(["jquery",
         var cell_links = [],
             cell_list = [],
             cell_child_nums = [],
-            output_nodes = [];
+            output_nodes = [],
+            internal_nodes = [];
         var globaldf = false;
         var globalselect = false;
 
@@ -230,8 +231,19 @@ define(["jquery",
                 if(output_nodes[a]){g.setNode("Out["+a+"]", {label: "Cell ID: " + a + '\nOutputs:' + [].concat.apply(output_nodes[a] || "None"), text:"Test", class:'parentnode'});}
             });
 
+            var updated_internal_nodes = Object.keys(internal_nodes).filter(function(a){
+                return updated_cell_list.includes(a);
+            })
+
             var updated_out_nodes = Object.keys(output_nodes).filter(function(a){
                return updated_cell_list.includes(a);
+            });
+
+            updated_internal_nodes.forEach(function (a) {
+                var parent = 'Out['+a+']';
+                internal_nodes[a].forEach(function (t) {
+                    g.setNode(a+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(a+t,parent);
+                })
             });
 
             var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
@@ -269,6 +281,7 @@ define(["jquery",
         cell_list = [];
         cell_child_nums = [];
         output_nodes = [];
+        internal_nodes = [];
 
             if(dataflow){
         Jupyter.notebook.get_cells().forEach(function(a) {
@@ -283,6 +296,8 @@ define(["jquery",
                         return c;
                     }, []);
                 }
+
+                internal_nodes[a.uuid] = a.internal_nodes;
 
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
@@ -321,7 +336,9 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
                         return c;
                     }, []);
+                internal_nodes[cell.uuid] = cell.internal_nodes;
                 }
+
                 cell.cell_imm_upstream_deps.forEach(function (b) {
                     if(outnames.includes(cell.uuid)){
                         cell_links.push({source: b, target: cell.uuid});
@@ -364,6 +381,7 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
                         return c;
                     }, []);
+                    internal_nodes[cell.uuid] = cell.internal_nodes;
                 }
                 cell.cell_imm_upstream_deps.forEach(function (b) {
                     if(cells_list.has(b.substr(0,6))) {
@@ -411,6 +429,7 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
                         return c;
                     }, []);
+                    internal_nodes[a.uuid] = a.internal_nodes;
                     if(output_nodes[a.uuid].length == 0){
                         delete output_nodes[a.uuid];
                     }
@@ -445,7 +464,16 @@ define(["jquery",
             }
         });
 
+        //Label Styles should be set in text so that Dagre can properly size the nodes
         var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
+
+
+        Object.keys(internal_nodes).forEach(function (a) {
+            var parent = 'Out['+a+']';
+                internal_nodes[a].forEach(function (t) {
+                    g.setNode(a+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(a+t,parent);
+            })
+        });
 
         Object.keys(output_nodes).forEach(function (a) {
             var parent = 'Out['+a+']';

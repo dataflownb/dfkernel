@@ -37,7 +37,7 @@ define([
 	    if (!("uuid" in this)) {
 	        this.uuid = this.notebook.get_new_id();
 	        this.was_changed = true;
-
+            this.internal_nodes = [];
             this.cell_info_area = null;
             this.cell_imm_upstream_deps = [];
             this.cell_imm_downstream_deps = [];
@@ -265,6 +265,7 @@ define([
                     that.cell_downstream_deps.append(new_item);
                     $('.downstream-deps', that.cell_info_area).show();
                 });
+                that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
                 if('update_downstreams' in msg.content){
                     msg.content.update_downstreams.forEach(function (t) {
