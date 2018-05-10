@@ -1,6 +1,6 @@
 define(["jquery",
     "base/js/namespace",
-    '/kernelspecs/dfpython3/df-notebook/d3.v3.min.js',
+    '/kernelspecs/dfpython3/df-notebook/d3.v4.min.js',
     '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
     '/kernelspecs/dfpython3/df-notebook/jquery-ui.js',
     ],
@@ -87,9 +87,9 @@ define(["jquery",
                 node.rx = node.ry = 5;
             });
 
-            var zoom = d3.behavior.zoom().on("zoom", function() {
-                inner.attr("transform", "translate(" + d3.event.translate + ")" +
-                    "scale(" + d3.event.scale + ")");
+            var zoom = d3.zoom()
+            .on("zoom", function() {
+            inner.attr("transform", d3.event.transform);
             });
             svg.call(zoom);
 
@@ -102,10 +102,13 @@ define(["jquery",
             render(d3.select("svg g"),g);
 
             var initialScale = 0.75;
-            zoom
-                .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
-                .scale(initialScale)
-                .event(svg);
+            svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - g.graph().width * initialScale) / 2, 20).scale(initialScale));
+
+
+            // zoom
+            //     .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
+            //     .scale(initialScale)
+            //     .event(svg);
             svg.attr('height', $(window).height() * .7);
 
             svg.selectAll("g.parentnode, .cluster")
@@ -178,10 +181,7 @@ define(["jquery",
             };
                         render(d3.select("svg g"),newg);
                         d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
-                                    zoom
-                .translate([(svg.attr("width") - newg.graph().width * initialScale) / 2, 20])
-                .scale(initialScale)
-                .event(svg);
+                        svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - newg.graph().width * initialScale) / 2, 20).scale(initialScale));
                                     g = newg;
                     node.style('stroke-width','1.5px').style('stroke-dasharray','none').style('fill','green');
                     }, 2000);
