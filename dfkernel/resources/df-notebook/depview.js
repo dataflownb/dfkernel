@@ -99,12 +99,12 @@ define(["jquery",
                 return selection.transition().duration(500);
             };
 
-            render(d3.select("svg g"),g);
+            d3.select("svg g").call(render, g);
 
             var initialScale = 0.75;
             svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - g.graph().width * initialScale) / 2, 20).scale(initialScale));
 
-
+            svg.selectAll('#internal').classed('cluster',false).classed('internal',true);
             // zoom
             //     .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
             //     .scale(initialScale)
@@ -128,16 +128,15 @@ define(["jquery",
                     cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
                 var cell = Jupyter.notebook.get_code_cell(cellid);
                 svg.selectAll('.edgePath').select('path').style('stroke-width','1.5px').style('stroke','black');
-                svg.selectAll('.cluster').select('rect').style('stroke-width','1.5px').style('stroke','#999');
+                svg.selectAll('g.parentnode, .cluster').select('rect').style('stroke-width','1.5px').style('stroke','#999');
             }).on("contextmenu",function() {
-
                 return false;
             });
 
 
             $("g.parentnode, .cluster").css('fill',function(t){
                 var cellid = d3.select(this).select('tspan').text().substr("Cell ID: ".length, 6);
-                if(Jupyter.notebook.get_code_cell(cellid).was_changed){ d3.select(this).style('stroke-dasharray', '10,10').style('stroke-width','4px'); return "yellow";}
+                if(Jupyter.notebook.get_code_cell(cellid).was_changed){ d3.select(this).style('stroke-dasharray', '10,10').style('stroke-width','4px'); return "red";}
                 return;
             }).on('mousedown',function(event) {
                 console.log(event.which);
@@ -159,7 +158,7 @@ define(["jquery",
                 visited.forEach(function (t) {
                     g.removeNode(t);
                 });
-                render(d3.select("svg g"), g);
+                d3.select("svg g").call(render, g);
                 }
                 else if(event.which == 1){
                     close_div();
@@ -173,18 +172,15 @@ define(["jquery",
                     cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
                     Jupyter.notebook.get_code_cell(cellid).execute();
                     Jupyter.notebook.get_code_cell(cellid).was_changed = false;
-                    node.style('fill','red');
+                    node.style('fill','yellow');
                     setTimeout(function (){
                         var newg = create_node_relations(globaldf,globalselect);
                         newg.graph().transition = function(selection) {
                 return selection.transition().duration(500);
             };
-                        render(d3.select("svg g"),newg);
-                        d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
-                        svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - newg.graph().width * initialScale) / 2, 20).scale(initialScale));
-                                    g = newg;
-                    node.style('stroke-width','1.5px').style('stroke-dasharray','none').style('fill','green');
+                        create_graph(svg,newg,inner);
                     }, 2000);
+
 
                 }
             }).on("contextmenu",function(event){return false;});
@@ -240,11 +236,16 @@ define(["jquery",
             });
 
             updated_internal_nodes.forEach(function (a) {
-                var parent = 'Out['+a+']';
+            if(internal_nodes[a].length){
+            var parent = 'Out['+a+']';
+            var internal = parent + 'internal';
+            g.setNode(internal,{label:'Internal Nodes', id:'internal',clusterLabelPos:'top',labelStyle:'font-family:monospace;font-size:1.3em'});
+            g.setParent(internal,parent);
                 internal_nodes[a].forEach(function (t) {
-                    g.setNode(a+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(a+t,parent);
-                })
-            });
+                    g.setNode(internal+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(internal+t,internal);
+            })
+            }
+        });
 
             var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
             updated_out_nodes.forEach(function (a) {
@@ -297,7 +298,7 @@ define(["jquery",
                     }, []);
                 }
 
-                internal_nodes[a.uuid] = a.internal_nodes;
+                internal_nodes[a.uuid] = a.internal_nodes.filter(function(x) { return output_nodes[a.uuid].indexOf(x) < 0});
 
                 cell_list.push({id: a.uuid});
                 a.cell_imm_upstream_deps.forEach(function (b) {
@@ -336,7 +337,7 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
                         return c;
                     }, []);
-                internal_nodes[cell.uuid] = cell.internal_nodes;
+                internal_nodes[cell.uuid] = cell.internal_nodes.filter(function(x) { return output_nodes[cell.uuid].indexOf(x) < 0});
                 }
 
                 cell.cell_imm_upstream_deps.forEach(function (b) {
@@ -381,7 +382,7 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
                         return c;
                     }, []);
-                    internal_nodes[cell.uuid] = cell.internal_nodes;
+                    internal_nodes[cell.uuid] = cell.internal_nodes.filter(function(x) { return output_nodes[cell.uuid].indexOf(x) < 0});
                 }
                 cell.cell_imm_upstream_deps.forEach(function (b) {
                     if(cells_list.has(b.substr(0,6))) {
@@ -429,7 +430,7 @@ define(["jquery",
                             return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
                         return c;
                     }, []);
-                    internal_nodes[a.uuid] = a.internal_nodes;
+                    internal_nodes[a.uuid] = a.internal_nodes.filter(function(x) { return output_nodes[a.uuid].indexOf(x) < 0});
                     if(output_nodes[a.uuid].length == 0){
                         delete output_nodes[a.uuid];
                     }
@@ -469,10 +470,16 @@ define(["jquery",
 
 
         Object.keys(internal_nodes).forEach(function (a) {
+            if(internal_nodes[a].length){
             var parent = 'Out['+a+']';
+            var internal = parent + 'internal';
+            //FIXME: We have to use IDs because clusters don't actually assign classes for some reason.. this is a shortcoming of DagreD3
+            g.setNode(internal,{label:'Internal Nodes',id:'internal',clusterLabelPos:'top',labelStyle:'font-family:monospace;font-size:1.3em'});
+            g.setParent(internal,parent);
                 internal_nodes[a].forEach(function (t) {
-                    g.setNode(a+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(a+t,parent);
+                    g.setNode(internal+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(internal+t,internal);
             })
+            }
         });
 
         Object.keys(output_nodes).forEach(function (a) {

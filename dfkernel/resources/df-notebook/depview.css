@@ -81,8 +81,22 @@ g text {
   fill: green;
 }
 
+.internal rect{
+    fill-opacity: 0;
+    rx: 10px;
+    ry: 10px;
+    stroke: white;
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+}
+
+.internal rect tspan{
+    stroke: none;
+    fill:white;
+}
+
 .cluster.stale {
-    fill: yellow;
+    fill: red;
 }
 
 .cluster rect{
