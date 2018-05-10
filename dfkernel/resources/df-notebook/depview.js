@@ -123,9 +123,8 @@ define(["jquery",
                 var node = d3.select(this),
                     cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
                 var cell = Jupyter.notebook.get_code_cell(cellid);
-                cell.cell_imm_downstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','#999'); svg.selectAll('g.'+cellid+t.substr(0,6)).select('path').style('stroke-width','1.5px').style('stroke','black'); });
-                cell.cell_imm_upstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','#999'); svg.selectAll('g.'+t.substr(0,6)+cellid).select('path').style('stroke-width','1.5px').style('stroke','black');});
-                d3.select(this).select("rect").style({"stroke":"#999"});
+                svg.selectAll('.edgePath').select('path').style('stroke-width','1.5px').style('stroke','black');
+                svg.selectAll('.cluster').select('rect').style('stroke-width','1.5px').style('stroke','#999');
             }).on("contextmenu",function() {
 
                 return false;
@@ -182,16 +181,26 @@ define(["jquery",
                 .translate([(svg.attr("width") - newg.graph().width * initialScale) / 2, 20])
                 .scale(initialScale)
                 .event(svg);
-            //svg.attr('height', newg.graph().height * initialScale + 40);
+                                    g = newg;
                     node.style('stroke-width','1.5px').style('stroke-dasharray','none').style('fill','green');
                     }, 2000);
 
-                    //create_graph(svg,g,inner);
                 }
             }).on("contextmenu",function(event){return false;});
 
 
-            //$("g.parentnode").tooltip();
+            d3.selectAll("g.node.childnode").select('rect').on('mouseover',function (inner) {
+                cell_links.forEach(function (links) {
+                    if(links.source == inner){
+                        svg.selectAll('g#'+inner+links.target).select('path').style('stroke-width','4px').style('stroke','red');
+                    }
+                    if(links.target == inner) {
+                        svg.selectAll('g#'+links.source+inner).select('path').style('stroke-width','4px').style('stroke','blue');
+                    }
+                });
+            }).on('mouseout',function(inner){
+                svg.selectAll('.edgePath').select('path').style('stroke-width','1.5px').style('stroke','black');
+            });
 
             //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
             d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
@@ -458,7 +467,7 @@ define(["jquery",
         }) });
 
         cell_links.forEach(function (a) {
-            g.setEdge(a.source,a.target,{class:a.source.substr(0,6)+a.target.substr(0,6)});
+            g.setEdge(a.source,a.target,{class:a.source.substr(0,6)+a.target.substr(0,6),id:a.source+a.target});
         });
         console.log(cell_list);
         console.log(output_nodes);

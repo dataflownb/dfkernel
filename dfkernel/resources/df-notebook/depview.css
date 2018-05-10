@@ -94,6 +94,9 @@ g text {
     ry: 10px;
 }
 
+tspan {
+    pointer-events: none;
+}
 
 #selected {
     fill:orange;
