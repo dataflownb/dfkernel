@@ -252,8 +252,7 @@ class DataflowFunctionManager(object):
 
         # print("RESULTS:", res)
         if len(self.cell_ovars[uuid]) > 1:
-            from dfkernel.tuplelib import dftuple
-            res_cls = dftuple('Result',self.cell_ovars[uuid])
+            res_cls = namedtuple('Result', self.cell_ovars[uuid])
             return res_cls(**res)
         elif len(self.cell_ovars[uuid]) > 0:
             return next(iter(res.values()))
