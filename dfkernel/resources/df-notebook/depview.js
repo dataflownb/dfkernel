@@ -74,7 +74,9 @@ define(["jquery",
               values: [ min_level, max_level ],
               slide: function( event, ui ) {
                 $( "#up-down" ).text("Levels Down: " + Math.abs(ui.values[ 0 ]) + "   Levels Up: " + Math.abs(ui.values[ 1 ]));
-                recreate_graph(ui.values[1],ui.values[0]);
+                if(ui.values[1] >= 0 && ui.values[0] <= 0){
+                    recreate_graph(ui.values[1],ui.values[0]);
+                }
               }
             });
         };
@@ -219,12 +221,22 @@ define(["jquery",
                 return {};
             });
 
+            var sel = "";
+
             var updated_cell_list = cell_list.filter(function(a){
+                if(a.level == 0){sel = a.id;}
                 return a.level <= up && a.level >= down;
             }).map(function(a){ return a.id;});
 
             updated_cell_list.forEach(function(a){
-                if(output_nodes[a]){g.setNode("Out["+a+"]", {label: "Cell ID: " + a + '\nOutputs:' + [].concat.apply(output_nodes[a] || "None"), text:"Test", class:'parentnode'});}
+                if(output_nodes[a]){
+                    if(a == sel){
+                        g.setNode("Out["+a+"]", {label: "Cell ID: " + a, id:'selected', class:'parentnode'});
+                    }
+                    else{
+                        g.setNode("Out["+a+"]", {label: "Cell ID: " + a, class:'parentnode'});
+                    }
+                }
             });
 
             var updated_internal_nodes = Object.keys(internal_nodes).filter(function(a){
@@ -268,7 +280,7 @@ define(["jquery",
 
             cell_links.forEach(function (a) {
                 if(updated_cell_list.includes(a.source) && updated_cell_list.includes(a.target)) {
-                    g.setEdge(a.source, a.target,{class:a.source.substr(0,6)+a.target.substr(0,6)});
+                    g.setEdge(a.source, a.target,{class:a.source.substr(0,6)+a.target.substr(0,6),id:a.source+a.target});
                 }
             });
 
