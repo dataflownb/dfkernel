@@ -250,10 +250,10 @@ define(["jquery",
             var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
             updated_out_nodes.forEach(function (a) {
                 var parent = 'Out['+a+']';
-                var cell = a+'[Cell]';
+                var cell = a+'-Cell';
                 g.setNode(cell,{label:'Cell['+a+']',class:'childnode',labelStyle:labelstyles});
                 g.setParent(cell,parent);
-                updated_cell_list.push(a+'[Cell]');
+                updated_cell_list.push(a+'-Cell');
                 output_nodes[a].forEach(function (t) {
                     var uuid = t.substr(4,6);
                     if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
@@ -306,7 +306,7 @@ define(["jquery",
                         cell_links.push({source: b, target: a.uuid});
                     }
                     else{
-                        cell_links.push({source: b, target: (a.uuid + "[Cell]")})
+                        cell_links.push({source: b, target: (a.uuid + "-Cell")})
                     }
                 });
             }
@@ -345,7 +345,7 @@ define(["jquery",
                         cell_links.push({source: b, target: cell.uuid});
                     }
                     else{
-                        cell_links.push({source: b, target: (cell.uuid + "[Cell]")})
+                        cell_links.push({source: b, target: (cell.uuid + "-Cell")})
                     }
                 });
                 if(!(upstreams.length)){
@@ -390,7 +390,7 @@ define(["jquery",
                             cell_links.push({source: b, target: cell.uuid});
                         }
                         else {
-                            cell_links.push({source: b, target: (cell.uuid + "[Cell]")})
+                            cell_links.push({source: b, target: (cell.uuid + "-Cell")})
                         }
                     }
                 });
@@ -485,7 +485,7 @@ define(["jquery",
         Object.keys(output_nodes).forEach(function (a) {
             var parent = 'Out['+a+']';
             if(dataflow || selected){
-                var cell = a+'[Cell]';
+                var cell = a+'-Cell';
                 g.setNode(cell,{label:'Cell['+a+']',class:'childnode', labelStyle:labelstyles});
                 g.setParent(cell,parent);
 
