@@ -270,38 +270,6 @@ def expr2id(node):
     else:
         return 'x'
 
-class OutputTransformer(object):
-    def visit(self, node):
-        if len(node.body) > 0:
-            last_node = node.body[-1]
-            if isinstance(last_node, ast.Expr):
-                if isinstance(last_node.value, ast.Tuple):
-                    #print(object.__hash__)
-                    template = "import dfkernel.tuplelib as _dfkernel_tuplelib; import collections as _dfkernel_collections; _dfkernel_tuplelib.dftuple('namedtuple', ids)(args)"
-                    parsed_raw = ast.parse(template)
-                    new_nodes = parsed_raw.body
-                    new_node = new_nodes[-1].value
-                    ids = []
-                    for elt in last_node.value.elts:
-                        ids.append(expr2id(elt))
-                    # FIXME need to check for duplicate ids and resolve
-                    dup_ids = dict((k, c)
-                                   for k, c in collections.Counter(ids).items()
-                                   if c > 1)
-                    new_ids = []
-                    for id in reversed(ids):
-                        if id in dup_ids:
-                            dup_ids[id] -= 1
-                            id += str(dup_ids[id]+1)
-                        new_ids.append(id)
-                    new_ids.reverse()
-                    new_node.args = last_node.value.elts
-                    new_node.func.args[1] = ast.Str(','.join(new_ids))
-                    del node.body[-1]
-                    node.body.extend(new_nodes)
-                    return node
-        return node
-
 # FIXME should mix the pprint for seq and dict
 # FIXME use normal printer if _fields doesn't exist
 def tuple_formatter(arg, p, cycle):
@@ -313,14 +281,6 @@ def tuple_formatter(arg, p, cycle):
             if i != len(arg) - 1:
                 p.text(',')
                 p.breakable()
-
-# class NameNodeExtractor(ast.NodeTransformer):
-#     def visit(self,node):
-#         super().generic_visit(node)
-#         if len(node.body) > 0:
-#             if(isinstance(node,ast.Name) and isinstance(node,ast.Store)):
-#                 print(node)
-#         return node
 
 
 class CellIdTransformer(ast.NodeTransformer):
@@ -353,8 +313,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
         self.ast_transformers.append(CellIdTransformer())
-        #self.ast_transformers.append(NameNodeExtractor())
-        # self.ast_transformers.append(OutputTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
