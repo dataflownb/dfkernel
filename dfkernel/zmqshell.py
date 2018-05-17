@@ -352,6 +352,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         if 'user_ns' not in kwargs or kwargs['user_ns'] is None:
             kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
+        #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
+        self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
         self.ast_transformers.append(LibTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
