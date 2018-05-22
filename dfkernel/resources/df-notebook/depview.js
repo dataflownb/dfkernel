@@ -1,8 +1,8 @@
 define(["jquery",
     "base/js/namespace",
-    '/kernelspecs/dfpython3/df-notebook/d3.v4.min.js',
-    '/kernelspecs/dfpython3/df-notebook/dagre-d3.min.js',
-    '/kernelspecs/dfpython3/df-notebook/jquery-ui.js',
+    './d3.v4.min.js',
+    './dagre-d3.min.js',
+    './jquery-ui.js'
     ],
     function($, Jupyter, d3, dagreD3) {
     "use strict";
@@ -562,4 +562,4 @@ define(["jquery",
         create_dep_view: create_dep_view,
          attach_controls: attach_controls,
     };
-    });
+});

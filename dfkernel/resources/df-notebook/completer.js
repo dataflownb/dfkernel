@@ -249,4 +249,5 @@ define([
         return true;
     };
 
-})
+    return {Completer: Completer};
+});

@@ -52,4 +52,6 @@ define(['jquery',
             this.typeset();
         }
     };
+
+    return {OutputArea: OutputArea}
 });

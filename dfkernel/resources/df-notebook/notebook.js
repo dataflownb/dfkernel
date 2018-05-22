@@ -29,7 +29,7 @@ define([
     'notebook/js/scrollmanager',
     'notebook/js/commandpalette',
     'notebook/js/shortcuteditor',
-    '/kernelspecs/dfpython3/df-notebook/utils.js'
+    './utils.js'
 ], function (
     $,
     notebook,
@@ -272,5 +272,7 @@ define([
             _super.apply(this, arguments);
         };
     }(Notebook.prototype.paste_cell_replace));
+
+    return {Notebook: Notebook};
 
 });

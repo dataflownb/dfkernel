@@ -1,11 +1,11 @@
 define(["jquery",
     "base/js/namespace",
-    '/kernelspecs/dfpython3/df-notebook/depview.js',
-    '/kernelspecs/dfpython3/df-notebook/codecell.js',
-    '/kernelspecs/dfpython3/df-notebook/completer.js',
-    '/kernelspecs/dfpython3/df-notebook/kernel.js',
-    '/kernelspecs/dfpython3/df-notebook/notebook.js',
-    '/kernelspecs/dfpython3/df-notebook/outputarea.js'
+    './df-notebook/depview.js',
+    './df-notebook/codecell.js',
+    './df-notebook/completer.js',
+    './df-notebook/kernel.js',
+    './df-notebook/notebook.js',
+    './df-notebook/outputarea.js'
     ],
     function($, Jupyter, depview) {
         var onload = function() {

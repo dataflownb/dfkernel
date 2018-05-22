@@ -12,7 +12,7 @@ define([
     'codemirror/lib/codemirror',
     'codemirror/mode/python/python',
     'notebook/js/codemirror-ipython',
-    '/kernelspecs/dfpython3/df-notebook/utils.js'
+    './utils.js'
 ], function(
     $,
     codecell,
@@ -367,4 +367,6 @@ define([
             return data;
         }
     }(CodeCell.prototype.toJSON));
+
+    return {CodeCell: CodeCell};
 });
