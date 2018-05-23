@@ -335,60 +335,6 @@ class LibTransformer(ast.NodeTransformer):
                 return node
         return node
 
-class FuncTransformer(ast.NodeTransformer):
-    def visit(self, node):
-        if len(node.body) > 0:
-            last_node = node.body[-1]
-            out_names = []
-            func_names = []
-            top_level_stores = []
-            if (isinstance(last_node, ast.Expr)):
-                if (isinstance(last_node.value, ast.Tuple)):
-                    for namenode in last_node.value.elts:
-                        out_names.append(namenode.id)
-                elif (isinstance(last_node.value, ast.Num)):
-                    return node
-                else:
-                    out_names = [last_node.value.id]
-                del node.body[-1]
-            for topnode in node.body:
-                if (isinstance(topnode, ast.FunctionDef)):
-                    func_names.append(topnode.name)
-                elif (isinstance(topnode, ast.Assign)):
-                    for target in topnode.targets:
-                        if (isinstance(target, ast.Tuple)):
-                            for elt in target.elts:
-                                top_level_stores.append(elt.id)
-                        elif (isinstance(target, ast.Name)):
-                            top_level_stores.append(target.id)
-            intersection = list(set(func_names) & set(out_names))
-            if (len(intersection)):
-                initdef = "def __init__(self,args=None):\n\tself.func = eval('self.'+args)"
-                calldef = "def __call__(self,*args):\n\treturn self.func(*args)"
-                classdef = ast.ClassDef('dfpyclass', [], [], [ast.parse(initdef).body[0], ast.parse(calldef).body[0]],
-                                        [])
-                for topnode in node.body:
-                    if (isinstance(topnode, ast.FunctionDef)):
-                        args = [arg.arg for arg in topnode.args.args]
-                        topnode.args.args = [ast.arg('self', None)] + topnode.args.args
-                        for func_node in ast.walk(topnode):
-                            if (isinstance(func_node, ast.Name)):
-                                if (isinstance(func_node.ctx, ast.Store)):
-                                    # Append user defined vars
-                                    args.append(func_node.id)
-                                elif (func_node.id in top_level_stores and func_node.id not in args):
-                                    func_node.id = 'self.' + func_node.id
-                classdef.body.extend(node.body)
-                outs = []
-                for num, name in enumerate(out_names):
-                    if (name in func_names):
-                        outs.append('dfpyclass("' + name + '")')
-                    else:
-                        outs.append('dfpyclass.' + name)
-                template = ','.join(out_names) + '=' ','.join(outs)
-                last_node = ast.parse(template)
-                node.body = [classdef] + last_node.body
-        return node
 
 class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     """A subclass of InteractiveShell for ZMQ."""
@@ -410,7 +356,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
         self.ast_transformers.append(LibTransformer())
-        self.ast_transformers.append(FuncTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
