@@ -2,9 +2,9 @@ from collections import OrderedDict
 import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
-    def __init__(self, uuid, *args, **kwargs):
+    def __init__(self, __uuid, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
-        self.__uuid__ = uuid
+        self.__uuid__ = __uuid
         #self.__dfhist__ =
 
     def get_uuid(self):
@@ -51,5 +51,5 @@ class LinkedResult(OrderedDict):
 #     else:
 #         return LinkedResult(uuid, *args, **kwargs)
 
-def build_linked_result(uuid, *args, **kwargs):
-    return LinkedResult(uuid, *args, **kwargs)
+def build_linked_result(__uuid, *args, **kwargs):
+    return LinkedResult(__uuid, *args, **kwargs)
