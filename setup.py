@@ -87,7 +87,7 @@ install_requires = setuptools_args['install_requires'] = [
     'jupyter_client',
     'tornado>=4.0',
     'ipykernel>=4.8.2',
-    'notebook>=5.4'
+    'notebook>=5.0'
 ]
 
 if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):

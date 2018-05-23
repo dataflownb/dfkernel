@@ -1,21 +1,31 @@
 define(['jquery',
         'notebook/js/outputarea',
-        'base/js/utils',
-        'base/js/i18n',
-], function($, outputarea, utils, i18n) {
+        'base/js/utils'
+], function($, outputarea, utils) {
     "use strict";
 
     var OutputArea = outputarea.OutputArea;
 
-    OutputArea.output_prompt_function = function(prompt_value, metadata) {
-        if (metadata.output_tag) {
-            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._(metadata.output_tag + ':')));
-            // return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]'),prompt_value))
-            //     .append($('<br>'), '.' + metadata.output_tag + ':');
-        } else {
-            return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'),prompt_value));
-        }
-    };
+    // define differently depending on whether i18n is installed (notebook v5.1+)
+    require(['base/js/i18n'],
+        function(i18n) {
+            OutputArea.output_prompt_function = function (prompt_value, metadata) {
+                if (metadata.output_tag) {
+                    return $('<bdi>').text(metadata.output_tag + ':');
+                } else {
+                    return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'), prompt_value));
+                }
+            };
+        },
+        function(err) {
+            OutputArea.output_prompt_function = function (prompt_value, metadata) {
+                if (metadata.output_tag) {
+                    return $('<bdi>').text(metadata.output_tag + ':');
+                } else {
+                    return $('<bdi>').text('Out[' + prompt_value + ']:');
+                }
+            };
+        });
 
     // FIXME pull these in instead?
     // Declare mime type as constants
