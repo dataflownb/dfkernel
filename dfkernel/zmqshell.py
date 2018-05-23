@@ -296,46 +296,6 @@ class CellIdTransformer(ast.NodeTransformer):
                 ctx=node.ctx), node)
         return node
 
-class LibTransformer(ast.NodeTransformer):
-    def visit(self,node):
-        if len(node.body) > 0:
-            last_node = node.body[-1]
-            names = []
-            additional_nodes = []
-            if isinstance(last_node, ast.Expr):
-                if (isinstance(last_node.value, ast.Tuple)):
-                    for namenode in last_node.value.elts:
-                        additional_nodes.append(namenode)
-                else:
-                    additional_nodes = [last_node.value]
-            elif isinstance(last_node, ast.Assign):
-                import copy
-                for target in last_node.targets:
-                    if (isinstance(target, ast.Tuple)):
-                        for elt in last_node.targets[0].elts:
-                            new_elt = copy.copy(elt)
-                            new_elt.ctx = ast.Load()
-                            additional_nodes.append(new_elt)
-                    elif (isinstance(target, ast.Name)):
-                        new_elt = copy.copy(target)
-                        new_elt.ctx = ast.Load()
-                        additional_nodes.append(new_elt)
-            for elt in node.body:
-                if (isinstance(elt, ast.Import) or isinstance(elt, ast.ImportFrom)):
-                    for name in elt.names:
-                        names.append(name.asname if name.asname else name.name)
-            if (len(names)):
-                new_node = ast.parse(','.join(names))
-                if (len(names) > 1):
-                    new_node.body[0].value.elts.extend(additional_nodes)
-                else:
-                    additional_nodes.append(new_node.body[0].value)
-                    new_node.body[0].value = ast.Tuple(elts=additional_nodes, ctx=ast.Load())
-                node.body.extend(new_node.body)
-                return node
-        return node
-
-
 class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     """A subclass of InteractiveShell for ZMQ."""
 
@@ -355,7 +315,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
-        self.ast_transformers.append(LibTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
