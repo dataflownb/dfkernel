@@ -296,49 +296,6 @@ class CellIdTransformer(ast.NodeTransformer):
                 ctx=node.ctx), node)
         return node
 
-class LibTransformer(ast.NodeTransformer):
-    def visit(self,node):
-        if len(node.body) > 0:
-            last_node = node.body[-1]
-            names = []
-            additional_nodes = []
-            if isinstance(last_node, ast.Expr):
-                if (isinstance(last_node.value, ast.Tuple)):
-                    for namenode in last_node.value.elts:
-                        if (isinstance(namenode, ast.Num)):
-                            return node
-                        additional_nodes.append(namenode)
-                elif isinstance(last_node.value, ast.Num):
-                    return node
-                else:
-                    additional_nodes = [last_node.value]
-            elif isinstance(last_node, ast.Assign):
-                import copy
-                for target in last_node.targets:
-                    if (isinstance(target, ast.Tuple)):
-                        for elt in last_node.targets[0].elts:
-                            new_elt = copy.copy(elt)
-                            new_elt.ctx = ast.Load()
-                            additional_nodes.append(new_elt)
-                    elif (isinstance(target, ast.Name)):
-                        new_elt = copy.copy(target)
-                        new_elt.ctx = ast.Load()
-                        additional_nodes.append(new_elt)
-            for elt in node.body:
-                if (isinstance(elt, ast.Import) or isinstance(elt, ast.ImportFrom)):
-                    for name in elt.names:
-                        names.append(name.asname if name.asname else name.name)
-            if (len(names)):
-                new_node = ast.parse(','.join(names))
-                if (len(names) > 1):
-                    new_node.body[0].value.elts.extend(additional_nodes)
-                else:
-                    additional_nodes.append(new_node.body[0].value)
-                    new_node.body[0].value = ast.Tuple(elts=additional_nodes, ctx=ast.Load())
-                node.body.extend(new_node.body)
-                return node
-        return node
-
 class FuncTransformer(ast.NodeTransformer):
     def visit(self, node):
         #No purpose examining nodes that can't possibly have func defs and expr
@@ -420,8 +377,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
-        self.ast_transformers.append(LibTransformer())
-        self.ast_transformers.append(FuncTransformer())
+        # self.ast_transformers.append(FuncTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
@@ -689,57 +645,81 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         return result
 
+    def get_linked_vars(self, node):
+        create_node = True
+        append_node = True
+        vars = []
+        no_link_vars = []
+        if isinstance(node, _assign_nodes):
+            asg = node
+            if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
+                target = asg.targets[0]
+            elif isinstance(asg, _single_targets_nodes):
+                target = asg.target
+            else:
+                target = None
+            if isinstance(target, ast.Name):
+                vars.append(target.id)
+            elif isinstance(target, ast.Tuple):
+                for elt in target.elts:
+                    if not isinstance(elt, ast.Name):
+                        create_node = False
+                        break
+                    vars.append(elt.id)
+            else:
+                create_node = False
+        elif isinstance(node, ast.Expr):
+            append_node = False
+            if isinstance(node.value, ast.Tuple):
+                asg = node.value
+                for elt in asg.elts:
+                    if (not isinstance(elt, ast.Name) or
+                            self.user_ns._is_external_link(elt.id, self.uuid)):
+                        create_node = False
+                        break
+                    vars.append(elt.id)
+            elif isinstance(node.value, ast.Name):
+                elt = node.value
+                if self.user_ns._is_external_link(elt.id, self.uuid):
+                    create_node = False
+                else:
+                    vars.append(elt.id)
+            else:
+                create_node = False
+        else:
+            create_node = False
+        return vars, create_node, append_node
+
     def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
         no_link_vars = []
+        auto_add_libs = True # FIXME add a configuration option that sets this
         if interactivity == 'last_expr_or_assign':
-            create_node = True
-            append_node = True
-            if isinstance(nodelist[-1], _assign_nodes):
-                asg = nodelist[-1]
-                if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
-                    target = asg.targets[0]
-                elif isinstance(asg, _single_targets_nodes):
-                    target = asg.target
-                else:
-                    target = None
-                keywords = []
-                if isinstance(target, ast.Name):
-                    keywords.append(ast.keyword(target.id, ast.Name(target.id, ast.Load())))
-                    no_link_vars.append(target.id)
-                elif isinstance(target, ast.Tuple):
-                    for elt in target.elts:
-                        if not isinstance(elt, ast.Name):
-                            create_node = False
-                            break
-                        no_link_vars.append(elt.id)
-                        keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
-                else:
-                    create_node = False
-            elif isinstance(nodelist[-1], ast.Expr):
-                append_node = False
-                if isinstance(nodelist[-1].value, ast.Tuple):
-                    asg = nodelist[-1].value
-                    keywords = []
-                    for elt in asg.elts:
-                        if (not isinstance(elt, ast.Name) or
-                                self.user_ns._is_external_link(elt.id, self.uuid)):
-                            create_node = False
-                            break
-                        no_link_vars.append(elt.id)
-                        keywords.append(ast.keyword(elt.id, ast.Name(elt.id, ast.Load())))
-                elif isinstance(nodelist[-1].value, ast.Name):
-                    elt = nodelist[-1].value
-                    if self.user_ns._is_external_link(elt.id, self.uuid):
-                        create_node = False
-                    else:
-                        no_link_vars.append(elt.id)
-                        keywords = [ast.keyword(elt.id, ast.Name(elt.id, ast.Load()))]
-                else:
-                    create_node = False
-            else:
-                create_node = False
+            vars, create_node, append_node = self.get_linked_vars(nodelist[-1])
+            no_link_vars.extend(vars)
+
+            if auto_add_libs:
+                lnames = []
+                for elt in nodelist:
+                    if (isinstance(elt, ast.Import) or
+                            isinstance(elt,ast.ImportFrom)):
+                        for name in elt.names:
+                            if name.asname:
+                                lnames.append(name.asname)
+                            else:
+                                if '.' in name.name:
+                                    lnames.append(name.name.split('.',1)[0])
+                                else:
+                                    lnames.append(name.name)
+                if len(lnames) > 0:
+                    diff = set(lnames) - set(vars)
+                    if len(diff) > 0:
+                        create_node = True
+                        append_node = True
+                        vars = list(diff) + vars
+
             if create_node:
+                keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in vars]
                 nnode = ast.Expr(ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords))
                 ast.fix_missing_locations(nnode)
                 if append_node:
