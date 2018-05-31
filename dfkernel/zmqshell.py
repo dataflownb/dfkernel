@@ -649,7 +649,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         create_node = True
         append_node = True
         vars = []
-        no_link_vars = []
         if isinstance(node, _assign_nodes):
             asg = node
             if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
@@ -663,6 +662,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             elif isinstance(target, ast.Tuple):
                 for elt in target.elts:
                     if not isinstance(elt, ast.Name):
+                        vars = []
                         create_node = False
                         break
                     vars.append(elt.id)
@@ -675,6 +675,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 for elt in asg.elts:
                     if (not isinstance(elt, ast.Name) or
                             self.user_ns._is_external_link(elt.id, self.uuid)):
+                        vars = []
                         create_node = False
                         break
                     vars.append(elt.id)
@@ -695,6 +696,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
         if interactivity == 'last_expr_or_assign':
+            keep_last_node = False
             vars, create_node, append_node = self.get_linked_vars(nodelist[-1])
             no_link_vars.extend(vars)
 
@@ -714,13 +716,22 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 if len(lnames) > 0:
                     diff = set(lnames) - set(vars)
                     if len(diff) > 0:
+                        if not create_node and isinstance(nodelist[-1], ast.Expr):
+                            keep_last_node = True
                         create_node = True
                         append_node = True
                         vars = list(diff) + vars
 
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in vars]
-                nnode = ast.Expr(ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords))
+                if keep_last_node:
+                    nnode = ast.Expr(ast.Tuple(
+                        [ast.Call(ast.Name('_build_linked_result', ast.Load()),
+                                 [ast.Str(self.uuid)], keywords),
+                        nodelist[-1].value],
+                    ast.Load()))
+                else:
+                    nnode = ast.Expr(ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords))
                 ast.fix_missing_locations(nnode)
                 if append_node:
                     nodelist.append(nnode)

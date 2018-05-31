@@ -39,7 +39,21 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
         if result is not None and not self.quiet():
             self.start_displayhook()
             self.write_output_prompt()
-            if isinstance(result, LinkedResult):
+            if isinstance(result, tuple) and (len(result) == 2) and isinstance(result[0], LinkedResult):
+                # FIXME unify this so that the LinkedResult code isn't repeated in the elif
+                self.update_dataflow_ns(result[0])
+                format_dict = {}
+                md_dict = {}
+                i = 0
+                for i, (res_tag, res) in enumerate(result[0].items()):
+                    res_format_dict, res_md_dict = self.compute_format_data(res)
+                    format_dict[i] = res_format_dict
+                    res_md_dict['output_tag'] = res_tag
+                    md_dict[i] = res_md_dict
+                format_dict_normal, md_dict_normal = self.compute_format_data(result[1])
+                format_dict[i+1] = format_dict_normal
+                md_dict[i+1] = md_dict_normal
+            elif isinstance(result, LinkedResult):
                 self.update_dataflow_ns(result)
                 format_dict = {}
                 md_dict = {}
