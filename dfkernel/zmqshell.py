@@ -698,6 +698,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         compiler=compile, result=None):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
+        closure = True #FIXME Should this even be a config or default behavior?
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
@@ -731,7 +732,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
                      keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
-                #print(keywords)
+
+
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
@@ -739,14 +741,22 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         nodelist[-1].value],
                     ast.Load()))
                 else:
-                    nnode = ast.Expr(ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords))
+                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid)], keywords)
+                    if closure:
+                        nnode = ast.Return(innercall)
+                    else:
+                        nnode = ast.Expr(innercall)
+
                 ast.fix_missing_locations(nnode)
                 if append_node:
                     nodelist.append(nnode)
                 else:
                     nodelist[-1] = nnode
                 # also need to pull off the values so they don't recurse on themselves
-
+                if closure:
+                    nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                    for node in nodelist:
+                        ast.fix_missing_locations(node)
             interactivity = 'last_expr'
 
         # print("DO NOT LINK", no_link_vars)
