@@ -5,19 +5,30 @@ class LinkedResult(OrderedDict):
     def __init__(self, __uuid, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.__uuid__ = __uuid
-        #self.__dfhist__ =
 
     def get_uuid(self):
         return self.__uuid__
 
+    def __update_deps__(self,item):
+        self.__dfhist__.update_dependencies(self.__uuid__ + item, self.__dfhist__.shell.uuid)
+        self.__dfhist__.remove_dependencies(self.__uuid__, self.__dfhist__.shell.uuid)
+
     def __getitem__(self, item):
         #print(self.__uuid__,item)
-        if item in self:
-             self.__dfhist__.update_dependencies(self.__uuid__+item, self.__dfhist__.shell.uuid)
-             self.__dfhist__.remove_dependencies(self.__uuid__, self.__dfhist__.shell.uuid)
+        if isinstance(item,int) and len(self.keys()) > item and item >= 0:
+            item = list(self.keys())[item]
+            self.__update_deps__(item)
+        elif item in self:
+            self.__update_deps__(item)
         return super().__getitem__(item)
+
+    def __tuple__(self):
+        return tuple(list(self.values()))
+
     def __sethist__(self,hist):
         self.__dfhist__ = hist
+
+
     # def __setuuid__(self,uuidref):
     #     self._uuid = uuidref
 

@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple, OrderedDict
+from dfkernel.dflink import LinkedResult
 
 class DataflowHistoryManager(object):
     storeditems = []
@@ -160,7 +161,9 @@ class DataflowHistoryManager(object):
         self.update_dependencies(k, self.shell.uuid)
         # check if we need to recompute
         if not self.is_stale(k):
-            # print("  VALUE CACHE") 
+            # print("  VALUE CACHE")
+            if isinstance(self.value_cache[k],LinkedResult):
+                 return self.value_cache[k].__tuple__()
             return self.value_cache[k]
         else:
             # need to re-execute
@@ -297,7 +300,8 @@ class DataflowNamespace(dict):
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history[cell_id]
+            #res = df_history[cell_id]
+            res = df_history.value_cache[cell_id]
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]

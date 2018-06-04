@@ -649,6 +649,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         create_node = True
         append_node = True
         vars = []
+        unnamed = []
         if isinstance(node, _assign_nodes):
             asg = node
             if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
@@ -672,13 +673,15 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             append_node = False
             if isinstance(node.value, ast.Tuple):
                 asg = node.value
-                for elt in asg.elts:
-                    if (not isinstance(elt, ast.Name) or
-                            self.user_ns._is_external_link(elt.id, self.uuid)):
+                for outnum, elt in enumerate(asg.elts):
+                    if (not isinstance(elt, ast.Name)):
+                        unnamed.append((outnum,elt))
+                    elif self.user_ns._is_external_link(elt.id, self.uuid):
                         vars = []
                         create_node = False
                         break
-                    vars.append(elt.id)
+                    else:
+                        vars.append(elt.id)
             elif isinstance(node.value, ast.Name):
                 elt = node.value
                 if self.user_ns._is_external_link(elt.id, self.uuid):
@@ -689,7 +692,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 create_node = False
         else:
             create_node = False
-        return vars, create_node, append_node
+        return vars, unnamed, create_node, append_node
 
     def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
@@ -697,7 +700,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         auto_add_libs = True # FIXME add a configuration option that sets this
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
-            vars, create_node, append_node = self.get_linked_vars(nodelist[-1])
+            vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
             no_link_vars.extend(vars)
 
             if auto_add_libs:
@@ -724,6 +727,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in vars]
+                for out in unnamed:
+                    #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
+                    #might be better to double check though to ensure that this is actually fine
+                     keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
+                print(keywords)
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
