@@ -731,7 +731,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
                      keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
-                print(keywords)
+                #print(keywords)
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
