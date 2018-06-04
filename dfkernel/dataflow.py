@@ -150,7 +150,7 @@ class DataflowHistoryManager(object):
         return retval.result
 
 
-    def __getitem__(self, k, **flag):
+    def __getitem__(self, k):
         self.stale_check(k)
         self.update_dependencies(k, self.shell.uuid)
         # check if we need to recompute
