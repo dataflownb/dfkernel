@@ -150,26 +150,37 @@ class DataflowHistoryManager(object):
         return retval.result
 
 
-    def __getitem__(self, k):
-        class InvalidOutCell(KeyError):
-            '''Called when an Invalid OutCell is called'''
-        # print("CALLING OUT[{}]".format(k))
-        if k not in self.code_stale:
-            #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
-            raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
-
+    def __getitem__(self, k, **flag):
+        self.stale_check(k)
         self.update_dependencies(k, self.shell.uuid)
         # check if we need to recompute
         if not self.is_stale(k):
-            # print("  VALUE CACHE")
             if isinstance(self.value_cache[k],LinkedResult):
                  return self.value_cache[k].__tuple__()
             return self.value_cache[k]
         else:
             # need to re-execute
-            # print("  RE-EXECUTE")
-            return self.execute_cell(k)
+            val = self.execute_cell(k)
+            if isinstance(val,LinkedResult):
+                return val.__tuple__()
+            return val
 
+
+    def stale_check(self,k):
+        class InvalidOutCell(KeyError):
+            '''Called when an Invalid OutCell is called'''
+        if k not in self.code_stale:
+            #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
+            raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
+
+    def _get_item(self,k):
+        self.stale_check(k)
+        self.update_dependencies(k, self.shell.uuid)
+        # check if we need to recompute
+        if not self.is_stale(k):
+            return self.value_cache[k]
+        else:
+            return self.execute_cell(k)
 
     def __setitem__(self, key, value):
         self.update_value(key, value)
@@ -300,12 +311,13 @@ class DataflowNamespace(dict):
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            #res = df_history[cell_id]
-            res = df_history.value_cache[cell_id]
+            res = df_history._get_item(cell_id)
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
         return super().__getitem__(k)
+
+
 
         # if k in self.links:
         #     # run the cell at self.links[k]
