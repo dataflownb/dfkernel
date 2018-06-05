@@ -39,6 +39,7 @@ class DataflowHistoryManager(object):
         return (key in self.code_stale and self.code_stale[key])
 
     def update_value(self, key, value):
+
         self.value_cache[key] = value
         self.last_calculated[key] = self.last_calculated_ctr
         self.last_calculated_ctr += 1
@@ -173,7 +174,12 @@ class DataflowHistoryManager(object):
             return self.execute_cell(k)
 
     def __setitem__(self, key, value):
-        self.update_value(key, value)
+        class InvalidCellModification(KeyError):
+            '''This error results when another cell tries to modify an Out reference'''
+        if(key == self.shell.uuid):
+            self.update_value(key, value)
+        else:
+            raise InvalidCellModification("Out[" + key + "] can only be modified by it's own cell")
 
     #FIXME
     #Does this function do anything?
