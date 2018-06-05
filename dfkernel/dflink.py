@@ -2,11 +2,12 @@ from collections import OrderedDict
 import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
-    def __init__(self, __uuid, *args, **kwargs):
+    def __init__(self, __uuid, __libs, *args, **kwargs):
         for kwarg in list(kwargs):
             if(kwargs[kwarg] is None):
                 del kwargs[kwarg]
         super().__init__(self, *args, **kwargs)
+        self.__libs__ = __libs
         self.__uuid__ = __uuid
 
     def get_uuid(self):
@@ -26,10 +27,17 @@ class LinkedResult(OrderedDict):
         return super().__getitem__(item)
 
     def __tuple__(self):
-        vals = list(self.values())
+        vals = []
+        for k,v in zip(self.keys(),self.values()):
+            if(k not in self.__libs__):
+                vals.append(v)
         if len(vals) > 1:
             return tuple(vals)
-        return vals[0]
+        elif len(vals) == 1:
+            return vals[0]
+        else:
+            #FIXME: I mean if someone really only has libraries in a cell should we prevent them from accessing a tuple of them?
+            return tuple(self.values())
 
     def __sethist__(self,hist):
         self.__dfhist__ = hist
@@ -68,5 +76,5 @@ class LinkedResult(OrderedDict):
 #     else:
 #         return LinkedResult(uuid, *args, **kwargs)
 
-def build_linked_result(__uuid, *args, **kwargs):
-    return LinkedResult(__uuid, *args, **kwargs)
+def build_linked_result(__uuid,__libs, *args, **kwargs):
+    return LinkedResult(__uuid,__libs, *args, **kwargs)
