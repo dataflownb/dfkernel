@@ -151,26 +151,16 @@ class DataflowHistoryManager(object):
 
 
     def __getitem__(self, k):
-        self.stale_check(k)
-        self.update_dependencies(k, self.shell.uuid)
-        # check if we need to recompute
-        if not self.is_stale(k):
-            if isinstance(self.value_cache[k],LinkedResult):
-                 return self.value_cache[k].__tuple__()
-            return self.value_cache[k]
-        else:
-            # need to re-execute
-            val = self.execute_cell(k)
-            if isinstance(val,LinkedResult):
-                return val.__tuple__()
-            return val
+        res = self._get_item(k)
+        if isinstance(res,LinkedResult):
+            return res.__tuple__()
+        return res
 
 
     def stale_check(self,k):
         class InvalidOutCell(KeyError):
             '''Called when an Invalid OutCell is called'''
         if k not in self.code_stale:
-            #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
             raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
 
     def _get_item(self,k):
