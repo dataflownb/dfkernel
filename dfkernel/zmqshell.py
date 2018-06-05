@@ -648,7 +648,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     def get_linked_vars(self, node):
         create_node = True
         append_node = True
-        delnode = False
         vars = []
         unnamed = []
         if isinstance(node, _assign_nodes):
@@ -692,13 +691,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             #elif isinstance(node.value, ast.Expr) or isinstance(node.value,ast.Num):
                 #unnamed.append((0,node.value))
             else:
-                #print(node.value)
-                delnode = True
                 unnamed.append((-1, node.value))
                 #create_node = False
         else:
             create_node = False
-        return vars, unnamed, create_node, append_node, delnode
+        return vars, unnamed, create_node, append_node
 
     def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
@@ -707,7 +704,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         closure = True #FIXME Should this even be a config or default behavior?
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
-            vars, unnamed, create_node, append_node, delnode = self.get_linked_vars(nodelist[-1])
+            vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
             no_link_vars.extend(vars)
             libs = []
 
