@@ -3,6 +3,9 @@ import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
     def __init__(self, __uuid, *args, **kwargs):
+        for kwarg in list(kwargs):
+            if(kwargs[kwarg] == None):
+                del kwargs[kwarg]
         super().__init__(self, *args, **kwargs)
         self.__uuid__ = __uuid
 
@@ -23,7 +26,10 @@ class LinkedResult(OrderedDict):
         return super().__getitem__(item)
 
     def __tuple__(self):
-        return tuple(list(self.values()))
+        vals = list(self.values())
+        if len(vals) > 1:
+            return tuple(vals)
+        return vals[0]
 
     def __sethist__(self,hist):
         self.__dfhist__ = hist

@@ -648,6 +648,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     def get_linked_vars(self, node):
         create_node = True
         append_node = True
+        delnode = False
         vars = []
         unnamed = []
         if isinstance(node, _assign_nodes):
@@ -688,11 +689,16 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     create_node = False
                 else:
                     vars.append(elt.id)
+            #elif isinstance(node.value, ast.Expr) or isinstance(node.value,ast.Num):
+                #unnamed.append((0,node.value))
             else:
-                create_node = False
+                #print(node.value)
+                delnode = True
+                unnamed.append((-1, node.value))
+                #create_node = False
         else:
             create_node = False
-        return vars, unnamed, create_node, append_node
+        return vars, unnamed, create_node, append_node, delnode
 
     def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
@@ -701,7 +707,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         closure = True #FIXME Should this even be a config or default behavior?
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
-            vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
+            vars, unnamed, create_node, append_node, delnode = self.get_linked_vars(nodelist[-1])
             no_link_vars.extend(vars)
 
             if auto_add_libs:
@@ -726,12 +732,18 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         append_node = True
                         vars = list(diff) + vars
 
+            if(len(unnamed)+len(vars) <= 1):
+                create_node = False
+
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in vars]
                 for out in unnamed:
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
-                     keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
+                    if(out[0]>=0):
+                        keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
+                    else:
+                        keywords.append(ast.keyword('Out[' + self.uuid + '][' + str(len(vars))+']',out[1]))
 
 
                 if keep_last_node:
@@ -748,7 +760,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         nnode = ast.Expr(innercall)
 
                 ast.fix_missing_locations(nnode)
-                if append_node:
+                if isinstance(nodelist[-1],ast.Expr):
+                    nodelist[-1] = nnode
+                elif append_node:
                     nodelist.append(nnode)
                 else:
                     nodelist[-1] = nnode
