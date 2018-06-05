@@ -4,7 +4,7 @@ class LinkedResult(OrderedDict):
     __dfhist__ = None
     def __init__(self, __uuid, *args, **kwargs):
         for kwarg in list(kwargs):
-            if(kwargs[kwarg] == None):
+            if(kwargs[kwarg] is None):
                 del kwargs[kwarg]
         super().__init__(self, *args, **kwargs)
         self.__uuid__ = __uuid
