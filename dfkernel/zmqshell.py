@@ -199,7 +199,7 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return build_linked_result(self.shell.uuid,[], **out)
+            return build_linked_result(self.shell.uuid,[],False, **out)
             # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
@@ -735,22 +735,25 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in (libs+vars)]
+                none_flag = bool(len(vars))
                 for out in unnamed:
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
-                    if(out[0]>=0):
-                        keywords.insert(out[0], ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
+                    if(len(unnamed)+len(vars) == 1):
+                        keywords.append(ast.keyword('Out[' + self.uuid + ']', out[1]))
+                    elif(out[0]>=0):
+                        keywords.insert(out[0]+len(libs), ast.keyword('Out[' + self.uuid + '][' + str(out[0])+']',out[1]))
                     else:
                         keywords.append(ast.keyword('Out[' + self.uuid + '][' + str(len(vars))+']',out[1]))
 
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
-                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load())], keywords),
+                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords),
                         nodelist[-1].value],
                     ast.Load()))
                 else:
-                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load())], keywords)
+                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords)
                     if closure:
                         nnode = ast.Return(innercall)
                     else:

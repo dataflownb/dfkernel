@@ -2,10 +2,12 @@ from collections import OrderedDict
 import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
-    def __init__(self, __uuid, __libs, *args, **kwargs):
-        for kwarg in list(kwargs):
-            if(kwargs[kwarg] is None):
-                del kwargs[kwarg]
+    def __init__(self, __uuid, __libs,__none_flag, *args, **kwargs):
+        diff = set(list(kwargs)) - set(list(__libs))
+        if len(diff) <= 1 and not __none_flag:
+            for kwarg in diff:
+                if(kwargs[kwarg] is None):
+                    del kwargs[kwarg]
         super().__init__(self, *args, **kwargs)
         self.__libs__ = __libs
         self.__uuid__ = __uuid
@@ -36,45 +38,11 @@ class LinkedResult(OrderedDict):
         elif len(vals) == 1:
             return vals[0]
         else:
-            #FIXME: I mean if someone really only has libraries in a cell should we prevent them from accessing a tuple of them?
-            return tuple(self.values())
+            return None
 
     def __sethist__(self,hist):
         self.__dfhist__ = hist
 
 
-    # def __setuuid__(self,uuidref):
-    #     self._uuid = uuidref
-
-    # def linked_result(uuid, **kwargs):
-    # res = OrderedDict(**kwargs)
-    # res.__uuid__ = uuid
-    # return res
-
-    # # FIXME need to work within the valid identifiers for namedtuple...
-    # # if '__uuid__' in kwargs:
-    # #     raise ValueError('Cannot name a result "__uuid__"')
-    # res = namedtuple('NamedResult', kwargs.keys())(**kwargs)
-    # res.__uuid__ = uuid
-    # return res
-
-# def build_linked_result(ns, uuid, *args, **kwargs):
-#     print("KWARGS:", kwargs.keys())
-#     if any(ns._is_link(arg) for arg in kwargs):
-#         print("GOT ANY")
-#         if all(ns._is_link(arg) for arg in kwargs):
-#             print("GOT ALL")
-#             if len(kwargs) == 1:
-#                 return ns[next(iter(kwargs.keys()))]
-#             else:
-#                 return tuple(ns[k] for k in kwargs.keys()
-#         else:
-#             print("GOT ANY ELSE")
-#             for arg in kwargs:
-#                 if ns._is_link(arg):
-#                     ns[arg] # raises DuplicateNameError
-#     else:
-#         return LinkedResult(uuid, *args, **kwargs)
-
-def build_linked_result(__uuid,__libs, *args, **kwargs):
-    return LinkedResult(__uuid,__libs, *args, **kwargs)
+def build_linked_result(__uuid,__libs,__none_flag, *args, **kwargs):
+    return LinkedResult(__uuid,__libs,__none_flag, *args, **kwargs)
