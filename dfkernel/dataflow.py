@@ -66,26 +66,6 @@ class DataflowHistoryManager(object):
             self.dep_parents[child].remove(parent)
             self.dep_children[parent].remove(child)
 
-    # returns True if any upstream cell has changed
-    def check_upstream(self, k):
-        class CyclicalCall(KeyError):
-            '''This error results when the call being made is Cyclical'''
-        res = False
-        for cid in self.dep_parents[k]:
-            if(cid in self.dep_children[k]):
-                if(cid == k):
-                    raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
-                    #Should no longer be nessecary
-                    #return False
-                continue
-            if self.check_upstream(cid):
-                res = True
-        if self.is_stale(k) or k not in self.value_cache:
-            res = True
-        if res:
-            self.set_stale(k)
-        # print("CHECK UPSTREAM:", k, res)
-        return res
 
     def all_upstream(self, k):
         visited = set()
@@ -137,6 +117,11 @@ class DataflowHistoryManager(object):
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
+        class CyclicalCall(KeyError):
+            '''This error results when the call being made is Cyclical'''
+        for cid in self.dep_parents[k]:
+            if cid in self.dep_children[k]:
+                raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                      **local_flags)
@@ -160,7 +145,7 @@ class DataflowHistoryManager(object):
         self.update_dependencies(k, self.shell.uuid)
         # check if we need to recompute
         if not self.is_stale(k):
-            # print("  VALUE CACHE") 
+            # print("  VALUE CACHE")
             return self.value_cache[k]
         else:
             # need to re-execute
