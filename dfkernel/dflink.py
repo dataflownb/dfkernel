@@ -20,9 +20,8 @@ class LinkedResult(OrderedDict):
         self.__dfhist__.remove_semantic_dependencies(self.__uuid__, self.__dfhist__.shell.uuid)
 
     def __getitem__(self, item):
-        #print(self.__uuid__,item)
         if isinstance(item,int) and len(self.keys()) > item and item >= 0:
-            item = list(self.keys())[item]
+            item = list(self.keys())[item+len(self.__libs__)]
             self.__update_deps__(item)
         elif item in self:
             self.__update_deps__(item)
@@ -34,7 +33,7 @@ class LinkedResult(OrderedDict):
             if(k not in self.__libs__):
                 vals.append(v)
         if len(vals) > 1:
-            return tuple(vals)
+            return dftuple(self,vals)
         elif len(vals) == 1:
             return vals[0]
         else:
@@ -42,6 +41,14 @@ class LinkedResult(OrderedDict):
 
     def __sethist__(self,hist):
         self.__dfhist__ = hist
+
+class dftuple(tuple):
+    def __new__(self,__linked,*args,**kwargs):
+        self.__ref__ = __linked
+        return super().__new__(self, *args, **kwargs)
+
+    def __getitem__(self, item):
+        return self.__ref__.__getitem__(item)
 
 def build_linked_result(__uuid,__libs,__none_flag, *args, **kwargs):
     return LinkedResult(__uuid,__libs,__none_flag, *args, **kwargs)
