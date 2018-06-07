@@ -630,17 +630,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if store_history:
                 result.internal_nodes = internalnodes
-                result.imm_upstream_deps = self.dataflow_history_manager.get_upstream(uuid)
-                result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
+                result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
+                result.all_upstream_deps = self.dataflow_history_manager.all_semantic_upstream(uuid)
                 result.update_downstreams = []
                 for i in result.imm_upstream_deps:
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
-                result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)
-                result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
+                result.imm_downstream_deps = self.dataflow_history_manager.get_semantic_downstream(uuid)
+                result.all_downstream_deps = self.dataflow_history_manager.all_semantic_downstream(uuid)
                 if(type(result.result).__name__ == 'LinkedResult'):
                     for i in result.result.keys():
-                        result.imm_downstream_deps += self.dataflow_history_manager.get_downstream(uuid+i)
-                        result.all_downstream_deps += self.dataflow_history_manager.all_downstream(uuid+i)
+                        result.imm_downstream_deps += self.dataflow_history_manager.get_semantic_downstream(uuid+i)
+                        result.all_downstream_deps += self.dataflow_history_manager.all_semantic_downstream(uuid+i)
 
 
         return result

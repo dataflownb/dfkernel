@@ -56,17 +56,31 @@ class DataflowHistoryManager(object):
         # dependencies are a DAG
         self.dep_parents = defaultdict(set) # child -> list(parent)
         self.dep_children = defaultdict(set) # parent -> list(child)
+        self.dep_semantic_children = defaultdict(set)
+        self.dep_semantic_parents = defaultdict(set)
         self.last_calculated_ctr = 0
 
     def update_dependencies(self, parent, child):
         self.storeditems.append({'parent':parent,'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
+        self.dep_semantic_parents[child].add(parent)
+        self.dep_semantic_children[parent].add(child)
+
+    def update_semantic_dependencies(self,parent,child):
+        self.dep_semantic_parents[child].add(parent)
+        self.dep_semantic_children[parent].add(child)
 
     def remove_dependencies(self, parent, child):
-        if parent in self.dep_parents[child]:
-            self.dep_parents[child].remove(parent)
-            self.dep_children[parent].remove(child)
+        self.remove_dep(parent,child,self.dep_parents,self.dep_children)
+
+    def remove_semantic_dependencies(self, parent, child):
+        self.remove_dep(parent,child,self.dep_semantic_parents,self.dep_semantic_children)
+
+    def remove_dep(self,parent,child,parents,children):
+        if parent in parents[child]:
+            parents[child].remove(parent)
+            children[parent].remove(child)
 
     # returns True if any upstream cell has changed
     def check_upstream(self, k):
@@ -89,28 +103,40 @@ class DataflowHistoryManager(object):
         # print("CHECK UPSTREAM:", k, res)
         return res
 
+    def all_semantic_upstream(self,k):
+        return self.get_all_upstreams(k,self.dep_semantic_parents)
+
     def all_upstream(self, k):
+        return self.get_all_upstreams(k,self.dep_parents)
+
+    def get_all_upstreams(self,k,dep_parents):
         visited = set()
         res = set()
-        frontier = list(self.dep_parents[k[:6]])
+        frontier = list(dep_parents[k[:6]])
         while len(frontier) > 0:
             cid = frontier.pop(0)[:6]
             visited.add(cid)
             res.add(cid)
-            for pid in self.dep_parents[cid]:
+            for pid in dep_parents[cid]:
                 if pid[:6] not in visited:
                     frontier.append(pid[:6])
         return list(res)
 
-    def all_downstream(self, k):
+    def all_semantic_downstream(self,k):
+        return self.get_all_downstream(k,self.dep_semantic_children)
+
+    def all_downstream(self,k):
+        return self.get_all_downstream(k,self.dep_children)
+
+    def get_all_downstream(self, k,dep_children):
         visited = set()
         res = []
-        frontier = list(self.dep_children[k])
+        frontier = list(dep_children[k])
         while len(frontier) > 0:
             cid = frontier.pop(0)
             visited.add(cid)
             res.append(cid)
-            for pid in self.dep_children[cid]:
+            for pid in dep_children[cid]:
                 if pid not in visited:
                     frontier.append(pid)
         return res
@@ -120,6 +146,12 @@ class DataflowHistoryManager(object):
 
     def get_upstream(self, k):
         return list(self.dep_parents[k])
+
+    def get_semantic_downstream(self, k):
+        return list(self.dep_semantic_children[k])
+
+    def get_semantic_upstream(self, k):
+        return list(self.dep_semantic_parents[k])
 
     def update_downstream(self, k):
         # this recurses via run_cell which checks for the update_downstream_deps
@@ -139,6 +171,12 @@ class DataflowHistoryManager(object):
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
+        class CyclicalCall(KeyError):
+            '''This error results when the call being made is Cyclical'''
+        for cid in self.dep_parents[k]:
+            if cid in self.dep_children[k]:
+                print("zzzz")
+                raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                      **local_flags)
