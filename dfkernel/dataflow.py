@@ -175,7 +175,6 @@ class DataflowHistoryManager(object):
             '''This error results when the call being made is Cyclical'''
         for cid in self.dep_parents[k]:
             if cid in self.dep_children[k]:
-                print("zzzz")
                 raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
