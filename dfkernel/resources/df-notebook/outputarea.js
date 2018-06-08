@@ -11,6 +11,9 @@ define(['jquery',
         function(i18n) {
             OutputArea.output_prompt_function = function (prompt_value, metadata) {
                 if (metadata.output_tag) {
+                    if(metadata.output_tag.substr(0,6) == prompt_value){
+                        return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s][%s]:'), prompt_value,metadata.output_tag.substr(6)));
+                    }
                     return $('<bdi>').text(metadata.output_tag + ':');
                 } else {
                     return $('<bdi>').text(i18n.msg.sprintf(i18n.msg._('Out[%s]:'), prompt_value));
@@ -20,6 +23,9 @@ define(['jquery',
         function(err) {
             OutputArea.output_prompt_function = function (prompt_value, metadata) {
                 if (metadata.output_tag) {
+                    if(metadata.output_tag.substr(0,6) == prompt_value){
+                        return $('<bdi>').text('Out['+prompt_value+']['+metadata.output_tag.substr(6)+']:');
+                    }
                     return $('<bdi>').text(metadata.output_tag + ':');
                 } else {
                     return $('<bdi>').text('Out[' + prompt_value + ']:');

@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple, OrderedDict
+from dfkernel.dflink import LinkedResult
 
 class DataflowHistoryManager(object):
     storeditems = []
@@ -38,6 +39,7 @@ class DataflowHistoryManager(object):
         return (key in self.code_stale and self.code_stale[key])
 
     def update_value(self, key, value):
+
         self.value_cache[key] = value
         self.last_calculated[key] = self.last_calculated_ctr
         self.last_calculated_ctr += 1
@@ -54,41 +56,67 @@ class DataflowHistoryManager(object):
         # dependencies are a DAG
         self.dep_parents = defaultdict(set) # child -> list(parent)
         self.dep_children = defaultdict(set) # parent -> list(child)
+        self.dep_semantic_children = defaultdict(set)
+        self.dep_semantic_parents = defaultdict(set)
         self.last_calculated_ctr = 0
 
     def update_dependencies(self, parent, child):
         self.storeditems.append({'parent':parent,'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
+        self.dep_semantic_parents[child].add(parent)
+        self.dep_semantic_children[parent].add(child)
+
+    def update_semantic_dependencies(self,parent,child):
+        self.dep_semantic_parents[child].add(parent)
+        self.dep_semantic_children[parent].add(child)
 
     def remove_dependencies(self, parent, child):
-        if parent in self.dep_parents[child]:
-            self.dep_parents[child].remove(parent)
-            self.dep_children[parent].remove(child)
+        self.remove_dep(parent,child,self.dep_parents,self.dep_children)
 
+    def remove_semantic_dependencies(self, parent, child):
+        self.remove_dep(parent,child,self.dep_semantic_parents,self.dep_semantic_children)
+
+    def remove_dep(self,parent,child,parents,children):
+        if parent in parents[child]:
+            parents[child].remove(parent)
+            children[parent].remove(child)
+
+
+    def all_semantic_upstream(self,k):
+        return self.get_all_upstreams(k,self.dep_semantic_parents)
 
     def all_upstream(self, k):
+        return self.get_all_upstreams(k,self.dep_parents)
+
+    def get_all_upstreams(self,k,dep_parents):
         visited = set()
         res = set()
-        frontier = list(self.dep_parents[k[:6]])
+        frontier = list(dep_parents[k[:6]])
         while len(frontier) > 0:
             cid = frontier.pop(0)[:6]
             visited.add(cid)
             res.add(cid)
-            for pid in self.dep_parents[cid]:
+            for pid in dep_parents[cid]:
                 if pid[:6] not in visited:
                     frontier.append(pid[:6])
         return list(res)
 
-    def all_downstream(self, k):
+    def all_semantic_downstream(self,k):
+        return self.get_all_downstream(k,self.dep_semantic_children)
+
+    def all_downstream(self,k):
+        return self.get_all_downstream(k,self.dep_children)
+
+    def get_all_downstream(self, k,dep_children):
         visited = set()
         res = []
-        frontier = list(self.dep_children[k])
+        frontier = list(dep_children[k])
         while len(frontier) > 0:
             cid = frontier.pop(0)
             visited.add(cid)
             res.append(cid)
-            for pid in self.dep_children[cid]:
+            for pid in dep_children[cid]:
                 if pid not in visited:
                     frontier.append(pid)
         return res
@@ -98,6 +126,12 @@ class DataflowHistoryManager(object):
 
     def get_upstream(self, k):
         return list(self.dep_parents[k])
+
+    def get_semantic_downstream(self, k):
+        return list(self.dep_semantic_children[k])
+
+    def get_semantic_upstream(self, k):
+        return list(self.dep_semantic_parents[k])
 
     def update_downstream(self, k):
         # this recurses via run_cell which checks for the update_downstream_deps
@@ -135,26 +169,34 @@ class DataflowHistoryManager(object):
 
 
     def __getitem__(self, k):
+        res = self._get_item(k)
+        if isinstance(res,LinkedResult):
+            return res.__tuple__()
+        return res
+
+
+    def stale_check(self,k):
         class InvalidOutCell(KeyError):
             '''Called when an Invalid OutCell is called'''
-        # print("CALLING OUT[{}]".format(k))
         if k not in self.code_stale:
-            #print("Invalid Key: Out['",k,"'] is an Invalid Cell")
             raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
 
+    def _get_item(self,k):
+        self.stale_check(k)
         self.update_dependencies(k, self.shell.uuid)
         # check if we need to recompute
         if not self.is_stale(k):
-            # print("  VALUE CACHE")
             return self.value_cache[k]
         else:
-            # need to re-execute
-            # print("  RE-EXECUTE")
             return self.execute_cell(k)
 
-
     def __setitem__(self, key, value):
-        self.update_value(key, value)
+        class InvalidCellModification(KeyError):
+            '''This error results when another cell tries to modify an Out reference'''
+        if(key == self.shell.uuid):
+            self.update_value(key, value)
+        else:
+            raise InvalidCellModification("Out[" + key + "] can only be modified by it's own cell")
 
     #FIXME
     #Does this function do anything?
@@ -282,11 +324,13 @@ class DataflowNamespace(dict):
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history[cell_id]
+            res = df_history._get_item(cell_id)
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
         return super().__getitem__(k)
+
+
 
         # if k in self.links:
         #     # run the cell at self.links[k]

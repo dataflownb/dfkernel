@@ -1,55 +1,56 @@
 from collections import OrderedDict
-import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
-    def __init__(self, __uuid, *args, **kwargs):
+    def __init__(self, __uuid, __libs,__none_flag, *args, **kwargs):
+        diff = set(list(kwargs)) - set(list(__libs))
+        if len(diff) <= 1 and not __none_flag:
+            for kwarg in diff:
+                if(kwargs[kwarg] is None):
+                    del kwargs[kwarg]
         super().__init__(self, *args, **kwargs)
+        self.__libs__ = __libs
         self.__uuid__ = __uuid
-        #self.__dfhist__ =
 
     def get_uuid(self):
         return self.__uuid__
 
+    def __update_deps__(self,item):
+        self.__dfhist__.update_semantic_dependencies(self.__uuid__ + item, self.__dfhist__.shell.uuid)
+        self.__dfhist__.remove_semantic_dependencies(self.__uuid__, self.__dfhist__.shell.uuid)
+
     def __getitem__(self, item):
-        #print(self.__uuid__,item)
-        if item in self:
-             self.__dfhist__.update_dependencies(self.__uuid__+item, self.__dfhist__.shell.uuid)
-             self.__dfhist__.remove_dependencies(self.__uuid__, self.__dfhist__.shell.uuid)
+        if isinstance(item,int):
+            item = item+len(self.__libs__)
+            if len(self.keys()) > item and item >= 0:
+                item = list(self.keys())[item]
+                self.__update_deps__(item)
+        elif item in self:
+            self.__update_deps__(item)
         return super().__getitem__(item)
+
+    def __tuple__(self):
+        vals = []
+        for k,v in zip(self.keys(),self.values()):
+            if(k not in self.__libs__):
+                vals.append(v)
+        if len(vals) > 1:
+            return dftuple(self,vals)
+        elif len(vals) == 1:
+            return vals[0]
+        else:
+            return None
+
     def __sethist__(self,hist):
         self.__dfhist__ = hist
-    # def __setuuid__(self,uuidref):
-    #     self._uuid = uuidref
 
-    # def linked_result(uuid, **kwargs):
-    # res = OrderedDict(**kwargs)
-    # res.__uuid__ = uuid
-    # return res
 
-    # # FIXME need to work within the valid identifiers for namedtuple...
-    # # if '__uuid__' in kwargs:
-    # #     raise ValueError('Cannot name a result "__uuid__"')
-    # res = namedtuple('NamedResult', kwargs.keys())(**kwargs)
-    # res.__uuid__ = uuid
-    # return res
+class dftuple(tuple):
+    def __new__(self,__linked,*args,**kwargs):
+        self.__ref__ = __linked
+        return super().__new__(self, *args, **kwargs)
 
-# def build_linked_result(ns, uuid, *args, **kwargs):
-#     print("KWARGS:", kwargs.keys())
-#     if any(ns._is_link(arg) for arg in kwargs):
-#         print("GOT ANY")
-#         if all(ns._is_link(arg) for arg in kwargs):
-#             print("GOT ALL")
-#             if len(kwargs) == 1:
-#                 return ns[next(iter(kwargs.keys()))]
-#             else:
-#                 return tuple(ns[k] for k in kwargs.keys()
-#         else:
-#             print("GOT ANY ELSE")
-#             for arg in kwargs:
-#                 if ns._is_link(arg):
-#                     ns[arg] # raises DuplicateNameError
-#     else:
-#         return LinkedResult(uuid, *args, **kwargs)
+    def __getitem__(self, item):
+        return self.__ref__.__getitem__(item)
 
-def build_linked_result(__uuid, *args, **kwargs):
-    return LinkedResult(__uuid, *args, **kwargs)
+def build_linked_result(__uuid,__libs,__none_flag, *args, **kwargs):
+    return LinkedResult(__uuid,__libs,__none_flag, *args, **kwargs)
