@@ -82,26 +82,6 @@ class DataflowHistoryManager(object):
             parents[child].remove(parent)
             children[parent].remove(child)
 
-    # returns True if any upstream cell has changed
-    def check_upstream(self, k):
-        class CyclicalCall(KeyError):
-            '''This error results when the call being made is Cyclical'''
-        res = False
-        for cid in self.dep_parents[k]:
-            if(cid in self.dep_children[k]):
-                if(cid == k):
-                    raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
-                    #Should no longer be nessecary
-                    #return False
-                continue
-            if self.check_upstream(cid):
-                res = True
-        if self.is_stale(k) or k not in self.value_cache:
-            res = True
-        if res:
-            self.set_stale(k)
-        # print("CHECK UPSTREAM:", k, res)
-        return res
 
     def all_semantic_upstream(self,k):
         return self.get_all_upstreams(k,self.dep_semantic_parents)

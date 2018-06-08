@@ -43,6 +43,7 @@ class LinkedResult(OrderedDict):
     def __sethist__(self,hist):
         self.__dfhist__ = hist
 
+
 class dftuple(tuple):
     def __new__(self,__linked,*args,**kwargs):
         self.__ref__ = __linked
