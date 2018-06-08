@@ -1,5 +1,4 @@
 from collections import OrderedDict
-import sys
 class LinkedResult(OrderedDict):
     __dfhist__ = None
     def __init__(self, __uuid, __libs,__none_flag, *args, **kwargs):
