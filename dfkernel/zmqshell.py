@@ -667,7 +667,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         append_node = True
                         libs = list(diff)
 
-            if(len(unnamed)+len(vars)+len(libs) <= 1 and len(vars) < 1):
+            if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
 
             if create_node:
