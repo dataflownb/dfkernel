@@ -349,7 +349,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     def init_magics(self):
         super(ZMQInteractiveShell, self).init_magics()
-        self.register_magics(FunctionMagics)
+        #self.register_magics(FunctionMagics)
         self.register_magics(OutputMagics)
 
     # FIXME hack to be notified of change before it happens?
