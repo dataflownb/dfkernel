@@ -70,7 +70,7 @@ class ZMQDisplayPublisher(ipykernel.zmqshell.ZMQDisplayPublisher):
         content['data'] = encode_images(data)
         content['metadata'] = metadata
         content['transient'] = transient
-        content['execution_count'] = self.get_execution_count()
+        #content['execution_count'] = self.get_execution_count()
 
         msg_type = 'update_display_data' if update else 'display_data'
 
