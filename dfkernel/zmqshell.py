@@ -639,6 +639,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
         closure = True #FIXME Should this even be a config or default behavior?
+        future_elt = False #Flag for determining if there's a __future__ import
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
@@ -647,9 +648,14 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if auto_add_libs:
                 lnames = []
-                for elt in nodelist:
+                for elt in nodelist[:]:
                     if (isinstance(elt, ast.Import) or
                             isinstance(elt,ast.ImportFrom)):
+                        if isinstance(elt, ast.ImportFrom) and elt.module == '__future__':
+                            import copy
+                            future_elt = copy.deepcopy(elt)
+                            nodelist.remove(elt)
+                            continue
                         for name in elt.names:
                             if name.asname:
                                 lnames.append(name.asname)
@@ -710,6 +716,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # also need to pull off the values so they don't recurse on themselves
             if closure:
                 nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                if future_elt:
+                    nodelist = [future_elt] + nodelist
                 for node in nodelist:
                     ast.fix_missing_locations(node)
             interactivity = 'last_expr'
