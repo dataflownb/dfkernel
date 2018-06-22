@@ -653,7 +653,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                             isinstance(elt,ast.ImportFrom)):
                         if isinstance(elt, ast.ImportFrom) and elt.module == '__future__':
                             import copy
-                            future_elt = copy.deepcopy(elt)
+                            if isinstance(future_elt,list):
+                                future_elt.append(copy.deepcopy(elt))
+                            else:
+                                future_elt = [copy.deepcopy(elt)]
                             nodelist.remove(elt)
                             continue
                         for name in elt.names:
@@ -719,7 +722,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             if closure:
                 nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
                 if future_elt:
-                    nodelist = [future_elt] + nodelist
+                    nodelist = future_elt + nodelist
                 for node in nodelist:
                     ast.fix_missing_locations(node)
             interactivity = 'last_expr'
