@@ -648,7 +648,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if auto_add_libs:
                 lnames = []
-                for elt in nodelist[:]:
+                new_node_list = []
+                for elt in nodelist:
                     if (isinstance(elt, ast.Import) or
                             isinstance(elt,ast.ImportFrom)):
                         if isinstance(elt, ast.ImportFrom) and elt.module == '__future__':
@@ -657,16 +658,19 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                                 future_elt.append(copy.deepcopy(elt))
                             else:
                                 future_elt = [copy.deepcopy(elt)]
-                            nodelist.remove(elt)
-                            continue
-                        for name in elt.names:
-                            if name.asname:
-                                lnames.append(name.asname)
-                            else:
-                                if '.' in name.name:
-                                    lnames.append(name.name.split('.',1)[0])
+                        else:
+                            new_node_list.append(elt)
+                            for name in elt.names:
+                                if name.asname:
+                                    lnames.append(name.asname)
                                 else:
-                                    lnames.append(name.name)
+                                    if '.' in name.name:
+                                        lnames.append(name.name.split('.',1)[0])
+                                    else:
+                                        lnames.append(name.name)
+                    else:
+                        new_node_list.append(elt)
+                nodelist = new_node_list
                 if len(lnames) > 0:
                     diff = set(lnames) - set(vars)
                     if len(diff) > 0:
@@ -675,7 +679,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         create_node = True
                         append_node = True
                         libs = list(diff)
-
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
                 if(len(unnamed) < 1):
