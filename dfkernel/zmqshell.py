@@ -669,6 +669,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
+                if(closure and isinstance(nodelist[-1],ast.Expr)):
+                    nnode = ast.Return(nodelist[-1].value)
+                    ast.fix_missing_locations(nnode)
+                    nodelist[-1] = nnode
 
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in (libs+vars)]
@@ -704,10 +708,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 else:
                     nodelist[-1] = nnode
                 # also need to pull off the values so they don't recurse on themselves
-                if closure:
-                    nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
-                    for node in nodelist:
-                        ast.fix_missing_locations(node)
+            if closure:
+                nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                for node in nodelist:
+                    ast.fix_missing_locations(node)
             interactivity = 'last_expr'
 
         # print("DO NOT LINK", no_link_vars)
