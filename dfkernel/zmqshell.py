@@ -675,7 +675,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
-                if(closure and isinstance(nodelist[-1],ast.Expr)):
+                if(len(unnamed) < 1):
+                    closure = False
+                elif(closure and isinstance(nodelist[-1],ast.Expr)):
                     nnode = ast.Return(nodelist[-1].value)
                     ast.fix_missing_locations(nnode)
                     nodelist[-1] = nnode
