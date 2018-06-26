@@ -92,6 +92,13 @@ define([
                 d.was_changed = false;
             }
         });
+        //if there are deleted cells, put it in the code_dict to update the dependencies' links
+        if (this.metadata.deleted_cells_uid && this.metadata.deleted_cells_uid.length > 0) {
+            for(var i = 0;i<this.metadata.deleted_cells_uid.length; i++) {
+                var cell_uuid = this.metadata.deleted_cells_uid.pop();
+                code_dict[cell_uuid] = "";
+            }
+        }
         return code_dict;
     };
 
@@ -288,6 +295,29 @@ define([
             this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
+
+    (function(_super) {
+        Notebook.prototype.delete_cells = function (indices) {
+            //create a list of the deleted cell uuid
+            this.metadata.deleted_cells_uid = [];
+            if (indices === undefined) {
+                indices = this.get_selected_cells_indices();
+            }
+            for (var i=0; i < indices.length; i++) {
+                if (!this.get_cell(indices[i]).is_deletable()) {
+                    // If any cell is marked undeletable, cancel
+                    return this;
+                }
+            }
+            //pass the list of deleted cell uuid into code_dict
+            //so we can clear the links in the kernel
+            for (i=0; i < indices.length; i++) {
+                var cell = this.get_cell(indices[i]);
+                this.metadata.deleted_cells_uid.push(cell.uuid);
+            }
+            return _super.call(this, indices);
+        };
+    }(Notebook.prototype.delete_cells));
 
     return {Notebook: Notebook};
 
