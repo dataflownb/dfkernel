@@ -19,7 +19,13 @@ class DataflowHistoryManager(object):
 
     def update_code(self, key, code):
         # print("CALLING UPDATE CODE", key)
-        if key not in self.code_cache or self.code_cache[key] != code:
+        # if code is empty, remove the code_cache, remove links
+        if code == '':
+            self.code_cache[key] = ''
+            self.value_cache[key] = ''
+            self.shell.user_ns._reset_cell(key)
+            self.set_stale(key)
+        elif key not in self.code_cache or self.code_cache[key] != code:
             self.code_cache[key] = code
             self.set_stale(key)
             self.func_cached[key] = False
