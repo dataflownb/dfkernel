@@ -1,4 +1,5 @@
-define(["jquery",
+define(["require",
+    "jquery",
     "base/js/namespace",
     './df-notebook/depview.js',
     './df-notebook/codecell.js',
@@ -7,15 +8,14 @@ define(["jquery",
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter, depview) {
+    function(require,$, Jupyter, depview) {
+
+        Jupyter._dfkernel_loaded = false;
+
         var onload = function() {
             // reload the notebook after patching code
             var nb = Jupyter.notebook;
             var kernelspec = nb.metadata.kernelspec;
-            if(nb.metadata.interactive){
-                console.log(true);
-                console.log(Jupyter);
-            }
             console.log("NB PATH:", nb.notebook_path);
             console.log("KERNEL SPEC:", kernelspec);
             // FIXME do the kernelspec patch here instead of
@@ -63,8 +63,12 @@ define(["jquery",
             // the kernel was already created, but $.proxy settings will
             // reference old handlers so relink them
             // needed to get execute_input messages
-            nb.session.kernel.init_iopub_handlers();
+            // FIXME: This causes multiple errors in the tests
+            //nb.session.kernel.init_iopub_handlers();
+
+            Jupyter._dfkernel_loaded = true;
         };
 
-        return {onload:onload}
+
+        return {onload:onload};
 });

@@ -38,7 +38,8 @@ casper.notebook_test(function () {
             "msgs = []",
             "def on_msg(msg):",
             "    msgs.append(msg)",
-            "comm.on_msg(on_msg)"
+            "comm.on_msg(on_msg)",
+            "comm,on_msg,msgs"
         ].join('\n'), 'code');
         this.execute_cell(index);
     });
@@ -50,6 +51,7 @@ casper.notebook_test(function () {
             "comm.send(data='message 0', buffers=buffers)",
             "comm.send(data='message 1')",
             "comm.send(data='message 2', buffers=buffers)",
+            "buffers",
         ].join('\n'), 'code');
         this.execute_cell(index);
     });
