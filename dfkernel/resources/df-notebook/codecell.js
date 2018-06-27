@@ -33,7 +33,6 @@ define([
 
     Jupyter._code_cell_loaded = true;
     var CodeCell = codecell.CodeCell;
-    //var Cell = cell.Cell;
 
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
@@ -288,27 +287,13 @@ define([
                     msg.content.update_downstreams.forEach(function (t) {
                         var upcell = Jupyter.notebook.get_code_cell(t['key'].substr(0, 6));
                         if (upcell.cell_imm_downstream_deps) {
-                            upcell.cell_imm_downstream_deps = [].concat(dfutils._toConsumableArray(new Set(upcell.cell_imm_downstream_deps.concat(t['data']))));
+                            upcell.cell_imm_downstream_deps = [].concat(dfutils.toConsumableArray(new Set(upcell.cell_imm_downstream_deps.concat(t['data']))));
                         }
                         else {
                             upcell.cell_imm_downstream_deps = t['data'];
                         }
                     });
                 }
-                // if(that.cell_imm_upstream_deps.length > 1) {
-                //     console.log("Makes it here");
-                //     that.cell_imm_upstream_deps.forEach(function (t) {
-                //         t = t.substr(0,6);
-                //         var upcell = Jupyter.notebook.get_code_cell(t);
-                //         if(upcell.cell_imm_downstream_deps){
-                //             upcell.cell_imm_downstream_deps = [...new Set(upcell.cell_imm_downstream_deps.concat(that.uuid))];
-                //         }
-                //         else{
-                //             upcell.cell_imm_downstream_deps = [that.uuid];
-                //         }
-                //
-                //     });
-                // }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
             _super.apply(cell, arguments);
@@ -388,10 +373,6 @@ define([
             return data;
         }
     }(CodeCell.prototype.toJSON));
-
-    CodeCell.prototype.retTrue = function () {
-        return true;
-    };
 
     return {CodeCell: CodeCell};
 });

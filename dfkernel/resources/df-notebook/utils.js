@@ -40,7 +40,7 @@ define(function() {
       }
     }
 
-    var _toConsumableArray = function(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+    var toConsumableArray = function(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
     var pad_str_left = function(s, len, pad_char) {
         pad_char = (typeof pad_char !== 'undefined') ?  pad_char : "0";
@@ -78,6 +78,7 @@ define(function() {
 
     return {
         pad_str_left: pad_str_left,
+        toConsumableArray: toConsumableArray,
         random_hex_str: random_hex_str,
         rewrite_code_ids: rewrite_code_ids
     };

@@ -98,7 +98,6 @@ define([
     Notebook.prototype.get_cell_output_tags = function(uid) {
         var output_tags = [];
         var cell = this.get_code_cell(uid);
-        console.log(cell);
         if (cell) {
             return cell.output_area.outputs.map(function (d) {
                 if (d.output_type === 'execute_result') {

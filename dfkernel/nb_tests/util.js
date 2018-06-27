@@ -81,14 +81,8 @@ casper.open_new_notebook = function () {
             events.on('kernel_busy.Kernel',function () {
                 IPython._status = 'busy';
             });
-            // nb = IPython.notebook;
-            // nb.contents.get(nb.notebook_path, {type: 'notebook'}).then(
-            //     $.proxy(nb.reload_notebook, nb),
-            //     $.proxy(nb.load_notebook_error, nb)
-            // );
         });
     });
-
 };
 
 casper.page_loaded = function() {
@@ -105,7 +99,7 @@ casper.kernel_running = function() {
         return IPython &&
         IPython.notebook &&
         IPython.notebook.kernel &&
-        IPython.notebook.kernel.is_connected() && Jupyter._dfkernel_loaded;
+        IPython.notebook.kernel.is_connected() && Jupyter._dfkernel_loaded && Jupyter._code_cell_loaded;
     });
 };
 
@@ -294,10 +288,6 @@ casper.insert_cell_at_bottom = function(cell_type){
     // Returns the new cell's index.
     return this.evaluate(function (cell_type) {
         var cell = IPython.notebook.insert_cell_at_bottom(cell_type);
-        var id = IPython.notebook.get_new_id();
-        cell.uuid = id;
-        cell.execution_count = parseInt(cell.uuid,16);
-        //console.log(cell);
         return IPython.notebook.find_cell_index(cell);
     }, cell_type);
 };
@@ -321,9 +311,6 @@ casper.execute_cell = function(index, expect_failure){
     this.then(function(){
         that.evaluate(function (index) {
             var cell = IPython.notebook.get_cell(index);
-            console.log("True: "+true);
-            console.log("Codecell Loaded: "+IPython._code_cell_loaded);
-            //console.log(cell);
             cell.execute();
         }, index);
     });

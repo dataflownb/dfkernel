@@ -1,5 +1,4 @@
-define(["require",
-    "jquery",
+define(["jquery",
     "base/js/namespace",
     './df-notebook/depview.js',
     './df-notebook/codecell.js',
@@ -8,7 +7,7 @@ define(["require",
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function(require,$, Jupyter, depview) {
+    function($, Jupyter, depview) {
 
         Jupyter._dfkernel_loaded = false;
 

@@ -28,9 +28,10 @@ casper.notebook_test(function () {
         var cell = IPython.notebook.get_cell(0);
         var cellplus = IPython.notebook.get_cell(1);
         var cellprint = IPython.notebook.get_cell(2);
+        var finalcell = IPython.notebook.get_cell(3);
         cell.set_text('k=1');
-        cellplus.set_text('k+=1');
-        cellprint.set_text('k*=2')
+        cellplus.set_text('p=2*j+1');
+        cellprint.set_text('j=k+1');
 
         IPython.notebook.kernel.stop_channels();
 
@@ -39,10 +40,13 @@ casper.notebook_test(function () {
         IPython.notebook.execute_cells([0]);
         IPython.notebook.execute_cells([2]);
         IPython.notebook.execute_cells([1]);
+        cellplus.set_text('p=2*j+3');
         IPython.notebook.execute_cells([1]);
+        cellplus.set_text('p=2*j+5');
         IPython.notebook.execute_cells([1]);
-        cellprint.set_text('print(k)')
-        IPython.notebook.execute_cells([2]);
+        finalcell.set_text('print(p)');
+        IPython.notebook.execute_cells([3]);
+
 
         IPython.notebook.kernel.reconnect(1);
     });
@@ -50,7 +54,7 @@ casper.notebook_test(function () {
     this.wait_for_output(2);
 
     this.then(function () {
-        var result = this.get_output_cell(2);
-        this.test.assertEquals(result.text, '5\n', 'kernels send buffered messages in order');
+        var result = this.get_output_cell(3);
+        this.test.assertEquals(result.text, '9\n', 'kernels send buffered messages in order');
     });
 });

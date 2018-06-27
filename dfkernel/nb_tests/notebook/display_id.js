@@ -32,7 +32,7 @@ casper.notebook_test(function () {
             "  else:",
             "    msg_type = 'update_display_data' if update else 'display_data'",
             "  session.send(iopub, msg_type, content, parent=ip.parent_header)",
-            "",//"display_with_id",
+            "display_with_id",
         ].join('\n'));
         cell.execute();
     });
