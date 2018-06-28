@@ -61,10 +61,12 @@ define(["jquery",
                }]);
 
             // the kernel was already created, but $.proxy settings will
-            // reference old handlers so relink them
+            // reference old handlers so relink _handle_input_message
             // needed to get execute_input messages
-            nb.session.kernel.init_iopub_handlers();
+            var k = nb.session.kernel;
+            k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
+
         };
 
-        return {onload:onload}
+        return {onload:onload};
 });
