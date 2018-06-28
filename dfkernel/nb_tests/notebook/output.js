@@ -111,20 +111,31 @@ casper.notebook_test(function () {
         '</svg>"""',
         'SVG(nested_svg)'
         ].join("\n"), [{
-            output_type: "execute_result",
-            data: { 
-            "text/plain" : "<IPython.core.display.SVG object>",
-            "image/svg+xml": [
-              '<svg height="200" width="100" xmlns="http://www.w3.org/2000/svg">',
-              '  <svg x="0">',
-              '    <rect height="80" style="fill: #0000ff" width="80" x="10" y="10"/>',
-              '  </svg>',
-              '  <svg x="100">',
-              '    <rect height="80" style="fill: #00cc00" width="80" x="10" y="10"/>',
-              '  </svg>',
-              '</svg>'].join("\n")
-            },
-        }]
+     "data": {
+      "text/plain": [
+       "IPython.core.display.SVG"
+      ]
+     },
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/svg+xml": [
+       "<svg height=\"100\" width=\"200\" xmlns=\"http://www.w3.org/2000/svg\">\n",
+       "  <svg x=\"0\">\n",
+       "    <rect height=\"80\" style=\"fill: #0000ff\" width=\"80\" x=\"10\" y=\"10\"/>\n",
+       "  </svg>\n",
+       "  <svg x=\"100\">\n",
+       "    <rect height=\"80\" style=\"fill: #00cc00\" width=\"80\" x=\"10\" y=\"10\"/>\n",
+       "  </svg>\n",
+       "</svg>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.SVG object>"
+      ]
+     },
+     "output_type": "execute_result"
+    }]
     );
 
     this.then(function () {

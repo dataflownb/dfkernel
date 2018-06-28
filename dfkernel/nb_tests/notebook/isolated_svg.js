@@ -62,7 +62,8 @@ casper.notebook_test(function () {
 
     // now ensure that we can pass the same metadata dict to plain old display()
     this.thenEvaluate(function () {
-        var cell = IPython.notebook.get_cell(0);
+        var cellid = this.insert_cell_at_bottom()
+        var cell = IPython.notebook.get_cell(cellid);
         cell.clear_output();
         cell.set_text( "from IPython.display import display\n" +
                        "display(SVG(s1), metadata=dict(isolated=True))\n" +

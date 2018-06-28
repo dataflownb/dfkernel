@@ -234,7 +234,7 @@ define([
                     cell.render();
                     that.events.trigger('execute.CodeCell', {cell: cell});
                 }
-            }
+            };
 
             return callbacks;
         }

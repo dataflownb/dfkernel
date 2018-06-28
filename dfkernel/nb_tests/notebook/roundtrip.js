@@ -22,11 +22,11 @@ var svg = "\"<svg width='1cm' height='1cm' viewBox='0 0 1000 500'><defs><style>r
 // helper function to ensure that the short_name is found in the toJSON
 // represetnation, while the original in-memory cell retains its long mimetype
 // name, and that fromJSON also gets its long mimetype name
-function assert_has(short_name, json, result, result2) {
+function assert_has(short_name, json, result, result2,out_idx) {
     var long_name = mime[short_name];
-    this.test.assertFalse(json[0].data.hasOwnProperty(short_name),
+    this.test.assertFalse(json[out_idx].data.hasOwnProperty(short_name),
             "toJSON()   representation doesn't use " + short_name);
-    this.test.assertTrue(json[0].data.hasOwnProperty(long_name),
+    this.test.assertTrue(json[out_idx].data.hasOwnProperty(long_name),
             'toJSON()   representation uses ' + long_name);
     this.test.assertTrue(result.data.hasOwnProperty(long_name),
             'toJSON()   original embedded JSON keeps ' + long_name);
@@ -38,7 +38,7 @@ function assert_has(short_name, json, result, result2) {
 // output_type (either 'execute_result' or 'display_data'), and checks the to/fromJSON
 // for a set of mimetype keys, ensuring the old short names ('javascript', 'text',
 // 'png', etc) are not used.
-function check_output_area(output_type, keys) {
+function check_output_area(output_type, keys,out_idx) {
     this.wait_for_output(0);
     var json = this.evaluate(function() {
         var json = IPython.notebook.get_cell(0).output_area.toJSON();
@@ -48,13 +48,13 @@ function check_output_area(output_type, keys) {
     });
     // The evaluate call above happens asynchronously: wait for cell[1] to have output
     this.wait_for_output(1);
-    var result = this.get_output_cell(0);
-    var result2 = this.get_output_cell(1);
+    out_idx = out_idx || 0;
+    var result = this.get_output_cell(0,out_idx);
+    var result2 = this.get_output_cell(1,out_idx);
     this.test.assertEquals(result.output_type, output_type,
         'testing ' + output_type + ' for ' + keys.join(' and '));
-
     for (var idx in keys) {
-        assert_has.apply(this, [keys[idx], json, result, result2]);
+        assert_has.apply(this, [keys[idx], json, result, result2,out_idx]);
     }
 }
 
@@ -63,8 +63,8 @@ function check_output_area(output_type, keys) {
 // the first one
 function clear_and_execute(that, code) {
     that.evaluate(function() {
-        IPython.notebook.get_cell(0).clear_output();
-        IPython.notebook.get_cell(1).clear_output();
+        IPython.notebook.insert_cell_at_index('code',0);
+        IPython.notebook.insert_cell_at_index('code',0);
     });
     that.then(function () {
         that.set_cell_text(0, code);
@@ -120,7 +120,7 @@ casper.notebook_test(function () {
     });
 
     this.then(function ( ) {
-        check_output_area.apply(this, ['display_data', ['text', 'json']]);
+        check_output_area.apply(this, ['display_data', ['json', 'text']]);
     });
     
     this.then(function() {
@@ -129,12 +129,12 @@ casper.notebook_test(function () {
     });
     
     this.then(function ( ) {
-        check_output_area.apply(this, ['execute_result', ['text', 'latex']]);
+        check_output_area.apply(this, ['execute_result', ['text', 'latex'],1]);
     });
 
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.display import Latex, display; display(Latex('$X^2$'))");
+            "display(Latex('$X^2$'))");
     });
     
     this.then(function ( ) {
@@ -147,23 +147,23 @@ casper.notebook_test(function () {
     });
     
     this.then(function ( ) {
-        check_output_area.apply(this, ['execute_result', ['text', 'html']]);
+        check_output_area.apply(this, ['execute_result', ['text', 'html'],1]);
     });
 
     this.then(function() {
         clear_and_execute(this,
-            "from base64 import b64decode;" + 
-            "black_dot_png = b64decode(" + black_dot_png + ");" + 
-            "black_dot_jpeg = b64decode(" + black_dot_jpeg + ")"
+            "from base64 import b64decode;" +
+            "black_dot_png, black_dot_jpeg = b64decode(" + black_dot_png + ")," +
+            "b64decode(" + black_dot_jpeg + ")"
         );
     });
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.display import HTML, display; display(HTML('<b>it works!</b>'))");
+            "display(HTML('<b>it works!</b>'))");
     });
     
     this.then(function ( ) {
-        check_output_area.apply(this, ['display_data', ['text', 'html']]);
+        check_output_area.apply(this, ['display_data', ['html', 'text']]);
     });
 
 
@@ -174,12 +174,12 @@ casper.notebook_test(function () {
     this.thenEvaluate(function() { IPython.notebook.save_notebook(); });
     
     this.then(function ( ) {
-        check_output_area.apply(this, ['execute_result', ['text', 'png']]);
+        check_output_area.apply(this, ['execute_result', ['text', 'png'],1]);
     });
     
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.display import Image, display; display(Image(black_dot_png))");
+            "display(Image(black_dot_png))");
     });
     
     this.then(function ( ) {
@@ -189,7 +189,7 @@ casper.notebook_test(function () {
 
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.display import Image; Image(black_dot_jpeg, format='jpeg')");
+            "Image(black_dot_jpeg, format='jpeg')");
     });
     
     this.then(function ( ) {
@@ -198,7 +198,7 @@ casper.notebook_test(function () {
     
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.display import Image, display; display(Image(black_dot_jpeg, format='jpeg'))");
+            "display(Image(black_dot_jpeg, format='jpeg'))");
     });
     
     this.then(function ( ) {
@@ -211,12 +211,12 @@ casper.notebook_test(function () {
     });
     
     this.then(function ( ) {
-        check_output_area.apply(this, ['execute_result', ['text', 'svg']]);
+        check_output_area.apply(this, ['execute_result', ['text', 'svg'],1]);
     });
 
     this.then(function() {
         clear_and_execute(this,
-            "from IPython.core.display import SVG, display; display(SVG(" + svg + "))");
+            "display(SVG(" + svg + "))");
     });
     
     this.then(function ( ) {
@@ -231,7 +231,6 @@ casper.notebook_test(function () {
             "x = HTMLFormatter()",
             "x.format_type = 'text/superfancymimetype'",
             "get_ipython().display_formatter.formatters['text/superfancymimetype'] = x",
-            "from IPython.display import HTML, display",
             'display(HTML("yo"))',
             "HTML('hello')"].join('\n')
             );
@@ -242,10 +241,10 @@ casper.notebook_test(function () {
     
     this.then(function () {
         var long_name = 'text/superfancymimetype';
-        var result = this.get_output_cell(0);
+        var result = this.get_output_cell(0,0);
         this.test.assertTrue(result.data.hasOwnProperty(long_name),
             'display_data custom mimetype ' + long_name);
-        result = this.get_output_cell(0, 1);
+        result = this.get_output_cell(0, 2);
         this.test.assertTrue(result.data.hasOwnProperty(long_name),
             'execute_result custom mimetype ' + long_name);
     
