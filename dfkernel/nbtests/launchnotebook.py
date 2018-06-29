@@ -24,8 +24,8 @@ import zmq
 
 import jupyter_core.paths
 from traitlets.config import Config
-from ..notebookapp import NotebookApp
-from ..utils import url_path_join
+from notebook.notebookapp import NotebookApp
+from notebook.utils import url_path_join
 from ipython_genutils.tempdir import TemporaryDirectory
 
 MAX_WAITTIME = 30   # seconds to wait for notebook server to start
