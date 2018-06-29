@@ -293,7 +293,7 @@ class DuplicateNameError(Exception):
         self.cell_id = cell_id
 
     def __str__(self):
-        return f"name '{self.var_name}' has already been defined in In[{self.cell_id}]"
+        return "name '{}' has already been defined in In[{}]".format(self.var_name,self.cell_id)
 
 class DataflowNamespace(dict):
     def __init__(self, *args, **kwargs):
