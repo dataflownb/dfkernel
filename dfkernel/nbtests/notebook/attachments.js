@@ -30,7 +30,7 @@ casper.notebook_test(function () {
     // phantomjs. So we manually set the input's files attribute
     //this.page.uploadFile('.modal-body input[name=file]', 'test.png')
     this.then(function() {
-        var fname = 'dfkernel/nbtest/_testdata/black_square_22.png';
+        var fname = 'dfkernel/nbtests/_testdata/black_square_22.png';
         if (!fs.exists(fname)) {
             this.test.fail(
                 " does not exist, are you running the tests " +
