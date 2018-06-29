@@ -17,7 +17,6 @@ env:
     - PATH=$TRAVIS_BUILD_DIR/pandoc:$PATH
   matrix:
     - GROUP=js/notebook
-    - GROUP=python
     - GROUP=js/base
     - GROUP=js/services
 
@@ -48,7 +47,8 @@ before_install:
         export PATH=$PATH:$PWD/geckodriver
       fi
 install:
-    - pip install --pre .[test]
+    - pip install -e .[test]
+    - python -m dfkernel install --sys-prefix
     - wget https://github.com/jgm/pandoc/releases/download/1.19.1/pandoc-1.19.1-1-amd64.deb && sudo dpkg -i pandoc-1.19.1-1-amd64.deb
 
 
@@ -65,7 +65,7 @@ script:
           true
       fi
     - 'if [[ $GROUP == js* ]]; then travis_retry python -m dfkernel.jstest ${GROUP:3}; fi'
-    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir notebook/tests/selenium --with-coverage --cover-package=notebook notebook; fi'
+    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir dfkernel/nbtest/selenium --with-coverage --cover-package=dfkernel dfkernel; fi'
     - 'if [[ $GROUP == selenium ]]; then py.test -sv notebook/tests/selenium; fi'
     - |
       if [[ $GROUP == docs ]]; then
@@ -77,24 +77,6 @@ script:
         pytest --nbval --current-env docs || EXIT_STATUS=$?
         exit $EXIT_STATUS
       fi
-matrix:
-    include:
-        - python: 3.6
-          env:
-          - GROUP=selenium
-          - JUPYTER_TEST_BROWSER=firefox
-          - MOZ_HEADLESS=1
-          addons:
-            firefox: 57.0
-
-        - python: 3.4
-          env: GROUP=python
-        - python: 3.5
-          env: GROUP=python
-        - python: "3.7-dev"
-          env: GROUP=python
-        - python: 3.6
-          env: GROUP=docs
 
 after_success:
     - codecov
