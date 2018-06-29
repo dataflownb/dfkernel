@@ -27,6 +27,11 @@ define(["jquery",
             // add event to be notified when cells need to be resent to kernel
             nb.events.on('kernel_ready.Kernel', function(event, data) {
                 nb.invalidate_cells();
+                // the kernel was already created, but $.proxy settings will
+                // reference old handlers so relink _handle_input_message
+                // needed to get execute_input messages
+                var k = nb.session.kernel;
+                k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
             });
 
             var depdiv = depview.create_dep_div();
@@ -59,11 +64,7 @@ define(["jquery",
 
                }]);
 
-            // the kernel was already created, but $.proxy settings will
-            // reference old handlers so relink them
-            // needed to get execute_input messages
-            // FIXME: This causes multiple errors in the tests
-            //nb.session.kernel.init_iopub_handlers();
+
 
             Jupyter._dfkernel_loaded = true;
         };
