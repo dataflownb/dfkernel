@@ -1,5 +1,7 @@
-from collections import defaultdict, namedtuple, OrderedDict
+from collections import defaultdict, namedtuple
+from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from dfkernel.dflink import LinkedResult
+import itertools
 
 class DataflowHistoryManager(object):
     storeditems = []
@@ -345,6 +347,19 @@ class DataflowNamespace(dict):
         self.__local_vars__[self.__cur_uuid__][k] = v
         return super().__setitem__(k, v)
 
+    def __contains__(self, k):
+        return super().__contains__(k) or k in self.__links__
+
+    def __delitem__(self, k):
+        # FIXME check if k in self or self.__links__
+        return super().__delitem__(k)
+
+    def __iter__(self):
+        return itertools.chain(super().__iter__(), iter(self.__links__))
+
+    def __len__(self):
+        return super().__len__() + len(self.__links__)
+
     def _add_links(self, tag_dict):
         for (cell_id,tag_list) in tag_dict.items():
             for tag in tag_list:
@@ -392,3 +407,15 @@ class DataflowNamespace(dict):
 
     def _is_external_link(self, k, uuid):
         return k in self.__links__ and self.__links__[k] != uuid
+
+    # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
+    get = MutableMapping.get
+    keys = MutableMapping.keys
+    items = MutableMapping.items
+    values = MutableMapping.values
+    __eq__ = MutableMapping.__eq__
+    pop = MutableMapping.pop
+    popitem = MutableMapping.popitem
+    clear = MutableMapping.clear
+    update = MutableMapping.update
+    setdefault = MutableMapping.setdefault
