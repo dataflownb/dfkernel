@@ -1,10 +1,6 @@
 # http://travis-ci.org/#!/ipython/ipython
 language: python
 
-branches:
-  only:
-  - Tests
-
 cache:
     directories:
         - $HOME/.cache/bower
