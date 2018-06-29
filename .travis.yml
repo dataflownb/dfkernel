@@ -26,7 +26,7 @@ env:
 
 before_install:
     - pip install --upgrade pip
-    - pip install --upgrade setuptools wheel nose coverage codecov
+    - pip install --upgrade setuptools wheel nose nose-exclude coverage codecov
     - nvm install 6.9.2
     - nvm use 6.9.2
     - node --version
