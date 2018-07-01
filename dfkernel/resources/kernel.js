@@ -32,6 +32,7 @@ define(["jquery",
                 // needed to get execute_input messages
                 var k = nb.session.kernel;
                 k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
+                Jupyter._dfkernel_loaded = true;
             });
 
             var depdiv = depview.create_dep_div();
@@ -64,9 +65,6 @@ define(["jquery",
 
                }]);
 
-
-
-            Jupyter._dfkernel_loaded = true;
         };
 
 
