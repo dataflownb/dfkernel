@@ -10,11 +10,9 @@ cache:
         - $HOME/.cache/bower
         - $HOME/.cache/pip
 python:
-    - "3.7-dev"
+    - 3.7
     - 3.6
     - 3.5
-    - 3.4
-    - 3.3
 
 sudo: required
 
@@ -27,6 +25,7 @@ env:
     - GROUP=python
     - GROUP=js/base
     - GROUP=js/services
+    - GROUP=js/dataflow
 
 before_install:
     - pip install --upgrade pip
