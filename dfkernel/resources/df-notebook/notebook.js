@@ -223,25 +223,24 @@ define([
     Notebook.prototype.remap_pasted_ids = function() {
         if (this.clipboard !== null && this.paste_enabled) {
             var remap = {};
+            var copy = $.extend(true, [], this.clipboard);
+            var cell_list = Jupyter.notebook.get_cells().map(function(a,b){return a.uuid});
             var cell_data, i;
             // TODO make copy of the text on the clipboard?
             for (i = 0; i < this.clipboard.length; i++) {
                 cell_data = this.clipboard[i];
-                var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
-                    this.get_default_id_length());
-                if (this.has_id(uuid)) {
-                    // need new id
-                    var new_id = this.get_new_id();
-                    remap[uuid] = new_id;
-                    cell_data.execution_count = new_id;
-                    cell_data.outputs.forEach(function (out) {
-                        if (out.output_type === "execute_result") {
-                            out.execution_count = uuid;
-                        }
-                    });
+                if(cell_data.cell_type == 'code') {
+                    var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
+                        this.get_default_id_length());
+                    if (cell_list.includes(uuid)) {
+                        // need new id
+                        var new_id = this.get_new_id();
+                        remap[uuid] = new_id;
+                        cell_data.execution_count = new_id;
+                        cell_data.outputs = [];
+                    }
                 }
             }
-
             for (i = 0; i < this.clipboard.length; i++) {
                 cell_data = this.clipboard[i];
                 if (cell_data.source !== undefined) {
@@ -249,26 +248,30 @@ define([
                 }
             }
         }
+        return copy;
     };
 
     (function(_super) {
         Notebook.prototype.paste_cell_above = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_above));
 
     (function(_super) {
         Notebook.prototype.paste_cell_below = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_below));
 
     (function(_super) {
         Notebook.prototype.paste_cell_replace = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
 
