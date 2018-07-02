@@ -156,7 +156,7 @@ class OutputMagics(Magics):
         help="""Expression to output"""
     )
 
-    def display(self, line):
+    def display(self, line, local_ns=None):
         args = magic_arguments.parse_argstring(self.display, line)
 
         names = args.names
@@ -180,16 +180,17 @@ class OutputMagics(Magics):
             mode = 'exec'
             source = '<display exec>'
         code = self.shell.compile(expr_ast, source, mode)
+
         glob = self.shell.user_ns
         if mode=='eval':
             try:
-                out = eval(code, glob, self.shell.user_ns)
+                out = eval(code, glob, local_ns)
             except:
                 self.shell.showtraceback()
                 return
         else:
             try:
-                exec(code, glob, self.shell.user_ns)
+                exec(code, glob, local_ns)
             except:
                 self.shell.showtraceback()
                 return
@@ -211,22 +212,24 @@ class OutputMagics(Magics):
             return collections.namedtuple('namedtuple', ' '.join(names))(out)
         return out
 
+    @needs_local_scope
     @line_magic
-    def split_out(self, line):
+    def split_out(self, line, local_ns=None):
         """Takes an output and splits into multiple outputs.
         mapping -> each key-value pair becomes a separate output
         tuple -> each tuple becomes a separate output
         list -> each entry becomes a separate output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
+    @needs_local_scope
     @line_magic
-    def name_out(self, line):
+    def name_out(self, line, local_ns=None):
         """Adds names to an output.
         Mirrors split_out except that this makes sense for a single output.
         object -> adds a name to the output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
 # TODO move to its own package
 def expr2id(node):
