@@ -87,12 +87,13 @@ script:
 matrix:
     include:
         - python: "3.7-dev"
-          env: 
-              matrix:
-                - GROUP=python
-                - GROUP=js/base
-                - GROUP=js/services
-                - GROUP=js/dataflow
-
+          env: GROUP=python
+        - python: "3.7-dev"
+          env: GROUP=js/base
+        - python: "3.7-dev"
+          env: GROUP=js/services
+        - python: "3.7-dev"
+          env: GROUP=js/dataflow
+          
 after_success:
     - codecov
