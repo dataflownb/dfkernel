@@ -14,6 +14,7 @@ casper.notebook_test(function () {
 
     this.wait_for_kernel_ready();
 
+    //By assigning this here we speed up the test slightly by not requiring a later this.then block
     var uuid = '';
 
     this.evaluate(function () {
