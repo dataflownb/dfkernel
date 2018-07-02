@@ -71,8 +71,8 @@ script:
           true
       fi
     - 'if [[ $GROUP == js* ]]; then travis_retry python -m dfkernel.jstest ${GROUP:3}; fi'
-    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir dfkernel/nbtests/selenium --with-coverage --cover-package=dfkernel dfkernel; fi'
-    - 'if [[ $GROUP == selenium ]]; then py.test -sv dfkernel/nbtests/selenium; fi'
+    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir dfkernel/tests/selenium --with-coverage --cover-package=dfkernel dfkernel; fi'
+    - 'if [[ $GROUP == selenium ]]; then py.test -sv dfkernel/tests/selenium; fi'
     - |
       if [[ $GROUP == docs ]]; then
         EXIT_STATUS=0
