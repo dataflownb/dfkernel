@@ -347,6 +347,7 @@ class DataflowNamespace(dict):
         return super().__setitem__(k, v)
 
     def _add_links(self, tag_dict):
+        """Used for adding links of pre-existing links currently only used for cold starts"""
         for (cell_id, tag_list) in tag_dict.items():
             for tag in tag_list:
                 self._add_link(tag, cell_id)
