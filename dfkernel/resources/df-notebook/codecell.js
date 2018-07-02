@@ -248,49 +248,61 @@ define([
             }
             if (cell == this && msg.metadata.status != "error") {
                 var that = this;
-                msg.content.upstream_deps.forEach(function (cid) {
-                    var new_item = $('<li></li>');
-                    var new_ahref = $('<a></a>');
-                    var trailing = '';
-                    if (cid.length > 6) {
-                        trailing = '.' + cid.substr(6);
-                        cid = cid.substr(0, 6);
-                    }
-                    new_ahref.attr('href', '#' + cid);
-                    new_ahref.text("Cell[" + cid + "]" + trailing);
-                    new_ahref.click(function () {
-                        that.notebook.select_by_id(cid);
-                        that.notebook.scroll_to_cell_id(cid);
-                        return false;
+                if('upstream_deps' in msg.content){
+                    msg.content.upstream_deps.forEach(function (cid) {
+                        var new_item = $('<li></li>');
+                        var new_ahref = $('<a></a>');
+                        var trailing = '';
+                        if (cid.length > 6) {
+                            trailing = '.' + cid.substr(6);
+                            cid = cid.substr(0, 6);
+                        }
+                        new_ahref.attr('href', '#' + cid);
+                        new_ahref.text("Cell[" + cid + "]" + trailing);
+                        new_ahref.click(function () {
+                            that.notebook.select_by_id(cid);
+                            that.notebook.scroll_to_cell_id(cid);
+                            return false;
+                        });
+                        new_item.append(new_ahref);
+                        that.cell_upstream_deps.append(new_item);
+                        $('.upstream-deps', that.cell_info_area).show();
                     });
-                    new_item.append(new_ahref);
-                    that.cell_upstream_deps.append(new_item);
-                    $('.upstream-deps', that.cell_info_area).show();
-                });
-                msg.content.downstream_deps.forEach(function (cid) {
-                    var new_item = $('<li></li>');
-                    var new_ahref = $('<a></a>');
-                    new_ahref.attr('href', '#' + cid);
-                    new_ahref.text("Cell[" + cid + "]");
-                    new_ahref.click(function () {
-                        that.notebook.select_by_id(cid);
-                        that.notebook.scroll_to_cell_id(cid);
-                        return false;
+                }
+
+                if('downstream_deps' in msg.content) {
+                    msg.content.downstream_deps.forEach(function (cid) {
+                        var new_item = $('<li></li>');
+                        var new_ahref = $('<a></a>');
+                        new_ahref.attr('href', '#' + cid);
+                        new_ahref.text("Cell[" + cid + "]");
+                        new_ahref.click(function () {
+                            that.notebook.select_by_id(cid);
+                            that.notebook.scroll_to_cell_id(cid);
+                            return false;
+                        });
+                        new_item.append(new_ahref);
+                        that.cell_downstream_deps.append(new_item);
+                        $('.downstream-deps', that.cell_info_area).show();
                     });
-                    new_item.append(new_ahref);
-                    that.cell_downstream_deps.append(new_item);
-                    $('.downstream-deps', that.cell_info_area).show();
-                });
+                }
+
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
-                if ('update_downstreams' in msg.content) {
+
+
+                if (msg.content.update_downstreams) {
                     msg.content.update_downstreams.forEach(function (t) {
-                        var upcell = Jupyter.notebook.get_code_cell(t['key'].substr(0, 6));
-                        if (upcell.cell_imm_downstream_deps) {
-                            upcell.cell_imm_downstream_deps = [].concat(dfutils.toConsumableArray(new Set(upcell.cell_imm_downstream_deps.concat(t['data']))));
-                        }
-                        else {
-                            upcell.cell_imm_downstream_deps = t['data'];
+                        var uuid = t['key'].substr(0, 6);
+                        if(Jupyter.notebook.has_id(uuid) && t.data){
+                            var upcell = Jupyter.notebook.get_code_cell(uuid);
+                            if (upcell.cell_imm_downstream_deps) {
+                                var updated = upcell.cell_imm_downstream_deps.concat(t['data']).reduce(function(a,b){if(!a.indexOf(b)+1){a.push(b);}return a;},[]);
+                                upcell.cell_imm_downstream_deps = updated;
+                            }
+                            else {
+                                upcell.cell_imm_downstream_deps = t['data'];
+                            }
                         }
                     });
                 }
