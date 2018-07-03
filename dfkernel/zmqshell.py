@@ -23,6 +23,7 @@ from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import unicode_type
+from dfkernel.dflink import LinkedResult
 from dfkernel.displayhook import ZMQShellDisplayHook
 from dfkernel.safe_attr import safe_attr
 from traitlets import (
@@ -541,7 +542,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     for j in self.dataflow_history_manager.storeditems:
                         self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
 
-                if (type(result.result).__name__ == 'LinkedResult'):
+                if isinstance(result.result, LinkedResult):
                     result.result.__sethist__(self.dataflow_history_manager)
 
                 self.dataflow_history_manager.storeditems = []
@@ -571,7 +572,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
                 result.imm_downstream_deps = self.dataflow_history_manager.get_semantic_downstream(uuid)
                 result.all_downstream_deps = self.dataflow_history_manager.all_semantic_downstream(uuid)
-                if(type(result.result).__name__ == 'LinkedResult'):
+                if isinstance(result.result, LinkedResult):
                     for i in result.result.keys():
                         result.imm_downstream_deps += self.dataflow_history_manager.get_semantic_downstream(uuid+i)
                         result.all_downstream_deps += self.dataflow_history_manager.all_semantic_downstream(uuid+i)
