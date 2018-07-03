@@ -1,10 +1,6 @@
 # http://travis-ci.org/#!/ipython/ipython
 language: python
 
-branches: 
-  only: 
-  - Tests
-
 cache:
     directories:
         - $HOME/.cache/bower
@@ -101,6 +97,6 @@ matrix:
           env: GROUP=js/services
         - python: "3.7-dev"
           env: GROUP=js/dataflow
-          
+
 after_success:
     - codecov

@@ -30,7 +30,7 @@ define(["jquery",
                 // the kernel was already created, but $.proxy settings will
                 // reference old handlers so relink _handle_input_message
                 // needed to get execute_input messages
-                var k = nb.session.kernel;
+                var k = nb.kernel;
                 k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
                 Jupyter._dfkernel_loaded = true;
             });
@@ -64,9 +64,6 @@ define(["jquery",
                        }
 
                }]);
-
         };
-
-
         return {onload:onload};
 });
