@@ -1,17 +1,12 @@
 # http://travis-ci.org/#!/ipython/ipython
 language: python
 
-branches: 
-  only: 
-  - Tests
-
 cache:
     directories:
         - $HOME/.cache/bower
         - $HOME/.cache/pip
 python:
     - 3.6
-    - 2.7
 
 sudo: required
 
@@ -24,10 +19,11 @@ env:
     - GROUP=python
     - GROUP=js/base
     - GROUP=js/services
+    - GROUP=js/dataflow
 
 before_install:
     - pip install --upgrade pip
-    - pip install --upgrade setuptools wheel nose coverage codecov
+    - pip install --upgrade setuptools wheel nose nose-exclude coverage codecov
     - nvm install 6.9.2
     - nvm use 6.9.2
     - node --version
@@ -70,8 +66,8 @@ script:
           true
       fi
     - 'if [[ $GROUP == js* ]]; then travis_retry python -m dfkernel.jstest ${GROUP:3}; fi'
-    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir dfkernel/nbtest/selenium --with-coverage --cover-package=dfkernel dfkernel; fi'
-    - 'if [[ $GROUP == selenium ]]; then py.test -sv dfkernel/nbtest/selenium; fi'
+    - 'if [[ $GROUP == python ]]; then nosetests -v --exclude-dir dfkernel/tests/selenium --with-coverage --cover-package=dfkernel dfkernel; fi'
+    - 'if [[ $GROUP == selenium ]]; then py.test -sv dfkernel/tests/selenium; fi'
     - |
       if [[ $GROUP == docs ]]; then
         EXIT_STATUS=0
@@ -85,13 +81,22 @@ script:
 
 matrix:
     include:
-        - python: 3.6
-          env:
-          - GROUP=selenium
-          - JUPYTER_TEST_BROWSER=firefox
-          - MOZ_HEADLESS=1
-          addons:
-            firefox: 57.0
+        - python: 3.4
+          env: GROUP=python
+        - python: 3.4
+          env: GROUP=dataflow
+        - python: 3.5
+          env: GROUP=python
+        - python: 3.5
+          env: GROUP=dataflow
+        - python: "3.7-dev"
+          env: GROUP=python
+        - python: "3.7-dev"
+          env: GROUP=js/base
+        - python: "3.7-dev"
+          env: GROUP=js/services
+        - python: "3.7-dev"
+          env: GROUP=js/dataflow
 
 after_success:
     - codecov

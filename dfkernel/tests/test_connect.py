@@ -11,7 +11,7 @@ import nose.tools as nt
 from traitlets.config import Config
 from ipython_genutils.tempdir import TemporaryDirectory, TemporaryWorkingDirectory
 from ipython_genutils.py3compat import str_to_bytes
-from dfkernel import connect
+from ipykernel import connect
 from dfkernel.kernelapp import IPKernelApp
 
 

@@ -46,8 +46,8 @@ define(["jquery",
             depdiv.setAttribute('class','dep-div');
             //This is a very "goofy" way to have to do this, this seems to be evaluated if you make onclick = close_div()
             closebtn.onclick = function() { close_div()};
-            depdiv.append(closebtn);
-            $('body').append(depdiv);
+            depdiv.appendChild(closebtn);
+            document.body.appendChild(depdiv);
             return depdiv;
         };
 

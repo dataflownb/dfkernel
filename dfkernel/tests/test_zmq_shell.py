@@ -75,6 +75,7 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
             pub_socket = self.socket
         )
 
+
     def tearDown(self):
         """
         We need to close the socket in order to proceed with the
