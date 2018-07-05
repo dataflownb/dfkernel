@@ -231,8 +231,13 @@ define([
                 if(cell_data.cell_type == 'code') {
                     var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
                         this.get_default_id_length());
-                    this.undelete_backup_stack = this.undelete_backup_stack.map(function(stack){
-                        stack.cells = stack.cells.filter(function(cell){ return !(cell.execution_count == cell_data.execution_count);});
+                    //FIXME: Will this cause issues with speed?
+                    this.undelete_backup_stack = this.undelete_backup_stack.map(
+                        function(stack){
+                        stack.cells = stack.cells.filter(
+                            function(cell){
+                                return cell.execution_count !== cell_data.execution_count;
+                            });
                         return stack;
                     }).filter(function(stack){
                         return stack.cells.length > 0;
