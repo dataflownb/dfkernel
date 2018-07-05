@@ -154,11 +154,9 @@ class DataflowHistoryManager(object):
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
-        class CyclicalCall(KeyError):
-            '''This error results when the call being made is Cyclical'''
         for cid in self.dep_parents[k]:
             if cid in self.dep_children[k]:
-                raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
+                raise CyclicalCallError(k)
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
@@ -286,6 +284,15 @@ class DataflowFunctionManager(object):
             return next(iter(res.values()))
         return retval
 
+class CyclicalCallError(Exception):
+    """This error results when the call being made is Cyclical"""
+    def __init__(self, cell_id):
+        super().__init__(self)
+        self.cell_id = cell_id
+
+    def __str__(self):
+        return "Out[{}] results in a Cyclical call".format(self.cell_id)
+
 class DuplicateNameError(Exception):
     def __init__(self, var_name, cell_id):
         super().__init__(self)
@@ -325,7 +332,10 @@ class DataflowNamespace(dict):
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history.get_item(cell_id)
+            try:
+                res = df_history.get_item(cell_id)
+            except CyclicalCallError:
+                raise
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
