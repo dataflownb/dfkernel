@@ -231,6 +231,17 @@ define([
                 if(cell_data.cell_type == 'code') {
                     var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
                         this.get_default_id_length());
+                    //FIXME: Will this cause issues with speed?
+                    this.undelete_backup_stack = this.undelete_backup_stack.map(
+                        function(stack){
+                        stack.cells = stack.cells.filter(
+                            function(cell){
+                                return cell.execution_count !== cell_data.execution_count;
+                            });
+                        return stack;
+                    }).filter(function(stack){
+                        return stack.cells.length > 0;
+                    });
                     if (this.get_cells().some(function (d) {return (d.uuid == uuid);}))
                     {
                         // need new id
@@ -247,6 +258,9 @@ define([
                     cell_data.source = dfutils.rewrite_code_ids(cell_data.source, remap);
                 }
             }
+        }
+        if (this.undelete_backup_stack.length === 0) {
+                        $('#undelete_cell').addClass('disabled');
         }
         return copy;
     };

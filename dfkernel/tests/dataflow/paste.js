@@ -1,5 +1,7 @@
 //
 // Test that the paste function only copies outputs as needed
+// Also tests that when a paste is performed that we get rid of
+// any references to the original cell in the undelete stack
 //
 casper.notebook_test(function () {
 
@@ -11,6 +13,16 @@ casper.notebook_test(function () {
         return JSON.parse(outputs_json);
     }
 
+
+    function get_undelete_stack_len(){
+        var undel_stack = casper.evaluate(function()
+        {
+           var undelete_stack = Jupyter.notebook.undelete_backup_stack;
+           return undelete_stack.length;
+        });
+        return undel_stack;
+    }
+
     function get_uuid(cell_idx) {
         var output = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
@@ -18,6 +30,7 @@ casper.notebook_test(function () {
         }, {cell_idx: cell_idx});
         return output;
     }
+
 
     this.wait_for_kernel_ready();
 
@@ -69,6 +82,16 @@ casper.notebook_test(function () {
             this.evaluate(function () {
                 Jupyter.notebook.select(0);
                 Jupyter.notebook.delete_cell();
+            });
+        });
+
+        this.then(function() {
+            var undel_stack_len = get_undelete_stack_len();
+            this.test.assertEquals(undel_stack_len,1,"The undelete stack currently contains the deleted cell");
+        });
+
+        this.then(function(){
+            this.evaluate(function(){
                 Jupyter.notebook.paste_cell_below();
                 Jupyter.notebook.paste_cell_below();
             });
@@ -79,7 +102,9 @@ casper.notebook_test(function () {
             var outputs = get_outputs(1);
             var pasteuuid = get_uuid(1);
             var text = this.get_cell_text(1);
-            this.test.assertEquals(text,"a=3","cell 1 contains the correct text")
+            var undel_stack_len = get_undelete_stack_len();
+            this.test.assertEquals(undel_stack_len,0,"The undelete stack reference to the deleted cell is gone");
+            this.test.assertEquals(text,"a=3","cell 1 contains the correct text");
             this.test.assertEquals(pasteuuid, uuid, 'after deletion cell 1 retains the same uuid');
             this.test.assertEquals(outputs.length, 1, 'after deletion cell 1 has the right number of outputs');
             this.test.assertEquals(outputs[0].data['text/plain'], '3', 'cell 1 produces the correct output');
