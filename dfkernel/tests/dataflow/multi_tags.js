@@ -74,7 +74,6 @@ casper.notebook_test(function () {
     this.evaluate(function () {
         Jupyter.notebook.insert_cell_at_index("code", 3);
         var cell = Jupyter.notebook.get_cell(3);
-        console.log('Out['+uuid+']');
         cell.set_text('Out['+uuid+']');
         cell.execute();
     });
@@ -90,7 +89,6 @@ casper.notebook_test(function () {
     this.evaluate(function () {
         Jupyter.notebook.insert_cell_at_index("code", 4);
         var cell = Jupyter.notebook.get_cell(4);
-        console.log('Out['+uuid+'][0]');
         cell.set_text('Out['+uuid+'][0]');
         cell.execute();
     });
