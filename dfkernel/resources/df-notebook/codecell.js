@@ -273,6 +273,8 @@ define([
                             else {
                                 upcell.cell_imm_downstream_deps = t['data'];
                             }
+                            $(upcell.cell_downstream_deps).empty();
+                            update_df_list(upcell,upcell.cell_imm_downstream_deps,'downstream');
                         }
                     });
                 }
