@@ -8,7 +8,6 @@ import ipykernel.zmqshell
 
 import ast
 import collections
-import copy
 import sys
 
 from IPython.core import magic_arguments
