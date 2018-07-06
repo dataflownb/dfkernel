@@ -388,7 +388,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         """
 
         # print("CODE_DICT:", code_dict)
-        # print("RUNNING CELL", uuid, raw_cell)
+        #print("RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
         self._last_traceback = None
 
@@ -398,6 +398,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
+            if uuid in self.dataflow_history_manager.value_cache and uuid in self.dataflow_history_manager.dep_parents:
+                self.dataflow_history_manager.dep_parents[uuid].clear()
+                self.dataflow_history_manager.dep_semantic_parents[uuid] = {}
             self.dataflow_history_manager.update_flags(
                 store_history=store_history,
                 silent=silent,
@@ -568,14 +571,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_semantic_upstream(uuid)
                 result.update_downstreams = []
-                for i in result.imm_upstream_deps:
+                for i in self.dataflow_history_manager.all_upstream(uuid):
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
                 result.imm_downstream_deps = self.dataflow_history_manager.get_semantic_downstream(uuid)
                 result.all_downstream_deps = self.dataflow_history_manager.all_semantic_downstream(uuid)
-                if isinstance(result.result, LinkedResult):
-                    for i in result.result.keys():
-                        result.imm_downstream_deps += self.dataflow_history_manager.get_semantic_downstream(uuid+i)
-                        result.all_downstream_deps += self.dataflow_history_manager.all_semantic_downstream(uuid+i)
 
 
         return result
