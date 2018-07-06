@@ -246,45 +246,15 @@ define([
             if (!cell) {
                 cell = this;
             }
-            if (cell == this && msg.metadata.status != "error") {
-                var that = this;
+            if (msg.metadata.status != "error") {
+                var that = cell;
+
                 if('upstream_deps' in msg.content){
-                    msg.content.upstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        var trailing = '';
-                        if (cid.length > 6) {
-                            trailing = '.' + cid.substr(6);
-                            cid = cid.substr(0, 6);
-                        }
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]" + trailing);
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_upstream_deps.append(new_item);
-                        $('.upstream-deps', that.cell_info_area).show();
-                    });
+                    update_df_list(cell,msg.content.upstream_deps,'upstream');
                 }
 
                 if('downstream_deps' in msg.content) {
-                    msg.content.downstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]");
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_downstream_deps.append(new_item);
-                        $('.downstream-deps', that.cell_info_area).show();
-                    });
+                    update_df_list(cell,msg.content.downstream_deps,'downstream');
                 }
 
                 that.internal_nodes = msg.content.internal_nodes;
@@ -311,6 +281,35 @@ define([
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));
+
+
+    update_df_list = function (cell,links,mode) {
+        if(mode === 'upstream'){
+            var listobj = cell.cell_upstream_deps;
+            var classinfo = '.upstream-deps'
+        }
+        else if(mode === 'downstream'){
+            var listobj = cell.cell_downstream_deps;
+            var classinfo = '.downstream-deps'
+        }
+
+        links.forEach(function(cid) {
+            cid = cid.substr(0,6);
+            var new_item = $('<li></li>');
+            var new_ahref = $('<a></a>');
+            new_ahref.attr('href', '#' + cid);
+            new_ahref.text("Cell[" + cid + "]");
+            new_ahref.click(function () {
+                cell.notebook.select_by_id(cid);
+                cell.notebook.scroll_to_cell_id(cid);
+                return false;
+            });
+            new_item.append(new_ahref);
+            listobj.append(new_item);
+            $(classinfo, cell.cell_info_area).show();
+        });
+    };
+
 
     (function (_super) {
         CodeCell.prototype.set_input_prompt = function (number) {
