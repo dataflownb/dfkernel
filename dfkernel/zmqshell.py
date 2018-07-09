@@ -390,6 +390,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #print("RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
         self._last_traceback = None
+        old_deps = []
 
         if store_history:
             self.dataflow_history_manager.update_codes(code_dict)
@@ -398,7 +399,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
             if uuid in self.dataflow_history_manager.value_cache and uuid in self.dataflow_history_manager.dep_parents:
-                self.dataflow_history_manager.dep_parents[uuid].clear()
+                old_deps = self.dataflow_history_manager.all_upstream(uuid)
+                for i in list(self.dataflow_history_manager.dep_parents[uuid]):
+                    self.dataflow_history_manager.remove_dependencies(i,uuid)
                 self.dataflow_history_manager.dep_semantic_parents[uuid] = {}
             self.dataflow_history_manager.update_flags(
                 store_history=store_history,
@@ -570,7 +573,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_semantic_upstream(uuid)
                 result.update_downstreams = []
-                for i in self.dataflow_history_manager.all_upstream(uuid):
+                #print("New Deps: ", self.dataflow_history_manager.all_upstream(uuid))
+                #print("Old Deps: ",old_deps)
+                for i in set(self.dataflow_history_manager.all_upstream(uuid)+old_deps):
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
                 result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)
                 result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
