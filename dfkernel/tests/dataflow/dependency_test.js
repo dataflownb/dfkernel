@@ -32,6 +32,15 @@ casper.notebook_test(function () {
         return outputs;
     }
 
+    function get_imm_downstreams(cell_idx) {
+        var outputs = casper.evaluate(function (cell_idx) {
+            var cell = Jupyter.notebook.get_cell(cell_idx);
+            return cell.cell_imm_downstream_deps;
+        }, {cell_idx: cell_idx});
+        return outputs;
+    }
+
+
     this.wait_for_kernel_ready();
 
     this.then(function(){
@@ -101,6 +110,12 @@ casper.notebook_test(function () {
         this.then(function () {
             var outputs = get_outputs(3);
             this.test.assertEquals(outputs[0].data['text/plain'], '20', 'cell 3 produces the correct output');
+            var immdowndeps = get_imm_downstreams(0);
+            this.test.assertEquals(immdowndeps.sort().join(','), ["cccccc"].sort().join(','), "cell 0 produces the correct Immediate Downstream Dependencies");
+            var immdowndeps = get_imm_downstreams(1);
+            this.test.assertEquals(immdowndeps.sort().join(','), ["dddddd"].sort().join(','), "cell 1 produces the correct Immediate Downstream Dependencies");
+            var immdowndeps = get_imm_downstreams(2);
+            this.test.assertEquals(immdowndeps.sort().join(','), ["dddddd"].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
             var immupdeps = get_imm_up_deps(3);
             this.test.assertEquals(immupdeps.sort().join(','), ["bbbbbbbbbbbb", "ccccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
             var allupdeps = get_all_up_deps(3);
@@ -121,7 +136,12 @@ casper.notebook_test(function () {
         this.wait_for_output(3);
 
         this.then(function () {
-
+            var immdowndeps = get_imm_downstreams(0);
+            this.test.assertEquals(immdowndeps, [], "cell 0 produces the correct Immediate Downstream Dependencies");
+            var immdowndeps = get_imm_downstreams(1);
+            this.test.assertEquals(immdowndeps.sort().join(','), ["dddddd"].sort().join(','), "cell 1 produces the correct Immediate Downstream Dependencies");
+            var immdowndeps = get_imm_downstreams(2);
+            this.test.assertEquals(immdowndeps.sort().join(','), ["dddddd"].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
             var outputs = get_outputs(2);
             this.test.assertEquals(outputs[0].data['text/plain'], '4', 'cell 2 produces the correct output');
             var immupdeps = get_imm_up_deps(2);
