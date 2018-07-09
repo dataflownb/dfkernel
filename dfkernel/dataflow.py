@@ -56,7 +56,6 @@ class DataflowHistoryManager(object):
         # dependencies are a DAG
         self.dep_parents = defaultdict(set) # child -> list(parent)
         self.dep_children = defaultdict(set) # parent -> list(child)
-        self.dep_semantic_children = defaultdict(dict)
         self.dep_semantic_parents = defaultdict(dict)
         self.last_calculated_ctr = 0
 
@@ -65,12 +64,10 @@ class DataflowHistoryManager(object):
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
         self.dep_semantic_parents[child][parent] = set([parent])
-        self.dep_semantic_children[parent][child] = set([child])
 
     def update_semantic_dependencies(self, parent, child,item=None):
         if item:
             self.dep_semantic_parents[child][parent].add(item)
-            self.dep_semantic_children[parent][child].add(item)
 
     def remove_dependencies(self, parent, child):
         self.remove_dep(parent, child, self.dep_parents, self.dep_children)
@@ -79,10 +76,8 @@ class DataflowHistoryManager(object):
         if parent in self.dep_semantic_parents[child]:
             if item:
                 self.dep_semantic_parents[child][parent].discard(item)
-                self.dep_semantic_children[parent][child].discard(item)
             else:
                  self.dep_semantic_parents[child][parent].discard(parent)
-                 self.dep_semantic_children[parent][child].discard(child)
 
     @staticmethod
     def remove_dep(parent, child, parents, children):
@@ -114,23 +109,18 @@ class DataflowHistoryManager(object):
                     frontier.append(pid)
         return list(res)
 
-    def all_semantic_downstream(self, k):
-        return self.get_all_downstream(k, True)
 
     def all_downstream(self, k):
-        return self.get_all_downstream(k, False)
+        return self.get_all_downstream(k)
 
-    def get_all_downstream(self, k, semantic=False):
+    def get_all_downstream(self, k):
         visited = set()
-        res = set(self.get_semantic_downstream(k)) if semantic else set()
+        res = set()
         frontier = list(self.dep_children[k])
         while frontier:
             cid = frontier.pop(0)
             visited.add(cid)
-            if semantic:
-                res.update(self.get_semantic_downstream(cid))
-            else:
-                res.add(cid)
+            res.add(cid)
             for pid in self.dep_children[cid]:
                 if pid not in visited:
                     frontier.append(pid)
@@ -141,12 +131,6 @@ class DataflowHistoryManager(object):
 
     def get_upstream(self, k):
         return list(self.dep_parents[k])
-
-    def get_semantic_downstream(self, k):
-        semantic_down = []
-        for key in self.dep_semantic_children[k].keys():
-            semantic_down += [key+item for item in self.dep_semantic_children[k][key]]
-        return semantic_down
 
     def get_semantic_upstream(self, k):
         semantic_up = []
