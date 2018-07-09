@@ -572,8 +572,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.update_downstreams = []
                 for i in self.dataflow_history_manager.all_upstream(uuid):
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
-                result.imm_downstream_deps = self.dataflow_history_manager.get_semantic_downstream(uuid)
-                result.all_downstream_deps = self.dataflow_history_manager.all_semantic_downstream(uuid)
+                result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)
+                result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
 
 
         return result
