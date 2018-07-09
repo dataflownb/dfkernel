@@ -266,13 +266,7 @@ define([
                         var uuid = t['key'].substr(0, 6);
                         if(Jupyter.notebook.has_id(uuid) && t.data){
                             var upcell = Jupyter.notebook.get_code_cell(uuid);
-                            if (upcell.cell_imm_downstream_deps) {
-                                var updated = upcell.cell_imm_downstream_deps.concat(t['data']).reduce(function(a,b){if(!a.indexOf(b)+1){a.push(b);}return a;},[]);
-                                upcell.cell_imm_downstream_deps = updated;
-                            }
-                            else {
-                                upcell.cell_imm_downstream_deps = t['data'];
-                            }
+                            upcell.cell_imm_downstream_deps = t['data'];
                             $(upcell.cell_downstream_deps).empty();
                             update_df_list(upcell,upcell.cell_imm_downstream_deps,'downstream');
                         }
