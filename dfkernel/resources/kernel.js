@@ -8,14 +8,13 @@ define(["jquery",
     './df-notebook/outputarea.js'
     ],
     function($, Jupyter, depview) {
+
+        Jupyter._dfkernel_loaded = false;
+
         var onload = function() {
             // reload the notebook after patching code
             var nb = Jupyter.notebook;
             var kernelspec = nb.metadata.kernelspec;
-            if(nb.metadata.interactive){
-                console.log(true);
-                console.log(Jupyter);
-            }
             console.log("NB PATH:", nb.notebook_path);
             console.log("KERNEL SPEC:", kernelspec);
             // FIXME do the kernelspec patch here instead of
@@ -28,6 +27,12 @@ define(["jquery",
             // add event to be notified when cells need to be resent to kernel
             nb.events.on('kernel_ready.Kernel', function(event, data) {
                 nb.invalidate_cells();
+                // the kernel was already created, but $.proxy settings will
+                // reference old handlers so relink _handle_input_message
+                // needed to get execute_input messages
+                var k = nb.kernel;
+                k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
+                Jupyter._dfkernel_loaded = true;
             });
 
             var depdiv = depview.create_dep_div();
@@ -59,14 +64,6 @@ define(["jquery",
                        }
 
                }]);
-
-            // the kernel was already created, but $.proxy settings will
-            // reference old handlers so relink _handle_input_message
-            // needed to get execute_input messages
-            var k = nb.kernel;
-            k.register_iopub_handler('execute_input', $.proxy(k._handle_input_message, k));
-
         };
-
         return {onload:onload};
 });

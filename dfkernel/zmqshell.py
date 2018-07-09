@@ -70,7 +70,7 @@ class ZMQDisplayPublisher(ipykernel.zmqshell.ZMQDisplayPublisher):
         content['data'] = encode_images(data)
         content['metadata'] = metadata
         content['transient'] = transient
-        content['execution_count'] = self.get_execution_count()
+        #content['execution_count'] = self.get_execution_count()
 
         msg_type = 'update_display_data' if update else 'display_data'
 
@@ -156,7 +156,7 @@ class OutputMagics(Magics):
         help="""Expression to output"""
     )
 
-    def display(self, line, local_ns=None):
+    def display(self, line):
         args = magic_arguments.parse_argstring(self.display, line)
 
         names = args.names
@@ -180,17 +180,16 @@ class OutputMagics(Magics):
             mode = 'exec'
             source = '<display exec>'
         code = self.shell.compile(expr_ast, source, mode)
-
         glob = self.shell.user_ns
         if mode=='eval':
             try:
-                out = eval(code, glob, local_ns)
+                out = eval(code, glob, self.shell.user_ns)
             except:
                 self.shell.showtraceback()
                 return
         else:
             try:
-                exec(code, glob, local_ns)
+                exec(code, glob, self.shell.user_ns)
             except:
                 self.shell.showtraceback()
                 return
@@ -212,24 +211,22 @@ class OutputMagics(Magics):
             return collections.namedtuple('namedtuple', ' '.join(names))(out)
         return out
 
-    @needs_local_scope
     @line_magic
-    def split_out(self, line, local_ns=None):
+    def split_out(self, line):
         """Takes an output and splits into multiple outputs.
         mapping -> each key-value pair becomes a separate output
         tuple -> each tuple becomes a separate output
         list -> each entry becomes a separate output
         """
-        return self.display(line, local_ns)
+        return self.display(line)
 
-    @needs_local_scope
     @line_magic
-    def name_out(self, line, local_ns=None):
+    def name_out(self, line):
         """Adds names to an output.
         Mirrors split_out except that this makes sense for a single output.
         object -> adds a name to the output
         """
-        return self.display(line, local_ns)
+        return self.display(line)
 
 # TODO move to its own package
 def expr2id(node):
@@ -639,6 +636,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
         closure = True #FIXME Should this even be a config or default behavior?
+        future_elt = False #Flag for determining if there's a __future__ import
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
@@ -647,17 +645,29 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             if auto_add_libs:
                 lnames = []
+                new_node_list = []
                 for elt in nodelist:
                     if (isinstance(elt, ast.Import) or
                             isinstance(elt,ast.ImportFrom)):
-                        for name in elt.names:
-                            if name.asname:
-                                lnames.append(name.asname)
+                        if isinstance(elt, ast.ImportFrom) and elt.module == '__future__':
+                            import copy
+                            if isinstance(future_elt,list):
+                                future_elt.append(copy.deepcopy(elt))
                             else:
-                                if '.' in name.name:
-                                    lnames.append(name.name.split('.',1)[0])
+                                future_elt = [copy.deepcopy(elt)]
+                        else:
+                            new_node_list.append(elt)
+                            for name in elt.names:
+                                if name.asname:
+                                    lnames.append(name.asname)
                                 else:
-                                    lnames.append(name.name)
+                                    if '.' in name.name:
+                                        lnames.append(name.name.split('.',1)[0])
+                                    else:
+                                        lnames.append(name.name)
+                    else:
+                        new_node_list.append(elt)
+                nodelist = new_node_list
                 if len(lnames) > 0:
                     diff = set(lnames) - set(vars)
                     if len(diff) > 0:
@@ -666,9 +676,14 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         create_node = True
                         append_node = True
                         libs = list(diff)
-
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
+                if(len(unnamed) < 1):
+                    closure = False
+                elif(closure and isinstance(nodelist[-1],ast.Expr)):
+                    nnode = ast.Return(nodelist[-1].value)
+                    ast.fix_missing_locations(nnode)
+                    nodelist[-1] = nnode
 
             if create_node:
                 keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in (libs+vars)]
@@ -704,10 +719,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 else:
                     nodelist[-1] = nnode
                 # also need to pull off the values so they don't recurse on themselves
-                if closure:
-                    nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
-                    for node in nodelist:
-                        ast.fix_missing_locations(node)
+            if closure:
+                nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                if future_elt:
+                    nodelist = future_elt + nodelist
+                for node in nodelist:
+                    ast.fix_missing_locations(node)
             interactivity = 'last_expr'
 
         # print("DO NOT LINK", no_link_vars)

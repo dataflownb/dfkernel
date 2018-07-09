@@ -21,7 +21,9 @@ define([
             // do with it.
             this.events.trigger('received_unsolicited_message.Kernel', msg);
         }
-        var callback = callbacks.iopub.execute_input;
+        if(callbacks){
+            var callback = callbacks.iopub.execute_input;
+        }
         if (callback) {
             callback(msg);
         }
