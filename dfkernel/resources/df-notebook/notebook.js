@@ -303,17 +303,16 @@ define([
             if (indices === undefined) {
                 indices = this.get_selected_cells_indices();
             }
-            for (var i=0; i < indices.length; i++) {
-                if (!this.get_cell(indices[i]).is_deletable()) {
-                    // If any cell is marked undeletable, cancel
-                    return this;
-                }
-            }
             //pass the list of deleted cell uuid into code_dict
             //so we can clear the links in the kernel
-            for (i=0; i < indices.length; i++) {
+            for (var i=0; i < indices.length; i++) {
                 var cell = this.get_cell(indices[i]);
                 this.metadata.deleted_cells_uid.push(cell.uuid);
+                if (!this.get_cell(indices[i]).is_deletable()) {
+                    // If any cell is marked undeletable, cancel
+                    this.metadata.deleted_cells_uid = [];
+                    return this;
+                }
             }
             return _super.call(this, indices);
         };
