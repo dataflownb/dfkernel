@@ -1,5 +1,5 @@
 //
-// Test DataflowHistoryManager functionality
+// Test DataflowHistoryManager and DataflowNamespace functionality
 //
 casper.notebook_test(function () {
 
@@ -59,7 +59,7 @@ casper.notebook_test(function () {
 
         this.then(function () {
             var outputs = get_outputs(2);
-            this.test.assertEquals(outputs[0].data['text/plain'], 'True', 'cell 1 produces the correct output');
+            this.test.assertEquals(outputs[0].data['text/plain'], 'True', 'cell 2 produces the correct output');
         });
     });
 
@@ -78,4 +78,63 @@ casper.notebook_test(function () {
             this.test.assertEquals(outputs[0].data['text/plain'], '5', 'cell 3 produces the correct output');
         });
     });
+
+    this.then(function () {
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 4);
+            var cell = Jupyter.notebook.get_cell(4);
+            cell.set_text('"a" in _ns');
+            cell.execute();
+        });
+
+        this.wait_for_output(4);
+
+        this.then(function () {
+            var outputs = get_outputs(4);
+            this.test.assertEquals(outputs[0].data['text/plain'], 'True', 'cell 4 produces the correct output');
+        });
+    });
+
+    this.then(function () {
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 5);
+            var cell = Jupyter.notebook.get_cell(5);
+            cell.set_text('c = len(_ns)');
+            cell.execute();
+        });
+
+        this.wait_for_output(5);
+
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 6);
+            var cell = Jupyter.notebook.get_cell(6);
+            cell.set_text('len(_ns)');
+            cell.execute();
+        });
+
+        this.wait_for_output(6);
+
+        this.then(function () {
+            var output1 = get_outputs(5);
+            var output2 = get_outputs(6);
+            this.test.assertEquals(parseInt(output1[0].data['text/plain'])+1, parseInt(output2[0].data['text/plain']), 'The namespace successfully increases in size');
+        });
+    });
+
+    this.then(function () {
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 7);
+            var cell = Jupyter.notebook.get_cell(7);
+            cell.set_text('_ns.get_parent("a")');
+            cell.execute();
+        });
+
+        this.wait_for_output(7);
+
+        this.then(function () {
+            var outputs = get_outputs(7);
+            this.test.assertEquals(outputs[0].data['text/plain'], "'aaaaaa'", 'cell 4 produces the correct output');
+        });
+    });
+
 });
