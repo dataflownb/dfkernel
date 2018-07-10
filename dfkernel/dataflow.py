@@ -327,7 +327,7 @@ class DataflowNamespace(dict):
         # print("__getitem__", k)
         if k not in self.__do_not_link__ and k in self.__links__:
             # print("getting link", k)
-            cell_id = self.__links__[k]
+            cell_id = self.get_parent(k)
             rev_links = self.__rev_links__[cell_id]
             # FIXME think about local variables...
             # FIXME do we need to compute difference first?
@@ -350,6 +350,11 @@ class DataflowNamespace(dict):
         #     pass
         # if k in self:
         #     return super().__getitem__(k)
+
+    def get_parent(self,k):
+        if k in self.__links__:
+            return self.__links__[k]
+        return None
 
     def __setitem__(self, k, v):
         # FIXME question is whether to do this or allow local vars
