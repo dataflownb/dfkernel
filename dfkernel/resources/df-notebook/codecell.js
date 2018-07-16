@@ -242,6 +242,7 @@ define([
 
     (function (_super) {
         CodeCell.prototype._handle_execute_reply = function (msg) {
+            var cc = this;
             var cell = this.notebook.get_code_cell(msg.content.execution_count);
             if (!cell) {
                 cell = this;
@@ -249,28 +250,23 @@ define([
             if (msg.metadata.status != "error") {
                 var that = cell;
 
-                if('upstream_deps' in msg.content){
-                    update_df_list(cell,msg.content.upstream_deps,'upstream');
-                }
+                /** Rename content for general readability*/
+                var nodes = msg.content.nodes;
+                var uplinks = msg.content.links;
+                var cells = msg.content.cells;
+                var downlinks = msg.content.imm_downstream_deps;
+                var all_ups = msg.content.upstream_deps;
+                var internal_nodes = msg.content.internal_nodes;
+                Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
 
-                if('downstream_deps' in msg.content) {
-                    update_df_list(cell,msg.content.downstream_deps,'downstream');
-                }
 
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
 
                 if (msg.content.update_downstreams) {
-                    msg.content.update_downstreams.forEach(function (t) {
-                        var uuid = t['key'].substr(0, 6);
-                        if(Jupyter.notebook.has_id(uuid) && t.data){
-                            var upcell = Jupyter.notebook.get_code_cell(uuid);
-                            upcell.cell_imm_downstream_deps = t['data'];
-                            $(upcell.cell_downstream_deps).empty();
-                            update_df_list(upcell,upcell.cell_imm_downstream_deps,'downstream');
-                        }
-                    });
+                    Jupyter.DfGraph.update_down_links(msg.content.update_downstreams);
+
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
@@ -279,7 +275,7 @@ define([
     }(CodeCell.prototype._handle_execute_reply));
 
 
-    update_df_list = function (cell,links,mode) {
+    CodeCell.prototype.update_df_list = function (cell,links,mode) {
         if(mode === 'upstream'){
             var listobj = cell.cell_upstream_deps;
             var classinfo = '.upstream-deps'
