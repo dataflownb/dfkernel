@@ -96,7 +96,7 @@ casper.notebook_test(function () {
     };
 
     var codeblock = '```\nx = 1```'
-    var result = '<pre><code>x = 1\n</code></pre>'
+    var result = '<pre><code>x = 1</code></pre>'
     md_render_test(codeblock, result, 'Markdown code block no language');
 
     codeblock = '```aaaa\nx = 1\n```'
