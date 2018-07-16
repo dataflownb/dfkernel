@@ -14,6 +14,15 @@ casper.notebook_test(function () {
     function get_all_up_deps(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
+            var childnodes = Jupyter.DfGraph.get_all_upstreams(cell.uuid);
+            return childnodes;
+        }, {cell_idx: cell_idx});
+        return outputs;
+    }
+
+    function get_all_up_dep_text(cell_idx) {
+        var outputs = casper.evaluate(function (cell_idx) {
+            var cell = Jupyter.notebook.get_cell(cell_idx);
             var childnodes = [];
             var children = cell.cell_upstream_deps[0].children;
             for (var i = 0; i < children.length; i++) {
@@ -27,7 +36,7 @@ casper.notebook_test(function () {
     function get_imm_up_deps(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
-            return cell.cell_imm_upstream_deps;
+            return Jupyter.DfGraph.get_upstreams(cell.uuid);
         }, {cell_idx: cell_idx});
         return outputs;
     }
@@ -35,7 +44,7 @@ casper.notebook_test(function () {
     function get_imm_downstreams(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
-            return cell.cell_imm_downstream_deps;
+            return Jupyter.DfGraph.get_downstreams(cell.uuid);
         }, {cell_idx: cell_idx});
         return outputs;
     }
@@ -119,7 +128,7 @@ casper.notebook_test(function () {
             var immupdeps = get_imm_up_deps(3);
             this.test.assertEquals(immupdeps.sort().join(','), ["bbbbbbbbbbbb", "ccccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
             var allupdeps = get_all_up_deps(3);
-            this.test.assertEquals(allupdeps.sort().join(','), ["Cell[aaaaaa]", "Cell[bbbbbb]", "Cell[cccccc]"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
+            this.test.assertEquals(allupdeps.sort().join(','), ["aaaaaa", "bbbbbb", "cccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
         });
     });
     });
@@ -146,14 +155,14 @@ casper.notebook_test(function () {
             this.test.assertEquals(outputs[0].data['text/plain'], '4', 'cell 2 produces the correct output');
             var immupdeps = get_imm_up_deps(2);
             this.test.assertEquals(immupdeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Upstream Dependencies");
-            var allupdeps = get_all_up_deps(2);
+            var allupdeps = get_all_up_dep_text(2);
             this.test.assertEquals(allupdeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Upstream Dependencies");
             var outputs = get_outputs(3);
             this.test.assertEquals(outputs[0].data['text/plain'], '14', 'cell 3 produces the correct output');
             var immupdeps = get_imm_up_deps(3);
             this.test.assertEquals(immupdeps.sort().join(','), ["bbbbbbbbbbbb", "ccccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
             var allupdeps = get_all_up_deps(3);
-            this.test.assertEquals(allupdeps.sort().join(','), ["Cell[bbbbbb]", "Cell[cccccc]"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
+            this.test.assertEquals(allupdeps.sort().join(','), ["bbbbbb", "cccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
 
         });
     });
