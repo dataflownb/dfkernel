@@ -1,13 +1,14 @@
 define(["jquery",
     "base/js/namespace",
     './df-notebook/depview.js',
+    './df-notebook/dfgraph.js',
     './df-notebook/codecell.js',
     './df-notebook/completer.js',
     './df-notebook/kernel.js',
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter, depview) {
+    function($, Jupyter, depview, dfgraph) {
 
         Jupyter._dfkernel_loaded = false;
 
@@ -23,6 +24,8 @@ define(["jquery",
                 $.proxy(nb.reload_notebook, nb),
                 $.proxy(nb.load_notebook_error, nb)
             );
+
+            Jupyter.DfGraph = new dfgraph.DfGraph();
 
             // add event to be notified when cells need to be resent to kernel
             nb.events.on('kernel_ready.Kernel', function(event, data) {
