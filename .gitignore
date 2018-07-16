@@ -3,6 +3,7 @@ build
 cover
 dist
 _build
+node_modules/*
 docs/man/*.gz
 docs/source/api/generated
 docs/source/config/options
