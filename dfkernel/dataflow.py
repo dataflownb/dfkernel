@@ -63,7 +63,8 @@ class DataflowHistoryManager(object):
         self.storeditems.append({'parent':parent, 'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
-        self.dep_semantic_parents[child][parent] = set([parent])
+        if parent not in self.dep_semantic_parents[child]:
+            self.dep_semantic_parents[child][parent] = set([parent])
 
     def update_semantic_dependencies(self, parent, child,item=None):
         if item:
