@@ -569,12 +569,20 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
+                cells = []
+                nodes = []
+                for uid in self.dataflow_history_manager.sorted_keys():
+                    cells.append(uid)
+                    if isinstance(self.dataflow_history_manager.value_cache[uid],LinkedResult):
+                        nodes += [uid+key for key in self.dataflow_history_manager.value_cache[uid].keys()]
+                result.nodes = nodes
+                result.cells = cells
+                result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
                 result.internal_nodes = internalnodes
+
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
-                result.all_upstream_deps = self.dataflow_history_manager.all_semantic_upstream(uuid)
+                result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
                 result.update_downstreams = []
-                #print("New Deps: ", self.dataflow_history_manager.all_upstream(uuid))
-                #print("Old Deps: ",old_deps)
                 for i in set(self.dataflow_history_manager.all_upstream(uuid)+old_deps):
                     result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
                 result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)

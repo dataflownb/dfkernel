@@ -139,6 +139,9 @@ class DataflowHistoryManager(object):
             semantic_up += [key+item for item in self.dep_semantic_parents[k][key]]
         return semantic_up
 
+    def raw_semantic_upstream(self,k):
+        return self.dep_semantic_parents[k]
+
     def update_downstream(self, k):
         # this recurses via run_cell which checks for the update_downstream_deps
         # flag at the end of its run
