@@ -286,7 +286,6 @@ define([
             //set input_changed so that we can load the saved notebook with the colored input field
             this.get_cells().forEach(function (d) {
                 if (d.cell_type === 'code' && d.input.css("background-color") == "rgb(255, 255, 0)") {
-                    console.log("input change here");
                     d.metadata.input_changed = true;
                 }
             });
