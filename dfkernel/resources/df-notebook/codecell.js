@@ -180,6 +180,7 @@ define([
         //reset input field color to white if cell is executed
         if (this.input.css("background-color") == "rgb(255, 255, 0)") {
             this.input.css("backgroundColor", "white");
+            cell.input_changed = false;
         }
         var output_tags = this.notebook.get_output_tags(Object.keys(code_dict));
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
@@ -320,6 +321,7 @@ define([
             //reset input field color to white if cell is executed
             if (cell.input.css("background-color") == "rgb(255, 255, 0)") {
                 cell.input.css("backgroundColor", "white");
+                cell.input_changed = false;
             }
             _super.apply(cell, arguments);
         }
