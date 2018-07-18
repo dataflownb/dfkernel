@@ -192,17 +192,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return reply_content, res
 
-    def do_complete(self, code, cursor_pos):
-        linked_vars = list(self.shell.user_ns.__links__.keys())
-        # print("LINKED VARS:", linked_vars, file=sys.__stdout__)
-        for k in linked_vars:
-            self.shell.user_ns.update({k: None})
-        try:
-            return super().do_complete(code, cursor_pos)
-        finally:
-            for k in linked_vars:
-                self.shell.user_ns.pop(k)
-
 
 # This exists only for backwards compatibility - use IPythonKernel instead
 class Kernel(IPythonKernel):
