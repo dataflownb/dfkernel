@@ -122,6 +122,11 @@ define([
 
             var that = this;
             this.code_mirror.on('change', function () {
+                //set input field background color to "yellow"
+                //only if the input is not empty
+                if (!(that.get_text().trim().length === 0)) {
+                    that.input.css("backgroundColor","yellow");
+                }
                 that.was_changed = true;
             });
 
@@ -172,6 +177,10 @@ define([
         var callbacks = this.get_callbacks();
 
         var code_dict = this.notebook.get_code_dict();
+        //reset input field color to white if cell is executed
+        if (this.input.css("background-color") == "rgb(255, 255, 0)") {
+            this.input.css("backgroundColor", "white");
+        }
         var output_tags = this.notebook.get_output_tags(Object.keys(code_dict));
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
             silent: false, store_history: true,
@@ -308,6 +317,10 @@ define([
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
+            //reset input field color to white if cell is executed
+            if (cell.input.css("background-color") == "rgb(255, 255, 0)") {
+                cell.input.css("backgroundColor", "white");
+            }
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));
@@ -357,7 +370,10 @@ define([
 
 
             _super.call(this, data);
-
+            //we don't want to have all saved cell to have yellow input field
+            if (!this.metadata.input_changed && this.input.css("background-color") == "rgb(255, 255, 0)") {
+                this.input.css("backgroundColor", "white");
+            }
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
