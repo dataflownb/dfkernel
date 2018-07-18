@@ -282,6 +282,19 @@ define([
     }(Notebook.prototype.paste_cell_below));
 
     (function(_super) {
+        Notebook.prototype.save_notebook = function (check_last_modified) {
+            //set input_changed so that we can load the saved notebook with the colored input field
+            this.get_cells().forEach(function (d) {
+                if (d.cell_type === 'code' && d.input.css("background-color") == "rgb(255, 255, 0)") {
+                    console.log("input change here");
+                    d.metadata.input_changed = true;
+                }
+            });
+            return _super.call(this, check_last_modified);
+        };
+    }(Notebook.prototype.save_notebook));
+
+    (function(_super) {
         Notebook.prototype.paste_cell_replace = function () {
             var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
