@@ -21,7 +21,15 @@ class DataflowHistoryManager(object):
         # print("CALLING UPDATE CODE", key)
         # if code is empty, remove the code_cache, remove links
         if code == '':
-            self.value_cache[key] = ''
+            self.set_stale(key)
+            if key in self.value_cache:
+                del self.value_cache[key]
+            for child in self.all_downstream(key):
+                self.remove_dependencies(key, child)
+                self.remove_semantic_dependencies(key, child)
+            for parent in self.all_upstream(key):
+                self.remove_dependencies(key, parent)
+                self.remove_semantic_dependencies(key, parent)
             self.shell.user_ns._reset_cell(key)
         elif key not in self.code_cache or self.code_cache[key] != code:
             # clear out the old __links__ and __rev_links__ (if exist)
@@ -30,8 +38,8 @@ class DataflowHistoryManager(object):
                     del self.shell.user_ns.__links__[tag]
                 del self.shell.user_ns.__rev_links__[key]
             self.func_cached[key] = False
-        self.code_cache[key] = code
-        self.set_stale(key)
+            self.code_cache[key] = code
+            self.set_stale(key)
         
     def update_codes(self, code_dict):
         for key, val in code_dict.items():
