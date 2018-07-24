@@ -95,9 +95,11 @@ define([
         //if there are deleted cells, put it in the code_dict to update the dependencies' links
         if (this.metadata.deleted_cells_uid && this.metadata.deleted_cells_uid.length > 0) {
             for(var i = 0;i<this.metadata.deleted_cells_uid.length; i++) {
-                var cell_uuid = this.metadata.deleted_cells_uid.pop();
+                var cell_uuid = this.metadata.deleted_cells_uid[i];
                 code_dict[cell_uuid] = "";
             }
+            //empty the list when we're done
+            this.metadata.deleted_cells_uid = [];
         }
         return code_dict;
     };
