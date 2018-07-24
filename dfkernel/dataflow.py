@@ -20,10 +20,10 @@ class DataflowHistoryManager(object):
     def update_code(self, key, code):
         # print("CALLING UPDATE CODE", key)
         # if code is empty, remove the code_cache, remove links
-        if code == '':
+        if code == '' and key in self.value_cache:
             self.set_stale(key)
-            if key in self.value_cache:
-                del self.value_cache[key]
+            del self.value_cache[key]
+            del self.code_cache[key]
             for child in self.all_downstream(key):
                 self.remove_dependencies(key, child)
                 self.remove_semantic_dependencies(key, child)
