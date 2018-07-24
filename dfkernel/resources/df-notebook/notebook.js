@@ -301,7 +301,9 @@ define([
     (function(_super) {
         Notebook.prototype.delete_cells = function (indices) {
             //create a list of the deleted cell uuid
-            this.metadata.deleted_cells_uid = [];
+            if( typeof this.metadata.deleted_cells_uid == 'undefined' && !(this.metadata.deleted_cells_uid instanceof Array) ) {
+                this.metadata.deleted_cells_uid = [];
+            }
             if (indices === undefined) {
                 indices = this.get_selected_cells_indices();
             }
