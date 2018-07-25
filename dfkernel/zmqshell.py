@@ -563,6 +563,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
+                result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                self.dataflow_history_manager.deleted_cells = []
                 result.internal_nodes = internalnodes
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_semantic_upstream(uuid)
