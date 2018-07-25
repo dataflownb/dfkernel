@@ -4,6 +4,7 @@ from dfkernel.dflink import LinkedResult
 import itertools
 
 class DataflowHistoryManager(object):
+    deleted_cells = []    
     storeditems = []
     tup_flag = False
 
@@ -31,6 +32,7 @@ class DataflowHistoryManager(object):
                 self.remove_dependencies(key, parent)
                 self.remove_semantic_dependencies(key, parent)
             self.shell.user_ns._reset_cell(key)
+            self.deleted_cells.append(key)
         elif key not in self.code_cache or self.code_cache[key] != code:
             # clear out the old __links__ and __rev_links__ (if exist)
             if self.shell.user_ns.__rev_links__[key]:
