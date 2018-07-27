@@ -125,7 +125,7 @@ define([
                 //set input field background color to "yellow"
                 //only if the input is not empty
                 if (!(that.get_text().trim().length === 0)) {
-                    that.input.css("backgroundColor","yellow");
+                    that.input.css("backgroundColor","rgba(255,255,0,0.2)");
                 }
                 that.was_changed = true;
             });
