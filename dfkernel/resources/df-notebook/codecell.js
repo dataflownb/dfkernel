@@ -44,6 +44,7 @@ define([
             this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
+            this.code_cached = '';
         }
     };
 
@@ -125,8 +126,12 @@ define([
                 //set input field background color to "yellow"
                 //only if the input is not empty
                 if (!(that.get_text().trim().length === 0)) {
-                    that.input.css("backgroundColor","rgba(255,255,0,0.2)");
-                }
+                    if(that.get_text() !== that.code_cached) {
+                        that.input.css("backgroundColor","rgba(255,255,0,0.2)");
+                    }
+                    else if (that.get_text() == that.code_cached) {
+                        that.input.css("backgroundColor","white");
+                    }                }
                 that.was_changed = true;
             });
 
@@ -178,7 +183,7 @@ define([
 
         var code_dict = this.notebook.get_code_dict();
         //reset input field color to white if cell is executed
-        if (this.input.css("background-color") == "rgb(255, 255, 0)") {
+        if (this.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
             this.input.css("backgroundColor", "white");
             cell.input_changed = false;
         }
@@ -190,6 +195,7 @@ define([
                 '__code_dict__': code_dict, '__output_tags__': output_tags
             }
         });
+        this.code_cached = code_dict[this.uuid];
         CodeCell.msg_cells[this.last_msg_id] = this;
         this.render();
         this.events.trigger('execute.CodeCell', {cell: this});
@@ -319,7 +325,7 @@ define([
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
             //reset input field color to white if cell is executed
-            if (cell.input.css("background-color") == "rgb(255, 255, 0)") {
+            if (cell.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
                 cell.input.css("backgroundColor", "white");
                 cell.input_changed = false;
             }
@@ -373,7 +379,7 @@ define([
 
             _super.call(this, data);
             //we don't want to have all saved cell to have yellow input field
-            if (!this.metadata.input_changed && this.input.css("background-color") == "rgb(255, 255, 0)") {
+            if (!this.metadata.input_changed && this.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
                 this.input.css("backgroundColor", "white");
             }
             this.uuid = uuid;
