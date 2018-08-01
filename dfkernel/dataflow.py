@@ -426,7 +426,8 @@ class DataflowNamespace(dict):
         return k in self.__links__ and self.__links__[k] != uuid
 
     # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
-    get = MutableMapping.get
+    # FIXME: Changing get causes strange dependency issues
+    #get = MutableMapping.get
     keys = MutableMapping.keys
     items = MutableMapping.items
     values = MutableMapping.values
