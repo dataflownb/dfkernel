@@ -92,6 +92,26 @@ define([
                 d.was_changed = false;
             }
         });
+        //if there are deleted cells, put it in the code_dict to update the dependencies' links
+        if (this.metadata.hl_list) {
+            for(cell_uuid in this.metadata.hl_list) {
+                code_dict[cell_uuid] = "";
+                var horizontal_line = this.metadata.hl_list[cell_uuid];
+                delete this.metadata.hl_list[cell_uuid];
+                var index = this.find_cell_index(horizontal_line);
+                var ce = this.get_cell_element(index);
+                ce.remove();
+                // make sure that there is a new cell at the bottom
+                if (index === (this.ncells()-1)) {
+                    this.command_mode();
+                    this.insert_cell_below();
+                    this.select(index+1);
+                    this.edit_mode();
+                    this.scroll_to_bottom();
+                    this.set_dirty(true);
+                }
+            }
+        }
         return code_dict;
     };
 
@@ -300,6 +320,137 @@ define([
             this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
+    
+    /**
+     * Delete cells from the notebook
+     *
+     * @param {Array} [indices] - the numeric indices of cells to delete.
+     * @return {Notebook} This notebook
+     */
+    Notebook.prototype.delete_cells = function(indices) {
+        var that = this;
+        //create a list of the horizontal lines for deleted cells
+        if( typeof this.metadata.hl_list == 'undefined' && !(this.metadata.hl_list instanceof Array) ) {
+            this.metadata.hl_list = [];
+        }
+        if (indices === undefined) {
+            indices = this.get_selected_cells_indices();
+        }
+        var undelete_backup = {
+            cells: [],
+            below: false,
+            index: 0,
+        };
+
+        var cursor_ix_before = this.get_selected_index();
+        var deleting_before_cursor = 0;
+        for (var i=0; i < indices.length; i++) {
+            if (!this.get_cell(indices[i]).is_deletable()) {
+                // If any cell is marked undeletable, cancel
+                return this;
+            }
+
+            if (indices[i] < cursor_ix_before) {
+                deleting_before_cursor++;
+            }
+        }
+
+        // If we started deleting cells from the top, the later indices would
+        // get offset. We sort them into descending order to avoid that.
+        indices.sort(function(a, b) {return b-a;});
+        for (i=0; i < indices.length; i++) {
+            var cell = this.get_cell(indices[i]);
+            undelete_backup.cells.push(cell.toJSON());
+            var horizontal_line = that.insert_cell_below("raw",indices[i]);
+            horizontal_line.inner_cell.height(1).css("backgroundColor","red");
+            horizontal_line.inner_cell[0].childNodes[1].remove();
+            //add the horizontal line into hl_list for undeletion
+            this.metadata.hl_list[cell.uuid] = horizontal_line;
+            //undeleted the cell once the corresponding red line is clicked
+            $(horizontal_line.inner_cell).parent().attr('id',cell.uuid).click(function(event) {
+                Jupyter.notebook.undelete_selected_cell(this.id);
+            });
+            this.get_cell_element(indices[i]).remove();
+            this.events.trigger('delete.Cell', {'cell': cell, 'index': indices[i]});
+        }
+
+        var new_ncells = this.ncells();
+        // Always make sure we have at least one cell.
+        if (new_ncells === 0) {
+            this.insert_cell_below('code');
+            new_ncells = 1;
+        }
+
+        var cursor_ix_after = this.get_selected_index();
+        if (cursor_ix_after === null) {
+            // Selected cell was deleted
+            cursor_ix_after = cursor_ix_before - deleting_before_cursor;
+            if (cursor_ix_after >= new_ncells) {
+                cursor_ix_after = new_ncells - 1;
+                undelete_backup.below = true;
+            }
+            this.select(cursor_ix_after);
+        }
+
+        // Check if the cells were after the cursor
+        for (i=0; i < indices.length; i++) {
+            if (indices[i] > cursor_ix_before) {
+                undelete_backup.below = true;
+            }
+        }
+
+        // This will put all the deleted cells back in one location, rather than
+        // where they came from. It will do until we have proper undo support.
+        undelete_backup.index = cursor_ix_after;
+        $('#undelete_cell').removeClass('disabled');
+
+        this.undelete_backup_stack.push(undelete_backup);
+        this.set_dirty(true);
+        return this;
+    };
+
+    //undelete a cell if click on the horizontoal line
+    Notebook.prototype.undelete_selected_cell = function(uuid) {
+        var i ,j , cell_data, new_cell, insert;
+        insert = $.proxy(this.insert_cell_below, this);
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                cell_data = this.undelete_backup_stack[i].cells[j];
+                if (cell_data.execution_count.toString(16) == uuid) {
+                    //get the clicked horizontal_line
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    delete this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    //undelete the corresponding cell
+                    new_cell = insert(cell_data.cell_type, index);
+                    new_cell.fromJSON(cell_data);
+                    //remove the horizontal line
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    this.undelete_backup_stack[i].cells.splice(j,1);
+                }
+            }
+        }
+        this.set_dirty(true);
+    };
+
+    (function(_super) {
+        Notebook.prototype.undelete_cell = function () {
+            var j = this.undelete_backup_stack.length - 1
+            var length = this.undelete_backup_stack[j].cells.length;
+            for(i=0; i<length ; i++) {
+                var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                //remove the corresponding horizontal line if exist
+                if (this.metadata.hl_list[uuid]) {
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                }
+            }
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.undelete_cell));
 
     return {Notebook: Notebook};
 
