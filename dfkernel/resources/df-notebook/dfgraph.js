@@ -156,9 +156,16 @@ define([
     /** @method returns upstreams for a cell with a given uuid */
     DfGraph.prototype.get_upstreams = function(uuid){
         var that = this;
-        return Object.keys(that.uplinks[uuid]).map(function (uplink) {
-           return that.uplinks[uuid][uplink].map(function (item){ return uplink+item;})
-        });
+        return Object.keys(that.uplinks[uuid]).reduce(function (arr,uplink) {
+           var links = that.uplinks[uuid][uplink].map(function (item){
+               return uplink === item ? item : uplink+item;}) || [];
+            return arr.concat(links);
+        },[]);
+    };
+
+    /** @method returns single cell based upstreams for a cell with a given uuid */
+    DfGraph.prototype.get_imm_upstreams = function(uuid){
+        return Object.keys(this.uplinks[uuid]);
     };
 
     /** @method returns downstreams for a cell with a given uuid */
