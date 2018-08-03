@@ -32,7 +32,7 @@ class LinkedResult(OrderedDict):
 
     def __tuple__(self):
         vals = []
-        for key, val in zip(self.keys(), self.values()):
+        for key, val in self.items():
             if key not in self.__libs__:
                 vals.append(val)
         if len(vals) > 1:
