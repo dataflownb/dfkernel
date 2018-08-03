@@ -1,13 +1,13 @@
 """Replacements for ipykernel.displayhook."""
 
 
-from ipykernel.displayhook import ZMQShellDisplayHook as ipyShellDispHook
+from ipykernel.displayhook import ZMQShellDisplayHook as ipyZMQShellDisplayHook
 from ipykernel.displayhook import sys, ZMQDisplayHook
 from ipykernel.jsonutil import encode_images, json_clean
 
 from dfkernel.dflink import LinkedResult
 
-class ZMQShellDisplayHook(ipyShellDispHook):
+class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
     def get_execution_count(self):
         raise NotImplementedError()
 
