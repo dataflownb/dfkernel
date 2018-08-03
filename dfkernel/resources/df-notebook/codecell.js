@@ -44,6 +44,7 @@ define([
             this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
+            this.had_error = false;
         }
     };
 
@@ -200,18 +201,18 @@ define([
 
         function handleFinished(evt, data) {
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
-                that.events.trigger('finished_execute.CodeCell', {cell: that});
-                that.events.off('finished_iopub.Kernel', handleFinished);
-                var errflag = true;
+                var errflag = false;
                 (that.output_area.outputs).forEach(function (out) {
                     if (out.output_type == "error") {
-                        errflag = false;
+                        errflag = true;
                     }
                 });
-                //console.log(errflag)
-                if (errflag) {
+                that.had_error = errflag;
+                if (! errflag) {
                     that.update_last_executed();
                 }
+                that.events.trigger('finished_execute.CodeCell', {cell: that});
+                that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
 
