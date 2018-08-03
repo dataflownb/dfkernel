@@ -64,6 +64,7 @@ define(["jquery",
                        }
 
                }]);
+               $('head').append('<link rel="stylesheet" type="text/css" href="df-notebook/icon.css">');
         };
         return {onload:onload};
 });

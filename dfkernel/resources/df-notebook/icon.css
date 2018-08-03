@@ -1,0 +1,16 @@
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+.newCell::before {
+    content: url(http://icons.iconarchive.com/icons/graphicloads/100-flat/256/home-icon.png);
+}
+.error::before{
+   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+}
+.executing::before{
+   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+}
+.success::before {
+    content: url(http://icons.iconarchive.com/icons/graphicloads/100-flat/256/home-icon.png);
+}
+.edited::before{
+   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+}
