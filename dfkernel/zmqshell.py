@@ -573,8 +573,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 nodes = []
                 for uid in self.dataflow_history_manager.sorted_keys():
                     cells.append(uid)
-                    if isinstance(self.dataflow_history_manager.value_cache[uid],LinkedResult):
-                        nodes += [uid+key for key in self.dataflow_history_manager.value_cache[uid].keys()]
+                if uuid in self.dataflow_history_manager.value_cache:
+                    if(self.dataflow_history_manager.value_cache[uuid] is not None):
+                        nodes.append('Out_'+uuid+'')
+                    if isinstance(self.dataflow_history_manager.value_cache[uuid], LinkedResult):
+                        nodes = list(self.dataflow_history_manager.value_cache[uuid].keys())
                 result.nodes = nodes
                 result.cells = cells
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)

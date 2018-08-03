@@ -25,7 +25,8 @@ define([
          * The DfGraph which contains all the link information between cells
          *
          * Parameters:
-         *  nodes: A list of all cells in a notebook
+         *  cells: A list of all cells in the notebook
+         *  nodes: A list of nodes in the notebook
          *      The nodes don't have to be set at creation time,
          *      they will be set as an empty list and will be set on later execution.
          *  links: A list of all the links between dependencies
@@ -53,7 +54,7 @@ define([
     DfGraph.prototype.update_graph = function(cells,nodes,uplinks,downlinks,uuid,all_ups,internal_nodes){
         var that = this;
         that.cells = cells;
-        that.nodes = nodes;
+        that.nodes[uuid] = nodes || [];
         if(uuid in that.uplinks){
             Object.keys(that.uplinks[uuid]).forEach(function (uplink) {
                 that.downlinks[uplink] = []
@@ -170,10 +171,20 @@ define([
         return this.internal_nodes[uuid];
     };
 
-    /** @method returns all nodes in the graph */
-    DfGraph.prototype.get_nodes = function(){
-        return this.nodes;
+    /** @method returns all nodes for a cell*/
+    DfGraph.prototype.get_nodes = function(uuid){
+        var that = this;
+        if(that.nodes[uuid].length > 0){
+            return that.nodes[uuid];
+        }
+        return [];
     };
+
+    /** @method returns all cells on kernel side*/
+    DfGraph.prototype.get_cells = function(){
+        return this.cells;
+    };
+
 
     return {'DfGraph': DfGraph};
 });
