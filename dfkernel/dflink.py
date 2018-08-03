@@ -36,7 +36,7 @@ class LinkedResult(OrderedDict):
             if key not in self.__libs__:
                 vals.append(val)
         if len(vals) > 1:
-            return DfTuple(self, vals)
+            return DFTuple(self, vals)
         elif len(vals) == 1:
             return vals[0]
         return None
@@ -45,7 +45,7 @@ class LinkedResult(OrderedDict):
         self.__dfhist__ = hist
 
 
-class DfTuple(tuple):
+class DFTuple(tuple):
     def __new__(self, __linked, *args, **kwargs):
         self.__ref__ = __linked
         return super().__new__(self, *args, **kwargs)
