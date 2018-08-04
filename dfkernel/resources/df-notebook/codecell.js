@@ -45,6 +45,7 @@ define([
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
             this.code_cached = '';
+            this.metadata.cell_status = 0;
         }
     };
 
@@ -125,13 +126,65 @@ define([
             this.code_mirror.on('change', function () {
                 //set input field background color to "yellow"
                 //only if the input is not empty
-                if (!(that.get_text().trim().length === 0)) {
-                    if(that.get_text() !== that.code_cached) {
-                        that.input.css("backgroundColor","rgba(255,255,0,0.2)");
+                if(that.get_text() !== that.code_cached) {
+                    that.input[0].childNodes[0].setAttribute("class","edited");
+                    // 0 is new cell
+                    // 1 is edited from new cell
+                    // 2 is success, convert to 9 on save, on 1st change back to 6
+                    // 3 is edited from success
+                    // 4 is error, convert to 10 on save, edited 11, back to 10
+                    // 5 is edited from error
+                    // 6 is success cell after loaded from saved notebook
+                    // 7 is edited from 6
+                    // 8 is executing
+                    // 9 is for saved success used for loading saved notebook
+                    // 10 is for saved error used for loading saved notebook
+                    // 11 is saved error cell, yellow times circle
+                    switch(that.metadata.cell_status) {
+                        case 0:
+                        case 11:
+                            that.metadata.cell_status = 1;
+                            break;
+                        case 2:
+                            that.metadata.cell_status = 3;
+                            break;
+                        case 4:
+                            that.metadata.cell_status = 5;
+                            break;
+                        case 6:
+                            that.metadata.cell_status = 7;
+                            break;
+                        case 9:
+                            that.metadata.cell_status = 6;
+                            that.input[0].childNodes[0].setAttribute("class","saved_success_cell");
+                            break;
+                        case 10:
+                            that.metadata.cell_status = 11;
+                            that.input[0].childNodes[0].setAttribute("class","saved_error_cell");
+                            break;
                     }
-                    else if (that.get_text() == that.code_cached) {
-                        that.input.css("backgroundColor","white");
-                    }                }
+                }
+                else if (that.get_text() == that.code_cached || that.get_text().trim().length === 0) {
+                    switch(that.metadata.cell_status) {
+                        case 0:
+                        case 1:
+                            that.input[0].childNodes[0].setAttribute("class","newCell");
+                            that.metadata.cell_status = 0;
+                            break;
+                        case 3:
+                            that.input[0].childNodes[0].setAttribute("class","success");
+                            that.metadata.cell_status = 2;
+                            break;
+                        case 5:
+                            that.input[0].childNodes[0].setAttribute("class","error");
+                            that.metadata.cell_status = 4;
+                            break;
+                        case 7:
+                            that.input[0].childNodes[0].setAttribute("class","saved_success_cell");
+                            that.metadata.cell_status = 6;
+                            break;
+                    }
+                }
                 that.was_changed = true;
             });
 
@@ -167,9 +220,15 @@ define([
         if (this.get_text().trim().length === 0) {
             // nothing to do
             this.set_input_prompt(null);
+            this.input[0].childNodes[0].setAttribute("class","");
+            if (this.metadata.cell_status == 0) {
+                this.metadata.cell_status = 2;
+                this.input[0].childNodes[0].setAttribute("class","success");
+            }
             return;
         }
-        this.set_input_prompt('*');
+        this.input[0].childNodes[0].setAttribute("class","executing");
+        this.metadata.cell_status = 8;
         this.element.addClass("running");
 
         if (!("last_executed_i" in this.notebook.session)) {
@@ -182,11 +241,7 @@ define([
         var callbacks = this.get_callbacks();
 
         var code_dict = this.notebook.get_code_dict();
-        //reset input field color to white if cell is executed
-        if (this.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
-            this.input.css("backgroundColor", "white");
-            cell.input_changed = false;
-        }
+        this.code_cached = code_dict[this.uuid];
         var output_tags = this.notebook.get_output_tags(Object.keys(code_dict));
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
             silent: false, store_history: true,
@@ -195,7 +250,6 @@ define([
                 '__code_dict__': code_dict, '__output_tags__': output_tags
             }
         });
-        this.code_cached = code_dict[this.uuid];
         CodeCell.msg_cells[this.last_msg_id] = this;
         this.render();
         this.events.trigger('execute.CodeCell', {cell: this});
@@ -219,7 +273,9 @@ define([
                 }
             }
         }
-
+        //set input field icon to success if cell is executed
+        this.input[0].childNodes[0].setAttribute("class","success");
+        this.metadata.cell_status = 2;
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
@@ -245,7 +301,8 @@ define([
                 var cell = that.notebook.get_code_cell(cid);
                 if (cell) {
                     cell.clear_output_imm(false, true);
-                    cell.set_input_prompt('*');
+                    cell.input[0].childNodes[0].setAttribute("class","executing");
+                    cell.metadata.cell_status = 8;
                     cell.element.addClass("running");
                     cell.render();
                     that.events.trigger('execute.CodeCell', {cell: cell});
@@ -323,11 +380,14 @@ define([
                     });
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
+                //set input field icon to success if cell is executed
+                cell.input[0].childNodes[0].setAttribute("class","success");
+                cell.metadata.cell_status = 2;
             }
-            //reset input field color to white if cell is executed
-            if (cell.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
-                cell.input.css("backgroundColor", "white");
-                cell.input_changed = false;
+            else if(cell == this && msg.metadata.status == "error") {
+                //set input field icon to error if cell returns error
+                cell.input[0].childNodes[0].setAttribute("class","error");
+                cell.metadata.cell_status = 4;
             }
             _super.apply(cell, arguments);
         }
@@ -378,9 +438,29 @@ define([
 
 
             _super.call(this, data);
-            //we don't want to have all saved cell to have yellow input field
-            if (!this.metadata.input_changed && this.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
-                this.input.css("backgroundColor", "white");
+            switch(this.metadata.cell_status) {
+                case 0:
+                    this.input[0].childNodes[0].setAttribute("class","newCell");
+                    break;
+                case 1:
+                case 3:
+                case 5:
+                case 7:
+                case 8:
+                    this.input[0].childNodes[0].setAttribute("class","edited");
+                    break;
+                case 2:
+                    this.input[0].childNodes[0].setAttribute("class","newCell");
+                case 4:
+                    this.input[0].childNodes[0].setAttribute("class","error");
+                    break;
+                case 6:
+                    this.input[0].childNodes[0].setAttribute("class","saved_success_cell");
+                    this.metadata.cell_status = 6;
+                    break;
+                case 11:
+                    this.input[0].childNodes[0].setAttribute("class","saved_error_cell");
+                    break;
             }
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
