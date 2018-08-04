@@ -305,8 +305,12 @@ define([
         Notebook.prototype.save_notebook = function (check_last_modified) {
             //set input_changed so that we can load the saved notebook with the colored input field
             this.get_cells().forEach(function (d) {
-                if (d.cell_type === 'code' && d.input.css("background-color") == "rgba(255, 255, 0, 0.2)") {
-                    d.metadata.input_changed = true;
+                if (d.cell_type === 'code') {
+                    if(d.metadata.cell_status == 2) {
+                        d.metadata.cell_status = 9;
+                    } else if(d.metadata.cell_status == 4) {
+                        d.metadata.cell_status = 10;
+                    }
                 }
             });
             return _super.call(this, check_last_modified);
