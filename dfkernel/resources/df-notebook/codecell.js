@@ -46,6 +46,7 @@ define([
             this.cell_downstream_deps = null;
             this.code_cached = '';
             this.metadata.cell_status = 0;
+            this.had_error = false;
         }
     };
 
@@ -199,6 +200,21 @@ define([
         };
     }(CodeCell.prototype.create_element));
 
+    CodeCell.prototype.update_last_executed = function() {
+        var output_tags = this.notebook.get_cell_output_tags(this.uuid);
+        if (output_tags.length === 0) {
+            this.notebook.session.last_executed.unshift('Out[' + this.uuid+ ']');
+        } else if (output_tags.length === 1) {
+            this.notebook.session.last_executed.unshift(output_tags[0]);
+        } else {
+            this.notebook.session.last_executed.unshift('(' + output_tags.join(',') + ')');
+        }
+        if (this.notebook.session.last_executed.length > this.notebook.session.last_executed_num) {
+            this.notebook.session.last_executed.pop();
+        }
+    };
+
+
     CodeCell.prototype.execute = function (stop_on_error) {
         if (!this.kernel) {
             console.log("Can't execute cell since kernel is not set.");
@@ -231,12 +247,10 @@ define([
         this.metadata.cell_status = 8;
         this.element.addClass("running");
 
-        if (!("last_executed_i" in this.notebook.session)) {
-            this.notebook.session.last_executed_iii = null;
-            this.notebook.session.last_executed_ii = null;
-            this.notebook.session.last_executed_i = null;
+        if (!("last_executed" in this.notebook.session)) {
+            this.notebook.session.last_executed = [];
+            this.notebook.session.last_executed_num = 3;
         }
-
 
         var callbacks = this.get_callbacks();
 
@@ -257,20 +271,18 @@ define([
 
         function handleFinished(evt, data) {
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
-                that.events.trigger('finished_execute.CodeCell', {cell: that});
-                that.events.off('finished_iopub.Kernel', handleFinished);
-                var errflag = true;
+                var errflag = false;
                 (that.output_area.outputs).forEach(function (out) {
                     if (out.output_type == "error") {
-                        errflag = false;
+                        errflag = true;
                     }
                 });
-                //console.log(errflag)
-                if (errflag) {
-                    that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;
-                    that.notebook.session.last_executed_ii = that.notebook.session.last_executed_i;
-                    that.notebook.session.last_executed_i = that.uuid;
+                that.had_error = errflag;
+                if (! errflag) {
+                    that.update_last_executed();
                 }
+                that.events.trigger('finished_execute.CodeCell', {cell: that});
+                that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
         //set input field icon to success if cell is executed
