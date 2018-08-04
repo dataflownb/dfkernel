@@ -64,7 +64,7 @@ define(["jquery",
                        }
 
                }]);
-               $('head').append('<link rel="stylesheet" type="text/css" href="df-notebook/icon.css">');
+               $('head').append('<link rel="stylesheet" type="text/css" href="dfkernel/resources/df-notebook/icon.css">');
         };
         return {onload:onload};
 });

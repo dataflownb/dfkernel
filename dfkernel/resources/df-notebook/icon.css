@@ -1,16 +1,21 @@
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
 .newCell::before {
-    content: url(http://icons.iconarchive.com/icons/graphicloads/100-flat/256/home-icon.png);
+    content: url(./img/fa/plus-circle.svg);
 }
 .error::before{
-   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+    content: url(./img/fa/times-circle.svg);
 }
 .executing::before{
-   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+    content: url(./img/fa/clock.svg);
 }
 .success::before {
-    content: url(http://icons.iconarchive.com/icons/graphicloads/100-flat/256/home-icon.png);
+    content: url(./img/fa/check-circle.svg);
 }
 .edited::before{
-   content: url(http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/sign-check-icon.png);
+    content: url(./img/fa/exclamation-circle.svg);
+}
+.saved_success_cell::before{
+    content: url(./img/fa/check-circle-yellow.svg);
+}
+.saved_error_cell::before{
+    content: url(./img/fa/times-circle-yellow.svg);
 }
