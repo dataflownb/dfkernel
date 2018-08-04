@@ -452,6 +452,17 @@ define([
         };
     }(Notebook.prototype.undelete_cell));
 
+    (function(_super) {
+        Notebook.prototype.insert_cell_at_index = function (type,index) {
+            var cell = _super.call(this, type,index);
+            if (cell.cell_type == "code") {
+                cell.cell_status = 0;
+                cell.input[0].childNodes[0].setAttribute("class","newCell");
+            }
+            return cell;
+        };
+    }(Notebook.prototype.insert_cell_at_index));
+
     return {Notebook: Notebook};
 
 });
