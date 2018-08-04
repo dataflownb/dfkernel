@@ -16,17 +16,12 @@ casper.notebook_test(function () {
 
     this.evaluate(function () {
         Jupyter.notebook.insert_cell_at_index("code", 0);
-        Jupyter.notebook.insert_cell_at_index("code", 1);
-        var cell0 = Jupyter.notebook.get_cell(0);
-        var cell1 = Jupyter.notebook.get_cell(1);
-        cell0.set_text('c,d = 5,6');
-        cell1.set_text('a,b= 3,4');
-        cell0.execute();
-        cell1.execute();
+        var cell = Jupyter.notebook.get_cell(0);
+        cell.set_text('c,d = 5,6');
+        cell.execute();
     });
 
     this.wait_for_output(0);
-    this.wait_for_output(1);
 
     this.then(function () {
         this.evaluate(function () {
@@ -42,8 +37,10 @@ casper.notebook_test(function () {
 
     this.then(function () {
         var outputs = get_outputs(1);
-        this.test.assertEquals(outputs[0].data['text/plain'], '1', 'cell 2 produces the correct output, cell deletion works successfully');
-        this.test.assertEquals(outputs[0].metadata.output_tag, 'c', 'cell 2 has the correct output_tag');
+        this.test.assertEquals(outputs[0].data['text/plain'], '1', 'cell 1 produces the correct first output, cell deletion works successfully');
+        this.test.assertEquals(outputs[0].metadata.output_tag, 'c', 'cell 1 has the correct first output_tag');
+        this.test.assertEquals(outputs[1].data['text/plain'], '2', 'cell 1 produces the correct second output, cell deletion works successfully');
+        this.test.assertEquals(outputs[1].metadata.output_tag, 'd', 'cell 1 has the correct second output_tag');
 
     });
 
