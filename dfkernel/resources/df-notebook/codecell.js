@@ -164,6 +164,13 @@ define([
                             that.input[0].childNodes[0].setAttribute("class","saved_error_cell");
                             break;
                     }
+                    for(var i = 0;i<that.cell_imm_downstream_deps.length;i++) {
+                        var cell = Jupyter.notebook.get_code_cell(that.cell_imm_downstream_deps[i]);
+                        if (cell.metadata.cell_status == 2) {
+                            cell.metadata.cell_status = 3;
+                            cell.input[0].childNodes[0].setAttribute("class","edited");
+                        }
+                    }
                 }
                 else if (that.get_text() == that.code_cached || that.get_text().trim().length === 0) {
                     switch(that.metadata.cell_status) {
@@ -184,6 +191,13 @@ define([
                             that.input[0].childNodes[0].setAttribute("class","saved_success_cell");
                             that.metadata.cell_status = 6;
                             break;
+                    }
+                    for(var i = 0;i<that.cell_imm_downstream_deps.length;i++) {
+                        var cell = Jupyter.notebook.get_code_cell(that.cell_imm_downstream_deps[i]);
+                        if (cell.metadata.cell_status == 3) {
+                            cell.metadata.cell_status = 2;
+                            cell.input[0].childNodes[0].setAttribute("class","success");
+                        }
                     }
                 }
                 that.was_changed = true;
@@ -343,8 +357,13 @@ define([
                 var all_ups = msg.content.upstream_deps;
                 var internal_nodes = msg.content.internal_nodes;
                 Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
-
-
+                for(var i = 0; i < all_ups.length; i++) {
+                    var upcell = Jupyter.notebook.get_code_cell(all_ups[i]);
+                    for(var j =i+1; j < all_ups.length; j++) {
+                        upcell.cell_imm_downstream_deps[j-1-i] = all_ups[j];
+                    }
+                    upcell.cell_imm_downstream_deps[all_ups.length - 1] = that.uuid;
+                }
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
