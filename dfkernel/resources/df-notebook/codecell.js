@@ -37,7 +37,7 @@ define([
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
-            this.was_changed = true;
+            this.kernel_notified = true;
             this.internal_nodes = [];
             this.cell_info_area = null;
             this.cell_imm_upstream_deps = [];
@@ -199,7 +199,7 @@ define([
                         }
                     }
                 }
-                that.was_changed = true;
+                that.kernel_notified = true;
             });
 
             this.create_df_info();
@@ -489,7 +489,7 @@ define([
             aname.attr('name', this.uuid);
             this.element.append(aname);
             this.set_input_prompt();
-            this.was_changed = true;
+            this.kernel_notified = true;
 
         };
     }(CodeCell.prototype.fromJSON));

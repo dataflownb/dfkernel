@@ -87,9 +87,9 @@ define([
     Notebook.prototype.get_code_dict = function () {
         var code_dict = {};
         this.get_cells().forEach(function (d) {
-            if (d.cell_type === 'code' && d.was_changed) {
+            if (d.cell_type === 'code' && d.kernel_notified) {
                 code_dict[d.uuid] = d.get_text();
-                d.was_changed = false;
+                d.kernel_notified = false;
             }
         });
         //if there are deleted cells, put it in the code_dict to update the dependencies' links
@@ -168,7 +168,7 @@ define([
     Notebook.prototype.invalidate_cells = function() {
         this.get_cells().forEach(function (d) {
             if (d.cell_type == 'code') {
-                d.was_changed = true;
+                d.kernel_notified = true;
             }
         });
     };
