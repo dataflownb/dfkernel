@@ -1,0 +1,37 @@
+.dataflow-toolbar-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.dependency-area {
+    display: block;
+    width: 50%;
+}
+
+.celltoolbar {
+    height: auto;
+}
+
+/* css overflow by Josh Crozier
+https://stackoverflow.com/questions/34519511/smart-overflow-in-html-is-there-any-way-to-put-ellipsis-with-a-link-at#answer-34519915
+*/
+.smart-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.ellipsis-link {
+  display: none;
+}
+.smart-overflow a.ellipsis-link {
+  display: block;
+  position: relative;
+  right: 0; bottom: 0;
+  width: 1.2em;
+  height: 100%;
+  cursor: pointer;
+}
