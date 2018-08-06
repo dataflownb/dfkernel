@@ -93,22 +93,24 @@ define([
             }
         });
         //if there are deleted cells, put it in the code_dict to update the dependencies' links
-        if (this.metadata.hl_list) {
-            for(cell_uuid in this.metadata.hl_list) {
-                code_dict[cell_uuid] = "";
-                var horizontal_line = this.metadata.hl_list[cell_uuid];
-                delete this.metadata.hl_list[cell_uuid];
-                var index = this.find_cell_index(horizontal_line);
-                var ce = this.get_cell_element(index);
-                ce.remove();
-                // make sure that there is a new cell at the bottom
-                if (index === (this.ncells()-1)) {
-                    this.command_mode();
-                    this.insert_cell_below();
-                    this.select(index+1);
-                    this.edit_mode();
-                    this.scroll_to_bottom();
-                    this.set_dirty(true);
+        if (this.metadata.hl_list && Object.keys(this.metadata.hl_list).length !== 0) {
+            for(var cell_uuid in this.metadata.hl_list) {
+                if(this.metadata.hl_list.hasOwnProperty(cell_uuid)) {
+                    code_dict[cell_uuid] = "";
+                    var horizontal_line = this.metadata.hl_list[cell_uuid];
+                    delete this.metadata.hl_list[cell_uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    // make sure that there is a new cell at the bottom
+                    if (index === (this.ncells()-1)) {
+                        this.command_mode();
+                        this.insert_cell_below();
+                        this.select(index+1);
+                        this.edit_mode();
+                        this.scroll_to_bottom();
+                        this.set_dirty(true);
+                    }
                 }
             }
         }
@@ -434,6 +436,7 @@ define([
                     var index = this.find_cell_index(horizontal_line);
                     var ce = this.get_cell_element(index);
                     ce.remove();
+                    delete this.metadata.hl_list[uuid];
                 }
             }
             _super.apply(this, arguments);
