@@ -46,7 +46,6 @@ define([
             this.cell_downstream_deps = null;
             this.code_cached = '';
             this.metadata.cell_status = 0;
-            this.had_error = false;
         }
     };
 
@@ -184,7 +183,7 @@ define([
                             that.metadata.cell_status = 2;
                             break;
                         case 5:
-                            that.input[0].childNodes[0].setAttribute("class","error");
+                            that.input[0].childNodes[0].setAttribute("class","errorCell");
                             that.metadata.cell_status = 4;
                             break;
                         case 7:
@@ -379,7 +378,7 @@ define([
             }
             else if(cell == this && msg.metadata.status == "error") {
                 //set input field icon to error if cell returns error
-                cell.input[0].childNodes[0].setAttribute("class","error");
+                cell.input[0].childNodes[0].setAttribute("class","errorCell");
                 cell.metadata.cell_status = 4;
             }
             _super.apply(cell, arguments);
@@ -474,7 +473,7 @@ define([
                 case 2:
                     this.input[0].childNodes[0].setAttribute("class","newCell");
                 case 4:
-                    this.input[0].childNodes[0].setAttribute("class","error");
+                    this.input[0].childNodes[0].setAttribute("class","errorCell");
                     break;
                 case 6:
                     this.input[0].childNodes[0].setAttribute("class","saved_success_cell");

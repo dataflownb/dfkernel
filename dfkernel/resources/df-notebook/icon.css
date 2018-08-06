@@ -1,7 +1,7 @@
 .newCell::before {
     content: url(./img/fa/plus-circle.svg);
 }
-.error::before{
+.errorCell::before{
     content: url(./img/fa/times-circle.svg);
 }
 .executing::before{
