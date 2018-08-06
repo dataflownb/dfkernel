@@ -443,6 +443,25 @@ define([
         };
     }(Notebook.prototype.undelete_cell));
 
+    (function(_super) {
+        Notebook.prototype.merge_cells = function (indices,into_last) {
+            _super.apply(this,arguments);
+            for (var i=0; i < indices.length; i++) {
+                var ce = this.get_cell_element(indices[i]);
+                ce.remove();
+                delete this.metadata.hl_list[ce[0].id];
+            }
+        };
+    }(Notebook.prototype.merge_cells));
+
+    /**
+     * Merge the selected cell into the cell below it.
+     */
+    Notebook.prototype.merge_cell_below = function () {
+        var index = this.get_selected_index();
+        this.merge_cells([index, index+1], true);
+    };
+
     return {Notebook: Notebook};
 
 });
