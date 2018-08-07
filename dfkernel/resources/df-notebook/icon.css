@@ -1,6 +1,9 @@
 .newCell::before {
     content: url(./img/fa/plus-circle.svg);
 }
+.editedNewCell::before {
+    content: url(./img/fa/plus-circle-yellow.svg);
+}
 .errorCell::before{
     content: url(./img/fa/times-circle.svg);
 }

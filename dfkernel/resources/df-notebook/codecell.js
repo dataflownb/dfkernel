@@ -142,13 +142,14 @@ define([
                     // 11 is saved error cell, yellow times circle
                     switch(that.metadata.cell_status) {
                         case 0:
-                        case 11:
                             that.metadata.cell_status = 1;
+                            that.input[0].childNodes[0].setAttribute("class","editedNewCell");
                             break;
                         case 2:
                             that.metadata.cell_status = 3;
                             break;
                         case 4:
+                        case 11:
                             that.metadata.cell_status = 5;
                             break;
                         case 6:
