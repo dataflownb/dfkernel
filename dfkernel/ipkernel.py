@@ -144,6 +144,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if res.success:
             print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
             reply_content[u'status'] = u'ok'
+            reply_content[u'nodes'] = res.nodes
+            reply_content[u'links'] = res.links
+            reply_content[u'cells'] = res.cells
+
             reply_content[u'upstream_deps'] = res.all_upstream_deps
             reply_content[u'downstream_deps'] = res.all_downstream_deps
             reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
