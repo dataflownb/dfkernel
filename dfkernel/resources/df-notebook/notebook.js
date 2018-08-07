@@ -97,20 +97,22 @@ define([
             for(var cell_uuid in this.metadata.hl_list) {
                 if(this.metadata.hl_list.hasOwnProperty(cell_uuid)) {
                     code_dict[cell_uuid] = "";
-                    var horizontal_line = this.metadata.hl_list[cell_uuid];
-                    delete this.metadata.hl_list[cell_uuid];
-                    var index = this.find_cell_index(horizontal_line);
-                    var ce = this.get_cell_element(index);
-                    ce.remove();
-                    // make sure that there is a new cell at the bottom
-                    if (index === (this.ncells()-1)) {
-                        this.command_mode();
-                        this.insert_cell_below();
-                        this.select(index+1);
-                        this.edit_mode();
-                        this.scroll_to_bottom();
-                        this.set_dirty(true);
+                    if (this.metadata.hl_list[cell_uuid] !== null) {
+                        var horizontal_line = this.metadata.hl_list[cell_uuid];
+                        var index = this.find_cell_index(horizontal_line);
+                        var ce = this.get_cell_element(index);
+                        ce.remove();
+                        // make sure that there is a new cell at the bottom
+                        if (index === (this.ncells()-1)) {
+                            this.command_mode();
+                            this.insert_cell_below();
+                            this.select(index+1);
+                            this.edit_mode();
+                            this.scroll_to_bottom();
+                            this.set_dirty(true);
+                        }
                     }
+                    delete this.metadata.hl_list[cell_uuid];
                 }
             }
         }
@@ -476,7 +478,7 @@ define([
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
                 ce.remove();
-                delete this.metadata.hl_list[ce[0].id];
+                this.metadata.hl_list[ce[0].id] = null;
             }
         };
     }(Notebook.prototype.merge_cells));
