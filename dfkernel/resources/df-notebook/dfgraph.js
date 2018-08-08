@@ -84,24 +84,26 @@ define([
         var that = this;
         var visited = [];
         var res = [];
-        var downlinks = this.downlinks[uuid].slice(0);
-        while(downlinks.length > 0){
-            var cid = downlinks.pop();
-            visited.setadd(cid);
-            res.setadd(cid);
-            if(cid in that.downstream_lists)
-            {
-                that.downstream_lists[cid].forEach(function (pid) {
-                    res.setadd(pid);
-                    visited.setadd(pid);
-                });
-            }
-            else{
-                that.downlinks[cid].forEach(function (pid) {
-                    if(visited.indexOf(pid) < 0){
-                        downlinks.push(pid);
-                    }
-                })
+        if(!(typeof this.downlinks[uuid] === "undefined")) {
+            var downlinks = this.downlinks[uuid].slice(0);
+            while(downlinks.length > 0){
+                var cid = downlinks.pop();
+                visited.setadd(cid);
+                res.setadd(cid);
+                if(cid in that.downstream_lists)
+                {
+                    that.downstream_lists[cid].forEach(function (pid) {
+                        res.setadd(pid);
+                        visited.setadd(pid);
+                    });
+                }
+                else{
+                    that.downlinks[cid].forEach(function (pid) {
+                        if(visited.indexOf(pid) < 0){
+                            downlinks.push(pid);
+                        }
+                    })
+                }
             }
         }
         that.downstream_lists[uuid] = res;

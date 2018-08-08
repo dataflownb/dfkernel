@@ -164,8 +164,9 @@ define([
                             that.input[0].childNodes[0].setAttribute("class","saved_error_cell");
                             break;
                     }
-                    for(var i = 0;i<that.cell_imm_downstream_deps.length;i++) {
-                        var cell = Jupyter.notebook.get_code_cell(that.cell_imm_downstream_deps[i]);
+                    var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
+                    for(var i = 0;i<downstream.length;i++) {
+                        var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 2) {
                             cell.metadata.cell_status = 3;
                             cell.input[0].childNodes[0].setAttribute("class","edited");
@@ -192,8 +193,9 @@ define([
                             that.metadata.cell_status = 6;
                             break;
                     }
-                    for(var i = 0;i<that.cell_imm_downstream_deps.length;i++) {
-                        var cell = Jupyter.notebook.get_code_cell(that.cell_imm_downstream_deps[i]);
+                    var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
+                    for(var i = 0;i<downstream.length;i++) {
+                        var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 3) {
                             cell.metadata.cell_status = 2;
                             cell.input[0].childNodes[0].setAttribute("class","success");
@@ -357,13 +359,6 @@ define([
                 var all_ups = msg.content.upstream_deps;
                 var internal_nodes = msg.content.internal_nodes;
                 Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
-                for(var i = 0; i < all_ups.length; i++) {
-                    var upcell = Jupyter.notebook.get_code_cell(all_ups[i]);
-                    for(var j =i+1; j < all_ups.length; j++) {
-                        upcell.cell_imm_downstream_deps[j-1-i] = all_ups[j];
-                    }
-                    upcell.cell_imm_downstream_deps[all_ups.length - 1] = that.uuid;
-                }
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
