@@ -1,5 +1,7 @@
 from collections import defaultdict, namedtuple
+from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from dfkernel.dflink import LinkedResult
+import itertools
 
 class DataflowHistoryManager(object):
     storeditems = []
@@ -56,26 +58,29 @@ class DataflowHistoryManager(object):
         # dependencies are a DAG
         self.dep_parents = defaultdict(set) # child -> list(parent)
         self.dep_children = defaultdict(set) # parent -> list(child)
-        self.dep_semantic_children = defaultdict(set)
-        self.dep_semantic_parents = defaultdict(set)
+        self.dep_semantic_parents = defaultdict(dict)
         self.last_calculated_ctr = 0
 
     def update_dependencies(self, parent, child):
         self.storeditems.append({'parent':parent, 'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
-        self.dep_semantic_parents[child].add(parent)
-        self.dep_semantic_children[parent].add(child)
+        if parent not in self.dep_semantic_parents[child]:
+            self.dep_semantic_parents[child][parent] = set([parent])
 
-    def update_semantic_dependencies(self, parent, child):
-        self.dep_semantic_parents[child].add(parent)
-        self.dep_semantic_children[parent].add(child)
+    def update_semantic_dependencies(self, parent, child,item=None):
+        if item:
+            self.dep_semantic_parents[child][parent].add(item)
 
     def remove_dependencies(self, parent, child):
         self.remove_dep(parent, child, self.dep_parents, self.dep_children)
 
-    def remove_semantic_dependencies(self, parent, child):
-        self.remove_dep(parent, child, self.dep_semantic_parents, self.dep_semantic_children)
+    def remove_semantic_dependencies(self, parent, child,item=None):
+        if parent in self.dep_semantic_parents[child]:
+            if item:
+                self.dep_semantic_parents[child][parent].discard(item)
+            else:
+                 self.dep_semantic_parents[child][parent].discard(parent)
 
     @staticmethod
     def remove_dep(parent, child, parents, children):
@@ -85,44 +90,44 @@ class DataflowHistoryManager(object):
 
 
     def all_semantic_upstream(self, k):
-        return self.get_all_upstreams(k, self.dep_semantic_parents)
+        return self.get_all_upstreams(k, True)
 
     def all_upstream(self, k):
-        return self.get_all_upstreams(k, self.dep_parents)
+        return self.get_all_upstreams(k, False)
 
-    @staticmethod
-    def get_all_upstreams(k, dep_parents):
+
+    def get_all_upstreams(self, k, semantic=False):
         visited = set()
-        res = set()
-        frontier = list(dep_parents[k[:6]])
-        while frontier:
-            cid = frontier.pop(0)[:6]
-            visited.add(cid)
-            res.add(cid)
-            for pid in dep_parents[cid]:
-                if pid[:6] not in visited:
-                    frontier.append(pid[:6])
-        return list(res)
-
-    def all_semantic_downstream(self, k):
-        return self.get_all_downstream(k, self.dep_semantic_children)
-
-    def all_downstream(self, k):
-        return self.get_all_downstream(k, self.dep_children)
-
-    @staticmethod
-    def get_all_downstream(k, dep_children):
-        visited = set()
-        res = []
-        frontier = list(dep_children[k])
+        res = set(self.get_semantic_upstream(k)) if semantic else set()
+        frontier = list(self.dep_parents[k])
         while frontier:
             cid = frontier.pop(0)
             visited.add(cid)
-            res.append(cid)
-            for pid in dep_children[cid]:
+            if semantic:
+                res.update(self.get_semantic_upstream(cid))
+            else:
+                res.add(cid)
+            for pid in self.dep_parents[cid]:
                 if pid not in visited:
                     frontier.append(pid)
-        return res
+        return list(res)
+
+
+    def all_downstream(self, k):
+        return self.get_all_downstream(k)
+
+    def get_all_downstream(self, k):
+        visited = set()
+        res = set()
+        frontier = list(self.dep_children[k])
+        while frontier:
+            cid = frontier.pop(0)
+            visited.add(cid)
+            res.add(cid)
+            for pid in self.dep_children[cid]:
+                if pid not in visited:
+                    frontier.append(pid)
+        return list(res)
 
     def get_downstream(self, k):
         return list(self.dep_children[k])
@@ -130,11 +135,14 @@ class DataflowHistoryManager(object):
     def get_upstream(self, k):
         return list(self.dep_parents[k])
 
-    def get_semantic_downstream(self, k):
-        return list(self.dep_semantic_children[k])
-
     def get_semantic_upstream(self, k):
-        return list(self.dep_semantic_parents[k])
+        semantic_up = []
+        for key in self.dep_semantic_parents[k].keys():
+            semantic_up += [key+item for item in self.dep_semantic_parents[k][key]]
+        return semantic_up
+
+    def raw_semantic_upstream(self,k):
+        return self.dep_semantic_parents[k]
 
     def update_downstream(self, k):
         # this recurses via run_cell which checks for the update_downstream_deps
@@ -154,11 +162,9 @@ class DataflowHistoryManager(object):
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
-        class CyclicalCall(KeyError):
-            '''This error results when the call being made is Cyclical'''
         for cid in self.dep_parents[k]:
             if cid in self.dep_children[k]:
-                raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
+                raise CyclicalCallError(k)
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
@@ -286,6 +292,15 @@ class DataflowFunctionManager(object):
             return next(iter(res.values()))
         return retval
 
+class CyclicalCallError(Exception):
+    """This error results when the call being made is Cyclical"""
+    def __init__(self, cell_id):
+        super().__init__(self)
+        self.cell_id = cell_id
+
+    def __str__(self):
+        return "Out[{}] results in a Cyclical call".format(self.cell_id)
+
 class DuplicateNameError(Exception):
     def __init__(self, var_name, cell_id):
         super().__init__(self)
@@ -318,14 +333,17 @@ class DataflowNamespace(dict):
         # print("__getitem__", k)
         if k not in self.__do_not_link__ and k in self.__links__:
             # print("getting link", k)
-            cell_id = self.__links__[k]
+            cell_id = self.get_parent(k)
             rev_links = self.__rev_links__[cell_id]
             # FIXME think about local variables...
             # FIXME do we need to compute difference first?
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history.get_item(cell_id)
+            try:
+                res = df_history.get_item(cell_id)
+            except CyclicalCallError:
+                raise
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
@@ -339,12 +357,30 @@ class DataflowNamespace(dict):
         # if k in self:
         #     return super().__getitem__(k)
 
+    def get_parent(self,k):
+        if k in self.__links__:
+            return self.__links__[k]
+        return None
+
     def __setitem__(self, k, v):
         # FIXME question is whether to do this or allow local vars
         if k not in self.__do_not_link__ and k in self.__links__:
             raise DuplicateNameError(k, self.__links__[k])
         self.__local_vars__[self.__cur_uuid__][k] = v
         return super().__setitem__(k, v)
+
+    def __contains__(self, k):
+        return super().__contains__(k) or k in self.__links__
+
+    def __delitem__(self, k):
+        # FIXME check if k in self or self.__links__
+        return super().__delitem__(k)
+
+    def __iter__(self):
+        return itertools.chain(super().__iter__(), iter(self.__links__))
+
+    def __len__(self):
+        return super().__len__() + len(self.__links__)
 
     def _add_links(self, tag_dict):
         """Used for adding links of pre-existing links currently only used for cold starts"""
@@ -394,3 +430,16 @@ class DataflowNamespace(dict):
 
     def _is_external_link(self, k, uuid):
         return k in self.__links__ and self.__links__[k] != uuid
+
+    # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
+    # FIXME: Changing get causes strange dependency issues
+    #get = MutableMapping.get
+    keys = MutableMapping.keys
+    items = MutableMapping.items
+    values = MutableMapping.values
+    __eq__ = MutableMapping.__eq__
+    pop = MutableMapping.pop
+    popitem = MutableMapping.popitem
+    clear = MutableMapping.clear
+    update = MutableMapping.update
+    setdefault = MutableMapping.setdefault

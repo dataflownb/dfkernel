@@ -144,6 +144,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if res.success:
             print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
             reply_content[u'status'] = u'ok'
+            reply_content[u'nodes'] = res.nodes
+            reply_content[u'links'] = res.links
+            reply_content[u'cells'] = res.cells
+
             reply_content[u'upstream_deps'] = res.all_upstream_deps
             reply_content[u'downstream_deps'] = res.all_downstream_deps
             reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
@@ -191,17 +195,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         shell.payload_manager.clear_payload()
 
         return reply_content, res
-
-    def do_complete(self, code, cursor_pos):
-        linked_vars = list(self.shell.user_ns.__links__.keys())
-        # print("LINKED VARS:", linked_vars, file=sys.__stdout__)
-        for k in linked_vars:
-            self.shell.user_ns.update({k: None})
-        try:
-            return super().do_complete(code, cursor_pos)
-        finally:
-            for k in linked_vars:
-                self.shell.user_ns.pop(k)
 
 
 # This exists only for backwards compatibility - use IPythonKernel instead

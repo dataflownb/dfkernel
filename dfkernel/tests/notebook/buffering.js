@@ -51,7 +51,7 @@ casper.notebook_test(function () {
         IPython.notebook.kernel.reconnect(1);
     });
 
-    this.wait_for_output(2);
+    this.wait_for_output(3);
 
     this.then(function () {
         var result = this.get_output_cell(3);

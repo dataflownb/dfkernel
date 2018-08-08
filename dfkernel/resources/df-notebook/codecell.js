@@ -242,75 +242,66 @@ define([
 
     (function (_super) {
         CodeCell.prototype._handle_execute_reply = function (msg) {
+            var cc = this;
             var cell = this.notebook.get_code_cell(msg.content.execution_count);
             if (!cell) {
                 cell = this;
             }
-            if (cell == this && msg.metadata.status != "error") {
-                var that = this;
-                if('upstream_deps' in msg.content){
-                    msg.content.upstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        var trailing = '';
-                        if (cid.length > 6) {
-                            trailing = '.' + cid.substr(6);
-                            cid = cid.substr(0, 6);
-                        }
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]" + trailing);
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_upstream_deps.append(new_item);
-                        $('.upstream-deps', that.cell_info_area).show();
-                    });
-                }
+            if (msg.metadata.status != "error") {
+                var that = cell;
 
-                if('downstream_deps' in msg.content) {
-                    msg.content.downstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]");
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_downstream_deps.append(new_item);
-                        $('.downstream-deps', that.cell_info_area).show();
-                    });
-                }
+                /** Rename content for general readability*/
+                var nodes = msg.content.nodes;
+                var uplinks = msg.content.links;
+                var cells = msg.content.cells;
+                var downlinks = msg.content.imm_downstream_deps;
+                var all_ups = msg.content.upstream_deps;
+                var internal_nodes = msg.content.internal_nodes;
+                Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
+
 
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
 
                 if (msg.content.update_downstreams) {
-                    msg.content.update_downstreams.forEach(function (t) {
-                        var uuid = t['key'].substr(0, 6);
-                        if(Jupyter.notebook.has_id(uuid) && t.data){
-                            var upcell = Jupyter.notebook.get_code_cell(uuid);
-                            if (upcell.cell_imm_downstream_deps) {
-                                var updated = upcell.cell_imm_downstream_deps.concat(t['data']).reduce(function(a,b){if(!a.indexOf(b)+1){a.push(b);}return a;},[]);
-                                upcell.cell_imm_downstream_deps = updated;
-                            }
-                            else {
-                                upcell.cell_imm_downstream_deps = t['data'];
-                            }
-                        }
-                    });
+                    Jupyter.DfGraph.update_down_links(msg.content.update_downstreams);
+
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));
+
+
+    CodeCell.prototype.update_df_list = function (cell,links,mode) {
+        if(mode === 'upstream'){
+            var listobj = cell.cell_upstream_deps;
+            var classinfo = '.upstream-deps'
+        }
+        else if(mode === 'downstream'){
+            var listobj = cell.cell_downstream_deps;
+            var classinfo = '.downstream-deps'
+        }
+
+        links.forEach(function(cid) {
+            cid = cid.substr(0,6);
+            var new_item = $('<li></li>');
+            var new_ahref = $('<a></a>');
+            new_ahref.attr('href', '#' + cid);
+            new_ahref.text("Cell[" + cid + "]");
+            new_ahref.click(function () {
+                cell.notebook.select_by_id(cid);
+                cell.notebook.scroll_to_cell_id(cid);
+                return false;
+            });
+            new_item.append(new_ahref);
+            listobj.append(new_item);
+            $(classinfo, cell.cell_info_area).show();
+        });
+    };
+
 
     (function (_super) {
         CodeCell.prototype.set_input_prompt = function (number) {
