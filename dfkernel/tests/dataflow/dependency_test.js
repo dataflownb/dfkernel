@@ -14,7 +14,7 @@ casper.notebook_test(function () {
     function get_all_up_deps(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
-            var childnodes = Jupyter.DfGraph.get_all_upstreams(cell.uuid);
+            var childnodes = cell.dfgraph.get_all_upstreams(cell.uuid);
             return childnodes;
         }, {cell_idx: cell_idx});
         return outputs;
@@ -36,7 +36,7 @@ casper.notebook_test(function () {
     function get_imm_up_deps(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
-            return Jupyter.DfGraph.get_upstreams(cell.uuid);
+            return cell.dfgraph.get_upstreams(cell.uuid);
         }, {cell_idx: cell_idx});
         return outputs;
     }
@@ -44,7 +44,7 @@ casper.notebook_test(function () {
     function get_imm_downstreams(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
-            return Jupyter.DfGraph.get_downstreams(cell.uuid);
+            return cell.dfgraph.get_downstreams(cell.uuid);
         }, {cell_idx: cell_idx});
         return outputs;
     }
