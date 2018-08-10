@@ -507,5 +507,30 @@ define([
         }
     }(CodeCell.prototype.toJSON));
 
+    CodeCell.prototype.set_icon_status = function(cell_status) {
+        //FIXME update depview here
+        // 0 is new cell
+        // 1 is edited from new cell
+        // 2 is success, convert to 9 on save, on 1st change back to 6
+        // 3 is edited from success
+        // 4 is error, convert to 10 on save, on 1st edited 11
+        // 5 is edited from error
+        // 6 is success cell after loaded from saved notebook
+        // 7 is edited from 6
+        // 8 is executing
+        // 9 is for saved success used for loading saved notebook
+        // 10 is for saved error used for loading saved notebook
+        // 11 is saved error cell, yellow times circle
+        // 12 is edited from 11
+        var i;
+        var title = ["New cell", "Edited new cell", "Success cell", "Edited success cell",
+                     "Error cell", "Edited error cell", "Saved success cell", "Edited saved cell",
+                     "Executing", "Saved success cell", "Saved error cell", "Saved error cell", "Edited saved cell"];
+        for(i=0;i<13;i++) {
+            $('#'+this.uuid).find('.icon_status').removeClass('cell_state_'+i);
+        }
+        this.metadata.cell_status = cell_status;
+        $('#'+this.uuid).find('.icon_status').addClass('cell_state_'+cell_status).prop("title",title[cell_status]);
+    }
     return {CodeCell: CodeCell};
 });
