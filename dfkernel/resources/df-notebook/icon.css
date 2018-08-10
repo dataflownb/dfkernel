@@ -1,5 +1,3 @@
-.newCell::before {
-    content: url(./img/fa/plus-circle.svg);
 div.icon_status {
     display: block;
     cursor: pointer;
@@ -10,24 +8,27 @@ div.icon_status {
     padding-right: 1ex;
     width: 1ex;
 }
-.editedNewCell::before {
-    content: url(./img/fa/plus-circle-yellow.svg);
+.cell_state_0::before {
+  content: url(img/fa/plus-circle.svg);
 }
-.errorCell::before{
-    content: url(./img/fa/times-circle.svg);
+.cell_state_1::before {
+  content: url(img/fa/plus-circle-yellow.svg);
 }
-.executing::before{
-    content: url(./img/fa/clock.svg);
+.cell_state_2::before {
+  content: url(img/fa/check-circle.svg);
 }
-.success::before {
-    content: url(./img/fa/check-circle.svg);
+.cell_state_3::before, .cell_state_5::before, .cell_state_7::before, .cell_state_12::before {
+  content: url(img/fa/exclamation-circle.svg);
 }
-.edited::before{
-    content: url(./img/fa/exclamation-circle.svg);
+.cell_state_4::before {
+  content: url(img/fa/times-circle.svg);
 }
-.saved_success_cell::before{
-    content: url(./img/fa/check-circle-yellow.svg);
+.cell_state_6::before, .cell_state_9::before {
+  content: url(img/fa/check-circle-yellow.svg);
 }
-.saved_error_cell::before{
-    content: url(./img/fa/times-circle-yellow.svg);
+.cell_state_8::before {
+  content: url(img/fa/clock.svg);
+}
+.cell_state_10::before, .cell_state_11::before {
+  content: url(img/fa/times-circle-yellow.svg);
 }
