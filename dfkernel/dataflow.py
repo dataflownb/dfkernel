@@ -1,5 +1,7 @@
 from collections import defaultdict, namedtuple
+from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from dfkernel.dflink import LinkedResult
+import itertools
 
 class DataflowHistoryManager(object):
     storeditems = []
@@ -160,11 +162,9 @@ class DataflowHistoryManager(object):
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
-        class CyclicalCall(KeyError):
-            '''This error results when the call being made is Cyclical'''
         for cid in self.dep_parents[k]:
             if cid in self.dep_children[k]:
-                raise CyclicalCall("Out[" + k + "] results in a Cyclical call")
+                raise CyclicalCallError(k)
         child_uuid = self.shell.uuid
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
@@ -292,6 +292,15 @@ class DataflowFunctionManager(object):
             return next(iter(res.values()))
         return retval
 
+class CyclicalCallError(Exception):
+    """This error results when the call being made is Cyclical"""
+    def __init__(self, cell_id):
+        super().__init__(self)
+        self.cell_id = cell_id
+
+    def __str__(self):
+        return "Out[{}] results in a Cyclical call".format(self.cell_id)
+
 class DuplicateNameError(Exception):
     def __init__(self, var_name, cell_id):
         super().__init__(self)
@@ -324,14 +333,17 @@ class DataflowNamespace(dict):
         # print("__getitem__", k)
         if k not in self.__do_not_link__ and k in self.__links__:
             # print("getting link", k)
-            cell_id = self.__links__[k]
+            cell_id = self.get_parent(k)
             rev_links = self.__rev_links__[cell_id]
             # FIXME think about local variables...
             # FIXME do we need to compute difference first?
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
             # print("Executing cell", cell_id)
-            res = df_history.get_item(cell_id)
+            try:
+                res = df_history.get_item(cell_id)
+            except CyclicalCallError:
+                raise
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
@@ -345,12 +357,30 @@ class DataflowNamespace(dict):
         # if k in self:
         #     return super().__getitem__(k)
 
+    def get_parent(self,k):
+        if k in self.__links__:
+            return self.__links__[k]
+        return None
+
     def __setitem__(self, k, v):
         # FIXME question is whether to do this or allow local vars
         if k not in self.__do_not_link__ and k in self.__links__:
             raise DuplicateNameError(k, self.__links__[k])
         self.__local_vars__[self.__cur_uuid__][k] = v
         return super().__setitem__(k, v)
+
+    def __contains__(self, k):
+        return super().__contains__(k) or k in self.__links__
+
+    def __delitem__(self, k):
+        # FIXME check if k in self or self.__links__
+        return super().__delitem__(k)
+
+    def __iter__(self):
+        return itertools.chain(super().__iter__(), iter(self.__links__))
+
+    def __len__(self):
+        return super().__len__() + len(self.__links__)
 
     def _add_links(self, tag_dict):
         """Used for adding links of pre-existing links currently only used for cold starts"""
@@ -400,3 +430,16 @@ class DataflowNamespace(dict):
 
     def _is_external_link(self, k, uuid):
         return k in self.__links__ and self.__links__[k] != uuid
+
+    # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
+    # FIXME: Changing get causes strange dependency issues
+    #get = MutableMapping.get
+    keys = MutableMapping.keys
+    items = MutableMapping.items
+    values = MutableMapping.values
+    __eq__ = MutableMapping.__eq__
+    pop = MutableMapping.pop
+    popitem = MutableMapping.popitem
+    clear = MutableMapping.clear
+    update = MutableMapping.update
+    setdefault = MutableMapping.setdefault

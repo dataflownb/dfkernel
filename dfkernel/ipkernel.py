@@ -52,21 +52,18 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         stop_on_error = content.get('stop_on_error', True)
 
-        # grab and remove uuid from user_expressions
+        # grab and remove dfkernel_data from user_expressions
         # there just for convenience of not modifying the msg protocol
-        uuid = user_expressions.pop('__uuid__', None)
-        code_dict = user_expressions.pop('__code_dict__', dict())
-        output_tags = user_expressions.pop('__output_tags__', dict())
+        dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
 
         self._outer_stream = stream
         self._outer_ident = ident
         self._outer_parent = parent
         self._outer_stop_on_error = stop_on_error
         self._outer_allow_stdin = allow_stdin
-        self._outer_code_dict = code_dict # stash since will be global
-        self._outer_output_tags = output_tags
+        self._outer_dfkernel_data = dfkernel_data
 
-        self.inner_execute_request(code, uuid, silent,
+        self.inner_execute_request(code, dfkernel_data.get('uuid'), silent,
                                    store_history, user_expressions)
 
         self._outer_stream = None
@@ -74,8 +71,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_parent = None
         self._outer_stop_on_error = None
         self._outer_allow_stdin = None
-        self._outer_code_dict = None
-        self._outer_output_tags = None
+        self._outer_dfkernel_data = None
 
     def inner_execute_request(self, code, uuid, silent,
                               store_history=True, user_expressions=None):
@@ -85,8 +81,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         parent = self._outer_parent
         stop_on_error = self._outer_stop_on_error
         allow_stdin = self._outer_allow_stdin
-        code_dict = self._outer_code_dict
-        output_tags = self._outer_output_tags
+        dfkernel_data = self._outer_dfkernel_data
 
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
@@ -94,7 +89,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if not silent:
             self._publish_execute_input(code, parent, uuid)
 
-        reply_content, res = self.do_execute(code, uuid, code_dict, output_tags, silent, store_history,
+        reply_content, res = self.do_execute(code, uuid, dfkernel_data, silent, store_history,
                                         user_expressions, allow_stdin)
 
         # Flush output before sending the reply.
@@ -121,7 +116,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return res
 
-    def do_execute(self, code, uuid, code_dict, output_tags, silent, store_history=True,
+    def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         shell = self.shell # we'll need this a lot here
 
@@ -131,7 +126,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         res = None
         try:
-            res = shell.run_cell(code, uuid=uuid, code_dict=code_dict, output_tags=output_tags,
+            res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
                                  store_history=store_history, silent=silent)
         finally:
             self._restore_input()
@@ -195,17 +190,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         shell.payload_manager.clear_payload()
 
         return reply_content, res
-
-    def do_complete(self, code, cursor_pos):
-        linked_vars = list(self.shell.user_ns.__links__.keys())
-        # print("LINKED VARS:", linked_vars, file=sys.__stdout__)
-        for k in linked_vars:
-            self.shell.user_ns.update({k: None})
-        try:
-            return super().do_complete(code, cursor_pos)
-        finally:
-            for k in linked_vars:
-                self.shell.user_ns.pop(k)
 
 
 # This exists only for backwards compatibility - use IPythonKernel instead

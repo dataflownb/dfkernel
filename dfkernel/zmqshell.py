@@ -359,7 +359,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             sys.stderr.flush()
         return proposal['value']
 
-    def run_cell(self, raw_cell, uuid=None, code_dict={}, output_tags={},
+    def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
                      store_history=False, silent=False, shell_futures=True,
                      update_downstream_deps=False):
         """Run a complete IPython cell.
@@ -386,6 +386,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         result : :class:`ExecutionResult`
         """
 
+        code_dict = dfkernel_data.get("code_dict", {})
+        output_tags = dfkernel_data.get("output_tags", {})
         # print("CODE_DICT:", code_dict)
         #print("RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
