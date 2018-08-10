@@ -64,3 +64,7 @@ https://stackoverflow.com/questions/34519511/smart-overflow-in-html-is-there-any
 .dftoolbar-inline .form-check-label {
     margin-bottom: 0;
 }
+
+.dftoolbar-inline .form-check-input {
+    margin-top: 0;
+}
