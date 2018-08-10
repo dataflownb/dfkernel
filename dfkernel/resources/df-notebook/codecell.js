@@ -127,78 +127,45 @@ define([
             this.code_mirror.on('change', function () {
                 //only if the input is not empty
                 if(that.get_text() !== that.code_cached) {
-                    that.input[0].childNodes[0].setAttribute("class","edited");
-                    // 0 is new cell
-                    // 1 is edited from new cell
-                    // 2 is success, convert to 9 on save, on 1st change back to 6
-                    // 3 is edited from success
-                    // 4 is error, convert to 10 on save, edited 11, back to 10
-                    // 5 is edited from error
-                    // 6 is success cell after loaded from saved notebook
-                    // 7 is edited from 6
-                    // 8 is executing
-                    // 9 is for saved success used for loading saved notebook
-                    // 10 is for saved error used for loading saved notebook
-                    // 11 is saved error cell, yellow times circle
                     switch(that.metadata.cell_status) {
                         case 0:
-                            that.metadata.cell_status = 1;
-                            that.input[0].childNodes[0].setAttribute("class","editedNewCell");
+                            that.set_icon_status(1);
                             break;
                         case 2:
-                            that.metadata.cell_status = 3;
+                            that.set_icon_status(3);
                             break;
                         case 4:
-                        case 11:
-                            that.metadata.cell_status = 5;
+                            that.set_icon_status(5);
                             break;
                         case 6:
-                            that.metadata.cell_status = 7;
+                            that.set_icon_status(7);
                             break;
                         case 9:
-                            that.metadata.cell_status = 6;
-                            that.input[0].childNodes[0].setAttribute("class","saved_success_cell");
+                            that.set_icon_status(6);
                             break;
                         case 10:
-                            that.metadata.cell_status = 11;
-                            that.input[0].childNodes[0].setAttribute("class","saved_error_cell");
+                            that.set_icon_status(11);
+                            break;
+                        case 11:
+                            that.set_icon_status(12);
                             break;
                     }
+
                     var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 2) {
-                            cell.metadata.cell_status = 3;
-                            cell.input[0].childNodes[0].setAttribute("class","edited");
+                            cell.set_icon_status(3);
                         }
                     }
                 }
                 else if (that.get_text() == that.code_cached || that.get_text().trim().length === 0) {
-                    switch(that.metadata.cell_status) {
-                        case 0:
-                        case 1:
-                            that.input[0].childNodes[0].setAttribute("class","newCell");
-                            that.metadata.cell_status = 0;
-                            break;
-                        case 3:
-                            that.input[0].childNodes[0].setAttribute("class","success");
-                            that.metadata.cell_status = 2;
-                            break;
-                        case 5:
-                            that.input[0].childNodes[0].setAttribute("class","errorCell");
-                            that.metadata.cell_status = 4;
-                            break;
-                        case 7:
-                            that.input[0].childNodes[0].setAttribute("class","saved_success_cell");
-                            that.metadata.cell_status = 6;
-                            break;
-                    }
+                    that.set_icon_status(that.metadata.cell_status-1);
                     var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 3) {
-                            cell.metadata.cell_status = 2;
-                            cell.input[0].childNodes[0].setAttribute("class","success");
+                            cell.set_icon_status(2);
                         }
                     }
                 }
@@ -252,15 +219,10 @@ define([
         if (this.get_text().trim().length === 0) {
             // nothing to do
             this.set_input_prompt(null);
-            this.input[0].childNodes[0].setAttribute("class","");
-            if (this.metadata.cell_status == 0) {
-                this.metadata.cell_status = 2;
-                this.input[0].childNodes[0].setAttribute("class","success");
-            }
+            this.set_icon_status(2);
             return;
         }
-        this.input[0].childNodes[0].setAttribute("class","executing");
-        this.metadata.cell_status = 8;
+        this.set_icon_status(8);
         this.element.addClass("running");
 
         if (!("last_executed" in this.notebook.session)) {
@@ -302,8 +264,7 @@ define([
             }
         }
         //set input field icon to success if cell is executed
-        this.input[0].childNodes[0].setAttribute("class","success");
-        this.metadata.cell_status = 2;
+        this.set_icon_status(2);
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
@@ -329,14 +290,12 @@ define([
                 var cell = that.notebook.get_code_cell(cid);
                 if (cell) {
                     cell.clear_output_imm(false, true);
-                    cell.input[0].childNodes[0].setAttribute("class","executing");
-                    cell.metadata.cell_status = 8;
+                    cell.set_icon_status(8);
                     cell.element.addClass("running");
                     cell.render();
                     that.events.trigger('execute.CodeCell', {cell: cell});
                 }
             };
-
             return callbacks;
         }
     }(CodeCell.prototype.get_callbacks));
@@ -369,13 +328,11 @@ define([
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
                 //set input field icon to success if cell is executed
-                cell.input[0].childNodes[0].setAttribute("class","success");
-                cell.metadata.cell_status = 2;
+                cell.set_icon_status(2);
             }
             else if(cell == this && msg.metadata.status == "error") {
                 //set input field icon to error if cell returns error
-                cell.input[0].childNodes[0].setAttribute("class","errorCell");
-                cell.metadata.cell_status = 4;
+                cell.set_icon_status(4);
             }
             _super.apply(cell, arguments);
         }
@@ -457,26 +414,29 @@ define([
             _super.call(this, data);
             switch(this.metadata.cell_status) {
                 case 0:
-                    this.input[0].childNodes[0].setAttribute("class","newCell");
-                    break;
                 case 1:
-                case 3:
                 case 5:
+                case 6:
                 case 7:
-                case 8:
-                    this.input[0].childNodes[0].setAttribute("class","edited");
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                    this.set_icon_status(this.metadata.cell_status);
                     break;
                 case 2:
-                    this.input[0].childNodes[0].setAttribute("class","newCell");
+                    this.set_icon_status(9);
+                    break;
+                case 3:
+                    this.set_icon_status(7);
+                    this.code_cached = '';
+                    break;
                 case 4:
-                    this.input[0].childNodes[0].setAttribute("class","errorCell");
+                    this.set_icon_status(10);
                     break;
-                case 6:
-                    this.input[0].childNodes[0].setAttribute("class","saved_success_cell");
-                    this.metadata.cell_status = 6;
-                    break;
-                case 11:
-                    this.input[0].childNodes[0].setAttribute("class","saved_error_cell");
+                case 5:
+                case 8:
+                    this.set_icon_status(12);
                     break;
             }
             this.uuid = uuid;

@@ -465,8 +465,7 @@ define([
         Notebook.prototype.insert_cell_at_index = function (type,index) {
             var cell = _super.call(this, type,index);
             if (cell.cell_type == "code") {
-                cell.metadata.cell_status = 0;
-                cell.input[0].childNodes[0].setAttribute("class","newCell");
+                cell.set_icon_status(0);
             }
             return cell;
         };
