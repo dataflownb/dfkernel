@@ -12,77 +12,18 @@ define([
 
     var CellToolbar = celltoolbar.CellToolbar;
 
-    // var update_overflows = function() {
-    //     /* css overflow by Josh Crozier
-    //       https://stackoverflow.com/questions/34519511/smart-overflow-in-html-is-there-any-way-to-put-ellipsis-with-a-link-at#answer-34519915
-    //     */
-    //
-    //     var overflows = $(".dataflow-toolbar-container .smart-overflow");
-    //     overflows.each(function() {
-    //         var el = $(this);
-    //         var link = $('<a/>')
-    //             .addClass('ellipsis-link')
-    //             .attr('href', '#');
-    //
-    //         console.log("PRINTING ELEMENT:", el.get());
-    //         console.log("WIDTHS:", el.width(), el.innerWidth());
-    //         console.log("WIDTHS2:", el.get()[0].offsetWidth, el.get()[0].scrollWidth);
-    //         if (el.get()[0].offsetWidth < el.get()[0].scrollWidth) {
-    //             console.log("FOUND ONE!");
-    //             link.click(function () {
-    //                 console.log("GOT CLICK", this, $(this).parent())
-    //                 // e.preventDefault();
-    //                 $(this).parent().removeClass('smart-overflow');
-    //             });
-    //             el.append(link);
-    //         }
-    //     });
-    // };
-    //
-    // var update_inputs = function(div, cell) {
-    //     var inputs = $(div).find('#inputs-' + cell.uuid);
-    //     inputs.text("Here is some really really adsfklhajsdlk;fjaksldjfklajsdklfjklasd;jf;l long text.");
-    // };
-
     var setup_toolbar = function(div, cell) {
         var link = $("<link/>")
             .attr('type', 'text/css')
             .attr('rel', 'stylesheet')
             .attr('href', require.toUrl('./toolbar.css'));
         $("head").append(link);
-        //
-        // var container = $(div);
-        // container.addClass('dataflow-toolbar-container');
-        // var label_in = $('<div/>')
-        //     .addClass('dependency-area')
-        //     .addClass('smart-overflow')
-        //     .attr('id', 'inputs-' + cell.uuid)
-        //     .text("Inputs:");
-        // var label_out = $('<div/>')
-        //     .addClass('dependency-area')
-        //     .addClass('smart-overflow')
-        //     .attr('id', 'outputs-' + cell.uuid)
-        //     .text("Outputs:");
-        // var deps_up = $('<div/>')
-        //     .addClass('dependency-area')
-        //     .addClass('smart-overflow')
-        //     .attr('id', 'upstreams-' + cell.uuid)
-        //     .text("Upstream Cells:");
-        // var deps_down = $('<div/>')
-        //     .addClass('dependency-area')
-        //     .addClass('smart-overflow')
-        //     .attr('id', 'downstreams-' + cell.uuid)
-        //     .text("Downstream Cells:");
-        // container.append(label_in, label_out, deps_up, deps_down);
+
         var dfdiv = $('<div class="dftoolbar">');
         update_inputs(dfdiv, cell);
         update_outputs(dfdiv, cell);
-        // add_buttons(div, cell);
-        // add_auto_update_checkbox(dfdiv, cell);
         add_auto_update_button(dfdiv, cell);
         $(div).append(dfdiv);
-        //var uuid = cell.cell_imm_upstream_deps;
-        //update_overflows(div);
     };
 
     var add_variable = function(name, cid, notebook) {
@@ -109,7 +50,6 @@ define([
                 var label = $('<i class="fa-chevron-circle-up fa">');
                 var links = $('<div class="dftoolbar-links">');
                 input_div.append(label, links);
-                // inputs.text("Inputs:");
                 upstream_pairs.forEach(
                     function (v_arr) {
                         links.append(add_variable(v_arr[0], v_arr[1], notebook));
@@ -139,7 +79,6 @@ define([
                 var label = $('<i class="fa-chevron-circle-down fa">');
                 var links = $('<div class="dftoolbar-links">');
                 output_div.append(label, links);
-                // outputs.text("Outputs:");
                 output_names.forEach(
                     function (v) {
                         links.append(add_variable(v));
@@ -157,35 +96,6 @@ define([
                 container.append(output_div);
             }
         }
-    };
-
-    var add_auto_update_checkbox = function(div, cell) {
-        var container = $(div);
-        var checkdiv = $('<div class="dftoolbar-inline"/>');
-        var label = $('<label/>')
-                .addClass("form-check-label")
-                .attr('for', 'auto-update-' + cell.uuid)
-                .text('Auto-Update:');
-        var checkbox = $('<input type="checkbox"/>')
-                .addClass("form-check-input")
-                .attr('id', 'auto-update-' + cell.uuid);
-        checkdiv.append(label, checkbox);
-        container.append(checkdiv);
-    };
-
-    var add_buttons = function(div, cell) {
-        var container = $(div);
-        // var button = $('<button />')
-        //     .addClass('btn btn-default btn-xs')
-        //     .text(i18n.msg._('Edit Attachments'))
-        //     .click( function() {
-        //       edit_attachments_dialog(cell);
-        //       return false;
-        //     });
-
-        var up_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-n'}}).attr("title", "Highlight Upstream");
-        var down_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-s'}}).attr("title", "Highlight Downstream");
-        container.append(up_button, down_button);
     };
 
     var add_auto_update_button = function(div, cell) {
@@ -212,5 +122,4 @@ define([
         CellToolbar.register_preset(i18n.msg._('Dataflow'), ['dfkernel.deps'], notebook);
     };
     return {'register': register};
-            // 'update_overflows': update_overflows};
 });
