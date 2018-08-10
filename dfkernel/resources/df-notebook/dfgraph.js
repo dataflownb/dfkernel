@@ -11,10 +11,12 @@
 
 define([
     'jquery',
-    'base/js/namespace'
+    'base/js/namespace',
+    'notebook/js/celltoolbar',
 ], function(
     $,
-    Jupyter
+    Jupyter,
+    celltoolbar
     ) {
     "use strict";
 
@@ -57,13 +59,14 @@ define([
         that.nodes[uuid] = nodes || [];
         if(uuid in that.uplinks){
             Object.keys(that.uplinks[uuid]).forEach(function (uplink) {
-                that.downlinks[uplink] = []
+                that.downlinks[uplink] = [];
             });
         }
         that.uplinks[uuid] = uplinks;
         that.downlinks[uuid] = downlinks || [];
         that.internal_nodes[uuid] = internal_nodes;
-        that.update_dep_lists(all_ups,uuid);
+        // that.update_dep_lists(all_ups,uuid);
+        celltoolbar.CellToolbar.rebuild_all();
     };
 
     /** @method set_internal_nodes */
@@ -97,11 +100,13 @@ define([
                 });
             }
             else{
-                that.downlinks[cid].forEach(function (pid) {
-                    if(visited.indexOf(pid) < 0){
-                        downlinks.push(pid);
-                    }
-                })
+                if (cid in that.downlinks) {
+                    that.downlinks[cid].forEach(function (pid) {
+                        if (visited.indexOf(pid) < 0) {
+                            downlinks.push(pid);
+                        }
+                    });
+                }
             }
         }
         that.downstream_lists[uuid] = res;
@@ -123,30 +128,30 @@ define([
             if(Jupyter.notebook.has_id(uuid) && t.data){
                 var upcell = Jupyter.notebook.get_code_cell(uuid);
                 $(upcell.cell_downstream_deps).empty();
-                upcell.update_df_list(upcell,that.all_downstream(uuid),'downstream');
+                // upcell.update_df_list(upcell,that.all_downstream(uuid),'downstream');
             }
         });
         that.downstream_lists = {};
     };
 
-    /** @method update_dep_lists */
-    DfGraph.prototype.update_dep_lists = function(all_ups,uuid){
-        var that = this;
-        var cell = Jupyter.notebook.get_code_cell(uuid);
-
-        if(cell.last_msg_id){
-            cell.clear_df_info();
-        }
-
-        if(that.downlinks[uuid].length > 0){
-            cell.update_df_list(cell,that.all_downstream(uuid),'downstream');
-        }
-
-        if(all_ups.length > 0){
-           that.upstream_list[uuid] = all_ups;
-           cell.update_df_list(cell,all_ups,'upstream');
-        }
-    };
+    // /** @method update_dep_lists */
+    // DfGraph.prototype.update_dep_lists = function(all_ups,uuid){
+    //     var that = this;
+    //     var cell = Jupyter.notebook.get_code_cell(uuid);
+    //
+    //     if(cell.last_msg_id){
+    //         cell.clear_df_info();
+    //     }
+    //
+    //     if(that.downlinks[uuid].length > 0){
+    //         cell.update_df_list(cell,that.all_downstream(uuid),'downstream');
+    //     }
+    //
+    //     if(all_ups.length > 0){
+    //        that.upstream_list[uuid] = all_ups;
+    //        cell.update_df_list(cell,all_ups,'upstream');
+    //     }
+    // };
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
     DfGraph.prototype.get_all_upstreams = function (uuid) {
@@ -165,8 +170,30 @@ define([
 
     /** @method returns single cell based upstreams for a cell with a given uuid */
     DfGraph.prototype.get_imm_upstreams = function(uuid){
-        return Object.keys(this.uplinks[uuid]);
+        if (uuid in this.uplinks) {
+            return Object.keys(this.uplinks[uuid]);
+        }
+        return [];
     };
+
+    DfGraph.prototype.get_imm_upstream_names = function(uuid) {
+        var arr = [];
+        var that = this;
+        this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
+            Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid]);
+        });
+        return arr;
+    };
+
+    DfGraph.prototype.get_imm_upstream_pairs = function(uuid) {
+        var arr = [];
+        var that = this;
+        this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
+            Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid].map(function(v) { return [v, up_uuid];}));
+        });
+        return arr;
+    };
+
 
     /** @method returns downstreams for a cell with a given uuid */
     DfGraph.prototype.get_downstreams = function (uuid) {
@@ -181,8 +208,10 @@ define([
     /** @method returns all nodes for a cell*/
     DfGraph.prototype.get_nodes = function(uuid){
         var that = this;
-        if(that.nodes[uuid].length > 0){
-            return that.nodes[uuid];
+        if (uuid in that.nodes) {
+            if (that.nodes[uuid].length > 0) {
+                return that.nodes[uuid];
+            }
         }
         return [];
     };

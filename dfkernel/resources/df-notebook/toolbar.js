@@ -45,11 +45,11 @@ define([
     // };
 
     var setup_toolbar = function(div, cell) {
-        // var link = $("<link/>")
-        //     .attr('type', 'text/css')
-        //     .attr('rel', 'stylesheet')
-        //     .attr('href', require.toUrl('./toolbar.css'));
-        // $("head").append(link);
+        var link = $("<link/>")
+            .attr('type', 'text/css')
+            .attr('rel', 'stylesheet')
+            .attr('href', require.toUrl('./toolbar.css'));
+        $("head").append(link);
         //
         // var container = $(div);
         // container.addClass('dataflow-toolbar-container');
@@ -74,42 +74,117 @@ define([
         //     .attr('id', 'downstreams-' + cell.uuid)
         //     .text("Downstream Cells:");
         // container.append(label_in, label_out, deps_up, deps_down);
-        add_auto_update_checkbox(div, cell);
+        var dfdiv = $('<div class="dftoolbar">');
+        update_inputs(dfdiv, cell);
+        update_outputs(dfdiv, cell);
+        // add_buttons(div, cell);
+        add_auto_update_checkbox(dfdiv, cell);
+        $(div).append(dfdiv);
         //var uuid = cell.cell_imm_upstream_deps;
-        update_inputs(div, cell);
         //update_overflows(div);
     };
 
-    var add_variable = function(name) {
-        return $('<button/>')
+    var add_variable = function(name, cid, notebook) {
+        var v = $('<button/>')
             .addClass("btn btn-default btn-xs")
-            .text(name)
-            .click( function () {
-                //goto_cell(cell);
+            .text(name);
+        if (cid) {
+            v.click(function () {
+                notebook.scroll_to_cell_id(cid);
+                notebook.select_by_id(cid);
                 return false;
             });
+        }
+        return v;
     };
 
     var update_inputs = function(div, cell) {
-        var container = $(div);
-        var inputs = $("<div/>");
-        inputs.text("Inputs:")
-        inputs.append(add_variable('i'), add_variable('j'))
-        container.append(inputs);
+        if ('uuid' in cell) {
+            var upstream_pairs = cell.dfgraph.get_imm_upstream_pairs(cell.uuid);
+            if (upstream_pairs.length > 0) {
+                var notebook = cell.notebook;
+                var container = $(div);
+                var input_div = $('<div class="dftoolbar-inline"/>');
+                var label = $('<i class="fa-chevron-circle-up fa">');
+                var links = $('<div class="dftoolbar-links">');
+                input_div.append(label, links);
+                // inputs.text("Inputs:");
+                upstream_pairs.forEach(
+                    function (v_arr) {
+                        links.append(add_variable(v_arr[0], v_arr[1], notebook));
+                    });
+                var highlight = $('<button/>')
+                    .addClass("btn btn-default btn-xs")
+                    .append($('<i class="fa-angle-double-up fa">'));
+                highlight.click(function() {
+                    var upstreams = cell.dfgraph.get_all_upstreams(cell.uuid);
+                    console.log("UPSTREAMS:", upstreams);
+                    notebook.select_cells_by_id(cell.dfgraph.get_all_upstreams(cell.uuid));
+                    return false;
+                });
+                links.append(highlight);
+                container.append(input_div);
+            }
+        }
+    };
+
+    var update_outputs = function(div, cell) {
+        if ('uuid' in cell) {
+            var output_names = cell.dfgraph.get_nodes(cell.uuid);
+            if (output_names.length > 0) {
+                var container = $(div);
+                var notebook = cell.notebook;
+                var output_div = $('<div class="dftoolbar-inline"/>');
+                var label = $('<i class="fa-chevron-circle-down fa">');
+                var links = $('<div class="dftoolbar-links">');
+                output_div.append(label, links);
+                // outputs.text("Outputs:");
+                output_names.forEach(
+                    function (v) {
+                        links.append(add_variable(v));
+                    });
+                var highlight = $('<button/>')
+                    .addClass("btn btn-default btn-xs")
+                    .append($('<i class="fa-angle-double-down fa">'));
+                highlight.click(function() {
+                    var downstreams = cell.dfgraph.get_downstreams(cell.uuid);
+                    console.log("DOWNSTREAMS:", downstreams);
+                    notebook.select_cells_by_id(cell.dfgraph.get_downstreams(cell.uuid));
+                    return false;
+                });
+                links.append(highlight);
+                container.append(output_div);
+            }
+        }
     };
 
     var add_auto_update_checkbox = function(div, cell) {
         var container = $(div);
-        var checkdiv = $('<div/>');
-        var checkbox = $('<input type="checkbox"/>')
-                .addClass("form-check-input")
-                .attr('id', 'auto-update-' + cell.uuid);
+        var checkdiv = $('<div class="dftoolbar-inline"/>');
         var label = $('<label/>')
                 .addClass("form-check-label")
                 .attr('for', 'auto-update-' + cell.uuid)
-                .text('Auto-Update');
-        checkdiv.append(checkbox, label);
+                .text('Auto-Update:');
+        var checkbox = $('<input type="checkbox"/>')
+                .addClass("form-check-input")
+                .attr('id', 'auto-update-' + cell.uuid);
+        checkdiv.append(label, checkbox);
         container.append(checkdiv);
+    };
+
+    var add_buttons = function(div, cell) {
+        var container = $(div);
+        // var button = $('<button />')
+        //     .addClass('btn btn-default btn-xs')
+        //     .text(i18n.msg._('Edit Attachments'))
+        //     .click( function() {
+        //       edit_attachments_dialog(cell);
+        //       return false;
+        //     });
+
+        var up_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-n'}}).attr("title", "Highlight Upstream");
+        var down_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-s'}}).attr("title", "Highlight Downstream");
+        container.append(up_button, down_button);
     };
 
     var register = function (notebook) {

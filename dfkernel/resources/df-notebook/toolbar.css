@@ -1,37 +1,66 @@
-.dataflow-toolbar-container {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    flex-grow: 1;
-    overflow: hidden;
-    position: relative;
-}
+/*.dataflow-toolbar-container {*/
+    /*width: 100%;*/
+    /*display: flex;*/
+    /*flex-direction: row;*/
+    /*flex-grow: 1;*/
+    /*overflow: hidden;*/
+    /*position: relative;*/
+/*}*/
 
-.dependency-area {
-    display: block;
-    width: 50%;
-}
+/*.dependency-area {*/
+    /*display: block;*/
+    /*width: 50%;*/
+/*}*/
 
-.celltoolbar {
-    height: auto;
-}
+/*.celltoolbar {*/
+    /*height: auto;*/
+/*}*/
 
 /* css overflow by Josh Crozier
 https://stackoverflow.com/questions/34519511/smart-overflow-in-html-is-there-any-way-to-put-ellipsis-with-a-link-at#answer-34519915
 */
-.smart-overflow {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/*.smart-overflow {*/
+  /*overflow: hidden;*/
+  /*text-overflow: ellipsis;*/
+  /*white-space: nowrap;*/
+/*}*/
+/*a.ellipsis-link {*/
+  /*display: none;*/
+/*}*/
+/*.smart-overflow a.ellipsis-link {*/
+  /*display: block;*/
+  /*position: relative;*/
+  /*right: 0; bottom: 0;*/
+  /*width: 1.2em;*/
+  /*height: 100%;*/
+  /*cursor: pointer;*/
+/*}*/
+
+.dftoolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-a.ellipsis-link {
-  display: none;
+
+.dftoolbar-inline {
+    display:flex;
+    align-items:center; /* vertically aligned! */
+    justify-content: center;
 }
-.smart-overflow a.ellipsis-link {
-  display: block;
-  position: relative;
-  right: 0; bottom: 0;
-  width: 1.2em;
-  height: 100%;
-  cursor: pointer;
+
+.dftoolbar-inline i.fa-chevron-circle-down {
+    font-size: 1.5em;
+}
+
+.dftoolbar-inline i.fa-chevron-circle-up {
+    font-size: 1.5em;
+}
+
+.dftoolbar-links {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.dftoolbar-inline .form-check-label {
+    margin-bottom: 0;
 }
