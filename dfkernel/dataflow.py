@@ -10,6 +10,7 @@ class DataflowHistoryManager(object):
     def __init__(self, shell, **kwargs):
         self.shell = shell
         self.flags = dict(kwargs)
+        self.auto_update_flags = {}
         # self.flags['silent'] = True
         self.clear()
 
@@ -23,10 +24,15 @@ class DataflowHistoryManager(object):
             self.code_cache[key] = code
             self.set_stale(key)
             self.func_cached[key] = False
+            if key not in self.auto_update_flags:
+                self.auto_update_flags[key] = False;
 
     def update_codes(self, code_dict):
         for key, val in code_dict.items():
             self.update_code(key, val)
+
+    def update_auto_update(self, flags):
+        self.auto_update_flags.update(flags)
 
     def set_stale(self, key):
         self.code_stale[key] = True
@@ -176,6 +182,13 @@ class DataflowHistoryManager(object):
         self.shell.uuid = child_uuid
         return retval.result
 
+    def run_auto_updates(self, k):
+        for cid in self.get_downstream(k):
+            if self.auto_update_flags[cid]:
+                upstreams = self.get_all_upstreams(cid)
+                if all(not self.is_stale(upcid) or self.auto_update_flags[upcid]
+                       for upcid in upstreams):
+                    retval = self.execute_cell(cid)
 
     def __getitem__(self, k):
         res = self.get_item(k)

@@ -176,7 +176,9 @@ define([
         var code_dict = this.notebook.get_code_dict()
         var dfkernel_data = {"uuid": this.uuid,
             "code_dict": code_dict,
-            "output_tags": this.notebook.get_output_tags(Object.keys(code_dict))};
+            "output_tags": this.notebook.get_output_tags(Object.keys(code_dict)),
+            "auto_update_flags": this.notebook.get_auto_update_flags()
+        };
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
             silent: false, store_history: true,
             stop_on_error: stop_on_error, user_expressions: {
