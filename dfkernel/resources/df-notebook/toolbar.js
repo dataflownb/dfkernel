@@ -117,9 +117,9 @@ define([
                     .addClass("btn btn-default btn-xs")
                     .append($('<i class="fa-angle-double-up fa">'));
                 highlight.click(function() {
-                    var upstreams = cell.dfgraph.get_all_upstreams(cell.uuid);
+                    var upstreams = cell.dfgraph.all_upstream_cell_ids(cell.uuid);
                     console.log("UPSTREAMS:", upstreams);
-                    notebook.select_cells_by_id(cell.dfgraph.get_all_upstreams(cell.uuid));
+                    notebook.select_cells_by_id(upstreams);
                     return false;
                 });
                 links.append(highlight);
@@ -147,9 +147,9 @@ define([
                     .addClass("btn btn-default btn-xs")
                     .append($('<i class="fa-angle-double-down fa">'));
                 highlight.click(function() {
-                    var downstreams = cell.dfgraph.get_downstreams(cell.uuid);
+                    var downstreams = cell.dfgraph.all_downstream(cell.uuid);
                     console.log("DOWNSTREAMS:", downstreams);
-                    notebook.select_cells_by_id(cell.dfgraph.get_downstreams(cell.uuid));
+                    notebook.select_cells_by_id(downstreams);
                     return false;
                 });
                 links.append(highlight);

@@ -113,6 +113,18 @@ define([
         return res;
     };
 
+    DfGraph.prototype.all_upstream_cell_ids = function(cid) {
+        var that = this;
+        var uplinks = this.get_imm_upstreams(cid);
+        var all_cids = [];
+        while (uplinks.length > 0) {
+            var up_cid = uplinks.pop();
+            all_cids.setadd(up_cid);
+            uplinks = uplinks.concat(this.get_imm_upstreams(up_cid));
+        }
+        return all_cids;
+    };
+
     /** @method updates all downstream links with downstream updates passed from kernel */
     DfGraph.prototype.update_down_links = function (downupdates) {
         var that = this;
