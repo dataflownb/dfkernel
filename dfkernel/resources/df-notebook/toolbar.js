@@ -78,7 +78,8 @@ define([
         update_inputs(dfdiv, cell);
         update_outputs(dfdiv, cell);
         // add_buttons(div, cell);
-        add_auto_update_checkbox(dfdiv, cell);
+        // add_auto_update_checkbox(dfdiv, cell);
+        add_auto_update_button(dfdiv, cell);
         $(div).append(dfdiv);
         //var uuid = cell.cell_imm_upstream_deps;
         //update_overflows(div);
@@ -115,10 +116,10 @@ define([
                     });
                 var highlight = $('<button/>')
                     .addClass("btn btn-default btn-xs")
+                    .attr('title','Highlight Upstream Cells')
                     .append($('<i class="fa-angle-double-up fa">'));
                 highlight.click(function() {
                     var upstreams = cell.dfgraph.all_upstream_cell_ids(cell.uuid);
-                    console.log("UPSTREAMS:", upstreams);
                     notebook.select_cells_by_id(upstreams);
                     return false;
                 });
@@ -145,10 +146,10 @@ define([
                     });
                 var highlight = $('<button/>')
                     .addClass("btn btn-default btn-xs")
+                    .attr('title', 'Highlight Downstream Cells')
                     .append($('<i class="fa-angle-double-down fa">'));
                 highlight.click(function() {
                     var downstreams = cell.dfgraph.all_downstream(cell.uuid);
-                    console.log("DOWNSTREAMS:", downstreams);
                     notebook.select_cells_by_id(downstreams);
                     return false;
                 });
@@ -185,6 +186,25 @@ define([
         var up_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-n'}}).attr("title", "Highlight Upstream");
         var down_button = $('<div/>').button({icons:{primary:'ui-icon-circle-arrow-s'}}).attr("title", "Highlight Downstream");
         container.append(up_button, down_button);
+    };
+
+    var add_auto_update_button = function(div, cell) {
+        var container = $(div);
+        var refresh = $('<button/>')
+            .addClass("btn btn-default btn-xs");
+        var refresh_icon = $('<span class="fa-stack">' +
+                          '<i class="fa fa-refresh fa-stack-1x"></i>' +
+                          '</span>');
+        if (!(cell.auto_update)) {
+            refresh_icon.addClass('crossed-out');
+        }
+        refresh.append(refresh_icon);
+        refresh.click(function() {
+            refresh_icon.toggleClass('crossed-out');
+            cell.auto_update = !(refresh_icon.hasClass('crossed-out'));
+            return false;
+        });
+        container.append(refresh);
     };
 
     var register = function (notebook) {

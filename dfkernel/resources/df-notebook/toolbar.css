@@ -68,3 +68,25 @@ https://stackoverflow.com/questions/34519511/smart-overflow-in-html-is-there-any
 .dftoolbar-inline .form-check-input {
     margin-top: 0;
 }
+
+.fa-stack {
+    width: 1em;
+    height: 1em;
+    line-height: 1em;
+}
+
+/* https://stackoverflow.com/questions/28723319/draw-a-slash-line-over-glyphicon-or-font-awesome-icon-using-css */
+.crossed-out:after{
+    position: relative;
+    content: '|';
+    display: block;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.5em;
+    left: -0.075em;
+    top: -0.075em;
+    -webkit-transform: rotate(-45deg);
+    -moz-transform: rotate(-45deg);
+    -o-transform: rotate(-45deg);
+    -ms-transform: rotate(-45deg);
+}

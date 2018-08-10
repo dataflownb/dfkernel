@@ -38,6 +38,7 @@ define([
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
             this.dfgraph = this.notebook.session.dfgraph;
+            this.auto_update = false;
             this.was_changed = true;
             this.internal_nodes = [];
             // this.cell_info_area = null;
