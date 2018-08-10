@@ -121,10 +121,10 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-
+            var icon_status = $('<div></div>').addClass("icon_status");
+            this.input.prepend(icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
-                //set input field background color to "yellow"
                 //only if the input is not empty
                 if(that.get_text() !== that.code_cached) {
                     that.input[0].childNodes[0].setAttribute("class","edited");
