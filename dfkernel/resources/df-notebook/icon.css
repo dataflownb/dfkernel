@@ -1,5 +1,14 @@
 .newCell::before {
     content: url(./img/fa/plus-circle.svg);
+div.icon_status {
+    display: block;
+    cursor: pointer;
+    color: #333;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 1ex;
+    padding-right: 1ex;
+    width: 1ex;
 }
 .editedNewCell::before {
     content: url(./img/fa/plus-circle-yellow.svg);
