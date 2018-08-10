@@ -412,6 +412,7 @@ define([
 
 
             _super.call(this, data);
+            this.code_cached = this.get_text();
             switch(this.metadata.cell_status) {
                 case 0:
                 case 1:
