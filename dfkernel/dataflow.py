@@ -77,26 +77,29 @@ class DataflowHistoryManager(object):
         # dependencies are a DAG
         self.dep_parents = defaultdict(set) # child -> list(parent)
         self.dep_children = defaultdict(set) # parent -> list(child)
-        self.dep_semantic_children = defaultdict(set)
-        self.dep_semantic_parents = defaultdict(set)
+        self.dep_semantic_parents = defaultdict(dict)
         self.last_calculated_ctr = 0
 
     def update_dependencies(self, parent, child):
         self.storeditems.append({'parent':parent, 'child':child})
         self.dep_parents[child].add(parent)
         self.dep_children[parent].add(child)
-        self.dep_semantic_parents[child].add(parent)
-        self.dep_semantic_children[parent].add(child)
+        if parent not in self.dep_semantic_parents[child]:
+            self.dep_semantic_parents[child][parent] = set([parent])
 
-    def update_semantic_dependencies(self, parent, child):
-        self.dep_semantic_parents[child].add(parent)
-        self.dep_semantic_children[parent].add(child)
+    def update_semantic_dependencies(self, parent, child,item=None):
+        if item:
+            self.dep_semantic_parents[child][parent].add(item)
 
     def remove_dependencies(self, parent, child):
         self.remove_dep(parent, child, self.dep_parents, self.dep_children)
 
-    def remove_semantic_dependencies(self, parent, child):
-        self.remove_dep(parent, child, self.dep_semantic_parents, self.dep_semantic_children)
+    def remove_semantic_dependencies(self, parent, child,item=None):
+        if parent in self.dep_semantic_parents[child]:
+            if item:
+                self.dep_semantic_parents[child][parent].discard(item)
+            else:
+                 self.dep_semantic_parents[child][parent].discard(parent)
 
     @staticmethod
     def remove_dep(parent, child, parents, children):
@@ -106,44 +109,44 @@ class DataflowHistoryManager(object):
 
 
     def all_semantic_upstream(self, k):
-        return self.get_all_upstreams(k, self.dep_semantic_parents)
+        return self.get_all_upstreams(k, True)
 
     def all_upstream(self, k):
-        return self.get_all_upstreams(k, self.dep_parents)
+        return self.get_all_upstreams(k, False)
 
-    @staticmethod
-    def get_all_upstreams(k, dep_parents):
+
+    def get_all_upstreams(self, k, semantic=False):
         visited = set()
-        res = set()
-        frontier = list(dep_parents[k[:6]])
-        while frontier:
-            cid = frontier.pop(0)[:6]
-            visited.add(cid)
-            res.add(cid)
-            for pid in dep_parents[cid]:
-                if pid[:6] not in visited:
-                    frontier.append(pid[:6])
-        return list(res)
-
-    def all_semantic_downstream(self, k):
-        return self.get_all_downstream(k, self.dep_semantic_children)
-
-    def all_downstream(self, k):
-        return self.get_all_downstream(k, self.dep_children)
-
-    @staticmethod
-    def get_all_downstream(k, dep_children):
-        visited = set()
-        res = []
-        frontier = list(dep_children[k])
+        res = set(self.get_semantic_upstream(k)) if semantic else set()
+        frontier = list(self.dep_parents[k])
         while frontier:
             cid = frontier.pop(0)
             visited.add(cid)
-            res.append(cid)
-            for pid in dep_children[cid]:
+            if semantic:
+                res.update(self.get_semantic_upstream(cid))
+            else:
+                res.add(cid)
+            for pid in self.dep_parents[cid]:
                 if pid not in visited:
                     frontier.append(pid)
-        return res
+        return list(res)
+
+
+    def all_downstream(self, k):
+        return self.get_all_downstream(k)
+
+    def get_all_downstream(self, k):
+        visited = set()
+        res = set()
+        frontier = list(self.dep_children[k])
+        while frontier:
+            cid = frontier.pop(0)
+            visited.add(cid)
+            res.add(cid)
+            for pid in self.dep_children[cid]:
+                if pid not in visited:
+                    frontier.append(pid)
+        return list(res)
 
     def get_downstream(self, k):
         return list(self.dep_children[k])
@@ -151,11 +154,14 @@ class DataflowHistoryManager(object):
     def get_upstream(self, k):
         return list(self.dep_parents[k])
 
-    def get_semantic_downstream(self, k):
-        return list(self.dep_semantic_children[k])
-
     def get_semantic_upstream(self, k):
-        return list(self.dep_semantic_parents[k])
+        semantic_up = []
+        for key in self.dep_semantic_parents[k].keys():
+            semantic_up += [key+item for item in self.dep_semantic_parents[k][key]]
+        return semantic_up
+
+    def raw_semantic_upstream(self,k):
+        return self.dep_semantic_parents[k]
 
     def update_downstream(self, k):
         # this recurses via run_cell which checks for the update_downstream_deps
@@ -445,7 +451,8 @@ class DataflowNamespace(dict):
         return k in self.__links__ and self.__links__[k] != uuid
 
     # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
-    get = MutableMapping.get
+    # FIXME: Changing get causes strange dependency issues
+    #get = MutableMapping.get
     keys = MutableMapping.keys
     items = MutableMapping.items
     values = MutableMapping.values
