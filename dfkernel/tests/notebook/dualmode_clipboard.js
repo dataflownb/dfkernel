@@ -2,6 +2,7 @@
        
 // Test
 casper.notebook_test(function () {
+    var num_cells;
     var a = 'print("a")';
     var index = this.append_cell(a);
     this.execute_cell_then(index);
@@ -16,11 +17,18 @@ casper.notebook_test(function () {
 
     this.then(function () {
          // Copy/paste/cut
-        var num_cells = this.get_cells_length();
+        num_cells = this.get_cells_length();
         this.test.assertEquals(this.get_cell_text(1), a, 'Verify that cell 1 is a');
         this.select_cell(1);
         this.trigger_keydown('x'); // Cut
         this.validate_notebook_state('x', 'command', 1);
+    });
+
+    this.thenEvaluate(function () {
+        Jupyter.notebook.get_code_dict();
+    });
+
+    this.then(function () {
         this.test.assertEquals(this.get_cells_length(), num_cells-1,  'Verify that a cell was removed.');
         this.test.assertEquals(this.get_cell_text(1), b, 'Verify that cell 2 is now where cell 1 was.');
         this.select_cell(2);
