@@ -446,6 +446,16 @@ define([
     (function(_super) {
         Notebook.prototype.merge_cells = function (indices,into_last) {
             _super.apply(this,arguments);
+            // Check if trying to merge above on topmost cell or wrap around
+            // when merging above
+            if (indices.filter(function(item) {return item < 0;}).length > 0) {
+                return;
+            }
+            for (var i=0; i < indices.length; i++) {
+                if(!this.get_cell(indices[i]).is_mergeable()) {
+                    return;
+                }
+            }
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
                 ce.remove();
