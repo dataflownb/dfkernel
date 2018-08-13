@@ -15,8 +15,9 @@ class LinkedResult(OrderedDict):
         return self.__uuid__
 
     def __update_deps__(self, item):
-        self.__dfhist__.update_semantic_dependencies(self.__uuid__ + item,
-                                                     self.__dfhist__.shell.uuid)
+        self.__dfhist__.update_semantic_dependencies(self.__uuid__,
+                                                     self.__dfhist__.shell.uuid,
+                                                     item)
         self.__dfhist__.remove_semantic_dependencies(self.__uuid__,
                                                      self.__dfhist__.shell.uuid)
 
