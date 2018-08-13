@@ -104,11 +104,7 @@ define([
                     ce.remove();
                     // make sure that there is a new cell at the bottom
                     if (index === (this.ncells()-1)) {
-                        this.command_mode();
-                        this.insert_cell_below();
-                        this.select(index+1);
-                        this.edit_mode();
-                        this.scroll_to_bottom();
+                        this.insert_cell_at_bottom();
                         this.set_dirty(true);
                     }
                 }
