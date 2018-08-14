@@ -484,9 +484,9 @@ define([
         // 11 is saved error cell, yellow times circle
         // 12 is edited from 11
         var i;
-        var title = ["New cell", "Edited new cell", "Success cell", "Edited success cell",
-                     "Error cell", "Edited error cell", "Saved success cell", "Edited saved cell",
-                     "Executing", "Saved success cell", "Saved error cell", "Saved error cell", "Edited saved cell"];
+        var title = ["New", "Edited new", "Success", "Edited success",
+                     "Error", "Edited error", "Saved success", "Edited saved",
+                     "Executing", "Saved success", "Saved error", "Saved error", "Edited saved"];
         for(i=0;i<13;i++) {
             $('#'+this.uuid).find('.icon_status').removeClass('cell_state_'+i);
         }
