@@ -48,6 +48,8 @@ define(['jquery',
     // only change is to pass the metadata to the prompt function!
     OutputArea.prototype.append_execute_result = function (json) {
         var n = json.execution_count || ' ';
+        // for a hack to get widget auto-updates working
+        this.execution_count = n;
         var toinsert = this.create_output_area();
         this._record_display_id(json, toinsert);
         if (this.prompt_area) {

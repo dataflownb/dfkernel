@@ -65,6 +65,32 @@ define(["jquery",
                 Jupyter._dfkernel_loaded = true;
             });
 
+            // hack to get widget auto-updates working...
+            (function(_super) {
+                Object.getPrototypeOf(Jupyter.notebook.kernel.widget_manager).create_view = function(model, options) {
+                    var _super_result = _super.apply(this, arguments);
+                    model.on('change:value', function() {
+                        var m = this;
+                        var view_ids = Object.keys(m.views);
+                        view_ids.forEach(function (vid) {
+                            m.views[vid].then(function(view) {
+                                // console.log("CELL CHANGE:", cell, m.get('value'));
+                                var cell = Jupyter.notebook.get_code_cell(view.options.output.execution_count);
+                                // want to do downstream execution only
+                                Jupyter.notebook.session.dfgraph.get_downstreams(cell.uuid).forEach(function(cid) {
+                                    // console.log("DOWNSTREAM", cid);
+                                    if (Jupyter.notebook.get_code_cell(cid).auto_update) {
+                                        Jupyter.notebook.get_code_cell(cid).execute();
+                                    }
+                                });
+                            });
+                        });
+                    }, model);
+                    return _super_result;
+                };
+            }(Object.getPrototypeOf(Jupyter.notebook.kernel.widget_manager).create_view));
+
+
             Jupyter.toolbar.add_buttons_group([
                   {
                        'label'   : 'Open/Close Dependency View',
