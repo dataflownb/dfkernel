@@ -97,22 +97,16 @@ define([
             for(var cell_uuid in this.metadata.hl_list) {
                 if(this.metadata.hl_list.hasOwnProperty(cell_uuid)) {
                     code_dict[cell_uuid] = "";
-                    if (this.metadata.hl_list[cell_uuid] !== null) {
-                        var horizontal_line = this.metadata.hl_list[cell_uuid];
-                        var index = this.find_cell_index(horizontal_line);
-                        var ce = this.get_cell_element(index);
-                        ce.remove();
-                        // make sure that there is a new cell at the bottom
-                        if (index === (this.ncells()-1)) {
-                            this.command_mode();
-                            this.insert_cell_below();
-                            this.select(index+1);
-                            this.edit_mode();
-                            this.scroll_to_bottom();
-                            this.set_dirty(true);
-                        }
-                    }
+                    var horizontal_line = this.metadata.hl_list[cell_uuid];
                     delete this.metadata.hl_list[cell_uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    // make sure that there is a new cell at the bottom
+                    if (index === (this.ncells()-1)) {
+                        this.insert_cell_at_bottom();
+                        this.set_dirty(true);
+                    }
                 }
             }
         }
@@ -462,22 +456,22 @@ define([
     }(Notebook.prototype.undelete_cell));
 
     (function(_super) {
-        Notebook.prototype.insert_cell_at_index = function (type,index) {
-            var cell = _super.call(this, type,index);
-            if (cell.cell_type == "code") {
-                cell.set_icon_status(0);
-            }
-            return cell;
-        };
-    }(Notebook.prototype.insert_cell_at_index));
-
-    (function(_super) {
         Notebook.prototype.merge_cells = function (indices,into_last) {
             _super.apply(this,arguments);
+            // Check if trying to merge above on topmost cell or wrap around
+            // when merging above
+            if (indices.filter(function(item) {return item < 0;}).length > 0) {
+                return;
+            }
+            for (var i=0; i < indices.length; i++) {
+                if(!this.get_cell(indices[i]).is_mergeable()) {
+                    return;
+                }
+            }
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
                 ce.remove();
-                this.metadata.hl_list[ce[0].id] = null;
+                delete this.metadata.hl_list[ce[0].id];
             }
         };
     }(Notebook.prototype.merge_cells));
