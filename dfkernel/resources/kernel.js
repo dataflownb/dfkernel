@@ -1,5 +1,6 @@
 define(["jquery",
     "base/js/namespace",
+    "require",
     './df-notebook/depview.js',
     './df-notebook/dfgraph.js',
     './df-notebook/codecell.js',
@@ -8,7 +9,7 @@ define(["jquery",
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter, depview, dfgraph) {
+    function($, Jupyter, require, depview, dfgraph) {
 
         Jupyter._dfkernel_loaded = false;
 
@@ -67,7 +68,9 @@ define(["jquery",
                        }
 
                }]);
-               $('head').append('<link rel="stylesheet" type="text/css" href="dfkernel/resources/df-notebook/icon.css">');
+                var stylesheet = $('<link rel="stylesheet" type="text/css">');
+                stylesheet.attr('href',require.toUrl("./df-notebook/icon.css"));
+                $('head').append(stylesheet);
         };
         return {onload:onload};
 });
