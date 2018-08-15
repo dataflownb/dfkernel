@@ -121,7 +121,7 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-            var icon_status = $('<div></div>').addClass("icon_status");
+            var icon_status = $('<div></div>').addClass("icon_status new-cell verified");
             this.input.prepend(icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
@@ -484,14 +484,28 @@ define([
         // 11 is saved error cell, yellow times circle
         // 12 is edited from 11
         var i;
+        var iconClass = ["new-cell", "edited-new", "success-cell", "edited-success",
+                         "error-cell", "edited-error", "saved-success", "edited-saved",
+                         "executing", "saved-success", "saved-error", "saved-error", "edited-saved"];
         var title = ["New", "Edited new", "Success", "Edited success",
                      "Error", "Edited error", "Saved success", "Edited saved",
                      "Executing", "Saved success", "Saved error", "Saved error", "Edited saved"];
+        var colorClass = ["verified","unverified","error"];
+        for(i=0;i<3;i++) {
+            $('#'+this.uuid).find('.icon_status').removeClass(colorClass[i]);
+        }
+        if ([0,2].includes(cell_status)) {
+            $('#'+this.uuid).find('.icon_status').addClass(colorClass[0]);
+        } else if ( [1,3,5,6,7,8,9,10,11,12].includes(cell_status) ) {
+            $('#'+this.uuid).find('.icon_status').addClass(colorClass[1]);
+        } else if ( cell_status == 4 ) {
+            $('#'+this.uuid).find('.icon_status').addClass(colorClass[2]);
+        }
         for(i=0;i<13;i++) {
-            $('#'+this.uuid).find('.icon_status').removeClass('cell_state_'+i);
+            $('#'+this.uuid).find('.icon_status').removeClass(iconClass[i]);
         }
         this.metadata.cell_status = cell_status;
-        $('#'+this.uuid).find('.icon_status').addClass('cell_state_'+cell_status).prop("title",title[cell_status]);
+        $('#'+this.uuid).find('.icon_status').addClass(iconClass[cell_status]).prop("title",title[cell_status]);
     }
     return {CodeCell: CodeCell};
 });
