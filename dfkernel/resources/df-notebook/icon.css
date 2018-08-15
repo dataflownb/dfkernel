@@ -8,27 +8,68 @@ div.icon_status {
     padding-right: 1ex;
     width: 1ex;
 }
-.cell_state_0::before {
-  content: url(img/fa/plus-circle.svg);
+.new-cell::before {
+  content: "\f055";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_1::before {
-  content: url(img/fa/plus-circle-yellow.svg);
+.edited-new::before {
+  content: "\f055";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_2::before {
-  content: url(img/fa/check-circle.svg);
+.success-cell::before {
+  content: "\f058";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_3::before, .cell_state_5::before, .cell_state_7::before, .cell_state_12::before {
-  content: url(img/fa/exclamation-circle.svg);
+.edited-success::before, .edited-error::before, .edited-saved::before, .edited-saved::before {
+  content: "\f06a";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_4::before {
-  content: url(img/fa/times-circle.svg);
+.error-cell::before {
+  content: "\f057";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_6::before, .cell_state_9::before {
-  content: url(img/fa/check-circle-yellow.svg);
+.saved-success::before, .saved-success::before {
+  content: "\f058";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_8::before {
-  content: url(img/fa/clock.svg);
+.executing::before {
+  content: "\f017";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
 }
-.cell_state_10::before, .cell_state_11::before {
-  content: url(img/fa/times-circle-yellow.svg);
+.saved-error::before, .saved-error::before {
+  content: "\f057";
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.2ex;
+}
 }
