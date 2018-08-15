@@ -149,6 +149,43 @@ casper.notebook_test(function () {
     });
 
     // Test underscore for Out[]
+    var global_uuid = '';
+
+    this.then(function () {
+
+        this.then(function () {
+
+            var text = '_';
+            var index = this.append_cell(text);
+            var uuid = '';
+
+            this.then(function () {
+                uuid = global_uuid = this.get_uuid(0);
+                this.set_cell_editor_cursor(index, 0, 1);
+                this.start_completion(index);
+            });
+
+            this.wait_for_completion(index);
+
+            this.then(function () {
+                var completed = this.get_completer_results(index,0);
+                this.test.assertEquals(completed, 'Out['+uuid+']', 'underscore successfully completes to Out['+uuid+']');
+            });
+        });
+    });
+
+    this.then(function () {
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 0);
+            var cell = Jupyter.notebook.get_cell(0);
+            cell.set_text('raise()');
+            cell.execute();
+        });
+
+        this.wait_for_output(0);
+    });
+
+    // Test underscore for Error Completions
     this.then(function () {
 
         this.then(function () {
@@ -167,7 +204,8 @@ casper.notebook_test(function () {
 
             this.then(function () {
                 var completed = this.get_completer_results(index,0);
-                this.test.assertEquals(completed, 'Out['+uuid+']', 'underscore successfully completes to Out['+uuid+']');
+                this.test.assertNotEquals(completed, 'Out['+uuid+']', 'underscore does not complete to Out['+uuid+']');
+                this.test.assertEquals(completed, 'Out['+global_uuid+']', 'underscore still completes to Out['+global_uuid+']');
             });
         });
     });
