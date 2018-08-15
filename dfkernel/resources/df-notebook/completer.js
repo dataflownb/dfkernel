@@ -45,7 +45,7 @@ define([
         // be slow here
         retval = notebook.get_cells()
             .filter(function (d) {
-                return (d.cell_type == 'code' && d.uuid.startsWith(piece)); })
+                return (d.cell_type == 'code' && d.uuid.startsWith(piece) && !notebook.get_code_cell(d.uuid).had_error); })
             .map(function(d) { return d.uuid; });
         return retval;
     };
