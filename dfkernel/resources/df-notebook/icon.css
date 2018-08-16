@@ -49,7 +49,7 @@ div.icon_status {
 }
 
 .df-verified::before {
-  color : #00ff00;
+  color : #008800;
 }
 
 .df-unverified::before {
