@@ -46,6 +46,7 @@ define([
             this.cell_downstream_deps = null;
             this.code_cached = '';
             this.metadata.cell_status = 0;
+            this.had_error = false;
         }
     };
 
@@ -205,7 +206,7 @@ define([
             });
         };
     }(CodeCell.prototype.bind_events));
-
+  
     CodeCell.prototype.update_last_executed = function() {
         var output_tags = this.notebook.get_cell_output_tags(this.uuid);
         if (output_tags.length === 0) {
