@@ -514,7 +514,7 @@ define([
         var title = ["New", "Edited new", "Success", "Edited success",
                      "Error", "Edited error", "Saved success", "Edited saved",
                      "Executing", "Saved success", "Saved error", "Saved error", "Edited saved"];
-        var colorClass = ["verified","unverified","error"];
+        var colorClass = ["df-verified","df-unverified","df-error"];
         for(i=0;i<3;i++) {
             $('#'+this.uuid).find('.icon_status').removeClass(colorClass[i]);
         }

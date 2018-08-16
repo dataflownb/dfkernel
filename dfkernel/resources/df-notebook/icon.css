@@ -72,12 +72,12 @@ div.icon_status {
   text-decoration: inherit;
   font-size: 1.2ex;
 }
-.verified::before {
+.df-verified::before {
   color : #00ff00;
 }
-.unverified::before {
+.df-unverified::before {
   color : #eac234;
 }
-.error::before {
+.df-error::before {
   color : #ff0000;
 }
