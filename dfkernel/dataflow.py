@@ -3,6 +3,13 @@ from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from dfkernel.dflink import LinkedResult
 import itertools
 
+class DataflowCacheException(Exception):
+    def __init__(self, cid):
+        self.cid = cid
+
+    def __str__(self):
+        return "Cell '{}' has not yet been computed".format(self.cid)
+
 class DataflowHistoryManager(object):
     storeditems = []
     tup_flag = False
@@ -11,6 +18,7 @@ class DataflowHistoryManager(object):
         self.shell = shell
         self.flags = dict(kwargs)
         self.auto_update_flags = {}
+        self.force_cached_flags = {}
         # self.flags['silent'] = True
         self.clear()
 
@@ -26,6 +34,8 @@ class DataflowHistoryManager(object):
             self.func_cached[key] = False
             if key not in self.auto_update_flags:
                 self.auto_update_flags[key] = False;
+            if key not in self.force_cached_flags:
+                self.force_cached_flags[key] = False;
 
     def update_codes(self, code_dict):
         for key, val in code_dict.items():
@@ -33,6 +43,9 @@ class DataflowHistoryManager(object):
 
     def update_auto_update(self, flags):
         self.auto_update_flags.update(flags)
+
+    def update_force_cached(self, flags):
+        self.force_cached_flags.update(flags)
 
     def set_stale(self, key):
         self.code_stale[key] = True
@@ -206,6 +219,13 @@ class DataflowHistoryManager(object):
     def get_item(self, k):
         self.stale_check(k)
         self.update_dependencies(k, self.shell.uuid)
+
+        # force recompute
+        if self.force_cached_flags[k]:
+            if k not in self.value_cache:
+                raise DataflowCacheException(k)
+            return self.value_cache[k]
+
         # check if we need to recompute
         if not self.is_stale(k):
             return self.value_cache[k]

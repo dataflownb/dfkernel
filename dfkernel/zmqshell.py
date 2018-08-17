@@ -389,6 +389,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
         auto_update_flags = dfkernel_data.get("auto_update_flags", [])
+        force_cached_flags = dfkernel_data.get("force_cached_flags", [])
         # print("CODE_DICT:", code_dict)
         #print("RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
@@ -398,6 +399,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         if store_history:
             self.dataflow_history_manager.update_codes(code_dict)
             self.dataflow_history_manager.update_auto_update(auto_update_flags)
+            self.dataflow_history_manager.update_force_cached(force_cached_flags)
             self.user_ns._add_links(output_tags)
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:

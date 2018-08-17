@@ -140,6 +140,11 @@ define([
             function(c) { return [c.uuid, c.auto_update]; });
     };
 
+    Notebook.prototype.get_force_cached_flags = function() {
+        return this.get_code_cells().map(
+            function(c) { return [c.uuid, c.force_cached]; });
+    };
+
     Notebook.prototype.has_id = function(id) {
         return this.get_cells().some(function (d) {
             return (d.cell_type == 'code' && d.uuid == id);

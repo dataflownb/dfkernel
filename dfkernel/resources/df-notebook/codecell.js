@@ -39,6 +39,7 @@ define([
             this.uuid = this.notebook.get_new_id();
             this.dfgraph = this.notebook.session.dfgraph;
             this.auto_update = false;
+            this.force_cached = false;
             this.was_changed = true;
             this.internal_nodes = [];
             // this.cell_info_area = null;
@@ -177,7 +178,8 @@ define([
         var dfkernel_data = {"uuid": this.uuid,
             "code_dict": code_dict,
             "output_tags": this.notebook.get_output_tags(Object.keys(code_dict)),
-            "auto_update_flags": this.notebook.get_auto_update_flags()
+            "auto_update_flags": this.notebook.get_auto_update_flags(),
+            "force_cached_flags": this.notebook.get_force_cached_flags(),
         };
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
             silent: false, store_history: true,

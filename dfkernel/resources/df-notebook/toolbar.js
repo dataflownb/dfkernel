@@ -22,6 +22,7 @@ define([
         var dfdiv = $('<div class="dftoolbar">');
         update_inputs(dfdiv, cell);
         update_outputs(dfdiv, cell);
+        add_force_cached_button(dfdiv, cell);
         add_auto_update_button(dfdiv, cell);
         $(div).append(dfdiv);
     };
@@ -113,6 +114,23 @@ define([
             return false;
         });
         container.append(refresh);
+    };
+
+    var add_force_cached_button = function(div, cell) {
+        var container = $(div);
+        var prompt = $('<button/>')
+            .addClass("btn btn-default btn-xs")
+            .attr('title', 'Only Update Explicitly')
+            .append($('<i class="fa-database fa">'));
+        if (cell.force_cached) {
+            prompt.addClass('active');
+        }
+        prompt.click(function() {
+            prompt.toggleClass('active');
+            cell.force_cached = prompt.hasClass('active');
+            return false;
+        });
+        container.append(prompt);
     };
 
     var register = function (notebook) {
