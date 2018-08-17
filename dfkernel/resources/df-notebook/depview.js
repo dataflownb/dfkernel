@@ -1,565 +1,513 @@
-define(["jquery",
-    "base/js/namespace",
-    './d3.v4.min.js',
-    './dagre-d3.min.js',
-    './jquery-ui.js'
+// Copyright (c) Dataflow Notebook Development Team.
+// Distributed under the terms of the BSD-3 License.
+/**
+ *
+ *
+ * @module depview
+ * @namespace depview
+ * @class DepView
+ */
+
+define(["require",
+        "jquery",
+        "lodash",
+        "graphlib",
+        "graphdotwriter",
+        "base/js/namespace",
+        'd3',
+        'viz',
+        'd3graphviz',
+        'jquery-ui',
     ],
-    function($, Jupyter, d3, dagreD3) {
+    function(require,$, _, GraphLib, Writer, Jupyter, d3, Viz) {
     "use strict";
-        var max_level,min_level = 0;
-        var cell_links = [],
-            cell_list = [],
-            cell_child_nums = [],
-            output_nodes = [],
-            internal_nodes = [];
-        var globaldf = false;
-        var globalselect = false;
+
+    var DepView = function (dfgraph,parentdiv,labelstyles) {
+        /**
+         * Constructor
+         *
+         * The DepView which contains all the information required for Visualization
+         *
+         * Parameters
+         *  dfgraph: an instance of the DfGraph class that the Depviewer can call
+         *  parentdiv: if not set will default to lower-header-bar in the header
+         *  labelstyles: a group of labelstyles that will be applied directly to the all text in the graph
+         *
+         */
+
+        //Flags
+        this.is_open = false;
+        this.dataflow = true;
+        this.selected = false;
+
+        //Turn on console logs
+        this.debug_mode = false;
+
+        //Divs and Div related variables
+        this.parentdiv = parentdiv || 'div.lower-header-bar';
+        this.depdiv = null;
+        this.side_panel = null;
+        this.nodespanel = null;
+        this.svg = null;
+        this.tabular = null;
+        this.execute_panel = null;
+
+        //Label Styles should be set in text so that GraphViz can properly size the nodes
+        this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
+
+        //Divs are created and defined in here
+        this.create_dep_div();
+
+        //This has been largely factored out but this provides the option to change the label of a cell
+        this.cell_label = "";
+
+        this.cell_links = [];
+        this.cell_list = [];
+        this.cell_child_nums = [];
+        this.output_nodes = [];
+        this.active_cell = '';
+
+        this.dfgraph = dfgraph;
 
 
-        var margin = {top:20, right:120, bottom:20, left: 120},
-            width = $(window).width() - margin.right - margin.left,
-            height = $(window).height() - margin.top - margin.bottom;
+        this.dotgraph = [];
 
-        var close_div = function(){
-            var dep_div = $('.dep-div')[0];
-                dep_div.style.width = "0%";
-                dep_div.zIndex = '-999';
-                $('.control-div').remove();
-                d3.select('#source-code').remove();
-                d3.selectAll("div.tooltipsy").remove();
-                d3.select("div.dep-div svg").transition().delay(1000).remove();
-        };
+        this.bind_events();
+
+    };
 
 
-        var create_dep_div = function() {
+    DepView.prototype = Object.create(DepView.prototype);
+
+    /** @method bind_events */
+    DepView.prototype.bind_events = function () {
+        var that = this;
+        var nb = Jupyter.notebook;
+
+        nb.events.on('create.Cell', function() {
+            //FIXME: This triggers on undelete update cell styles in here too
+            if(that.is_open){
+                that.update_cell_lists();
+            }
+        });
+        nb.events.on('select.Cell', function(){
+            var cell = Jupyter.notebook.get_selected_cell();
+           if(cell.cell_type === 'code'){
+               that.set_details(cell.uuid);
+           }
+        });
+        nb.events.on('delete.Cell',function () {
+           //FIXME: Update cell styles in here to ensure proper cells show deleted status
+            if(that.is_open){
+                console.log('Cell Deleted');
+            }
+        });
+    };
+
+    /** @method closes the depviewer **/
+    DepView.prototype.close_div = function(){
+        this.is_open = false;
+        this.depdiv.style.display = "none";
+            d3.select(this.parentdiv).transition().delay(100).style('height','0vh');
+            d3.select('.end_space').transition().delay(100).style('height','0vh');
+    };
+
+    /** @method closes the depviewer and scrolls to the currently selected cell **/
+    DepView.prototype.close_and_scroll = function () {
+      var that = this;
+      if(that.active_cell && that.active_cell !== ''){
+          that.close_div();
+          Jupyter.notebook.select_by_id(that.active_cell);
+          Jupyter.notebook.scroll_to_cell_id(that.active_cell);
+          return;
+      }
+      that.close_div();
+    };
+
+
+    /** @method creates dependency div*/
+    DepView.prototype.create_dep_div = function() {
+
+
+        var that = this;
+
+        var cssfiles = ['depview','mdb'];
+
+        cssfiles.forEach(function (file) {
             var link = document.createElement("link");
             link.type = "text/css";
             link.rel = "stylesheet";
-            link.href = require.toUrl('/kernelspecs/dfpython3/df-notebook/depview.css','css');
+            link.href = require.toUrl('./css/'+file+'.css', 'css');
             document.getElementsByTagName("head")[0].appendChild(link);
+        });
 
-            var closebtn = document.createElement('a');
-            closebtn.setAttribute("class","closebutton");
-            closebtn.setAttribute("href","#");
-            closebtn.innerHTML = "&times;";
-            var depdiv = document.createElement('div');
-            depdiv.setAttribute('class','dep-div');
-            //This is a very "goofy" way to have to do this, this seems to be evaluated if you make onclick = close_div()
-            closebtn.onclick = function() { close_div()};
-            depdiv.appendChild(closebtn);
-            document.body.appendChild(depdiv);
-            return depdiv;
-        };
 
-        var attach_controls = function(depdiv){
-            var control_div = document.createElement("div");
-            control_div.className = 'control-div';
+        this.depdiv = document.createElement('div');
+        this.depdiv.setAttribute('class','dep-div container');
+        this.depdiv.style.display = "none";
+        $(this.parentdiv).append(this.depdiv);
 
-            var slider = document.createElement("div");
-            slider.setAttribute('id','slider-range');
+        this.side_panel = d3.select('div.dep-div').append('div').attr('id','side-panel');
 
-            var p_ele = document.createElement('p');
-            p_ele.setAttribute('id','up-down');
-            var text_updown = document.createTextNode("Levels Down: " + Math.abs(min_level) + "   Levels Up: " + Math.abs(max_level));
-            p_ele.appendChild(text_updown);
+        this.tabular = this.side_panel.append("div").attr('id', 'table').classed('card', true);
+        this.tabular.append('h3').text("Graph Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
 
-            control_div.appendChild(p_ele);
-            control_div.appendChild(slider);
+        var newdiv = this.tabular.append('div').classed('table-div',true);
+        newdiv.append('h4').text('New Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
+        newdiv.append('div').classed('card-body', true).attr('id', 'newlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
 
-            depdiv.appendChild(control_div);
-            $( "#slider-range" ).slider({
-              range: true,
-              min: min_level,
-              max: max_level,
-              values: [ min_level, max_level ],
-              slide: function( event, ui ) {
-                $( "#up-down" ).text("Levels Down: " + Math.abs(ui.values[ 0 ]) + "   Levels Up: " + Math.abs(ui.values[ 1 ]));
-                if(ui.values[1] >= 0 && ui.values[0] <= 0){
-                    recreate_graph(ui.values[1],ui.values[0]);
+        var changediv = this.tabular.append('div').classed('table-div',true);
+        changediv.append('h4').text('Changed Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
+        changediv.append('div').classed('card-body', true).attr('id', 'changedlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
+
+
+        this.tabular.append('a').text('Download Dot').attr('id', 'dot-dl').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true)//.classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true);
+
+        this.tabular.append('a').text('Toggle Sink Cells').attr('id', 'out-toggle').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true)//.classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true)
+         .on('click',function () {
+            that.dataflow = !that.dataflow;
+            that.startGraphCreation();
+        });
+
+        //FIXME: This is where the Graph Summary button goes
+        //this.tabular.append('a').text('Show Graph Summary').attr('id', 'graphsum').classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true);
+
+
+        this.executepanel = this.side_panel.append('div').attr('id', 'cell-detail').classed('card', true).style('background-color', 'white');
+        this.executepanel.append('h3').text("Cell Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
+
+        this.nodespanel = this.executepanel.append('div').attr('id', 'nodes-panel');
+        this.nodespanel.append('h4').text("Cell Local Variables:").classed('card-title', true);
+        this.nodespanel.data(["None"]).append('span').text('None').classed('badge-pill', true).classed('badge-danger', true);
+
+        var executeactions = this.executepanel.append('div').attr('id','exec-actions');
+        executeactions.append('a').text("  Execute Cell").classed('btnviz', true).classed('btnviz-primary', true).attr('id', 'exec-button').classed('fa-step-forward', true).classed('fa', true).on('click',function(){
+            var cell = Jupyter.notebook.get_selected_cell();
+            cell.execute();
+        });
+        executeactions.append('a').text("Close and Go to Cell").attr('id', 'close-scroll').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true).on('click', function () {that.close_and_scroll();});
+
+        this.svg = d3.select("div.dep-div").append('div').attr('id', 'svg-div').append("svg")
+            .attr("id", "svg").on('contextmenu', function () {
+                return false;
+            });
+    };
+
+        /** @method upon a new cell selection will change the details of the viewer **/
+        DepView.prototype.set_details = function(cellid){
+            var that = this;
+            $('#'+that.active_cell+'cluster').find('polygon').toggleClass('selected',false);
+            that.active_cell = cellid;
+            d3.select('#select-identifier').remove();
+            if(that.dfgraph.get_cells().indexOf(that.active_cell) > -1) {
+                var rect_points = $('#' + that.active_cell + 'cluster').find('polygon').attr('points').split(' ');
+                var rect_top = rect_points[1].split(',');
+                var height = Math.abs(rect_top[1]-rect_points[0].split(',')[1]);
+                d3.select('#svg svg g').insert('g', '#a_graph0 + *').attr('id', 'select-identifier').append('rect').attr('x', parseInt(rect_top[0])-3).attr('y', parseInt(rect_top[1])).attr('height', height).attr('width', '3px');
+            }
+            Jupyter.notebook.select_by_id(that.active_cell);
+            Jupyter.notebook.scroll_to_cell_id(that.active_cell);
+            $('#'+cellid+'cluster').find('polygon').toggleClass('selected',true);
+            d3.select('#nodes-panel').selectAll('span').remove();
+            var int_nodes = that.dfgraph.get_internal_nodes(cellid);
+            if(int_nodes.length < 1){
+                int_nodes = ['None'];
+            }
+            d3.select('#nodes-panel').selectAll('span')
+                .data(int_nodes).enter().append('span').text(function(d){return d;}).attr('class',function (d) {
+            var baseclasses = "badge badge-pill ";
+                if(d === "None"){
+                    return baseclasses + 'badge-danger';
                 }
-              }
+            return baseclasses + 'badge-primary';
             });
         };
 
-        var create_graph = function(svg, g,inner){
+        /** @method updates the new and changed cell lists **/
+        DepView.prototype.update_cell_lists = function(){
+            var that = this;
+            var new_cells = [];
+            var changed_cells = [];
+            var cells = that.dfgraph.get_cells();
 
+            Jupyter.notebook.get_cells().map(function(cell){
+                if(cell.cell_type === 'code'){
+                    if(cells.indexOf(cell.uuid) > -1){
+                        //FIXME: Change this to whatever identifier we use to detect if cell was changed
+                        if(cell.was_changed){
+                            changed_cells.push(cell.uuid);
+                        }
+                    }
+                    else{
+                        new_cells.push(cell.uuid);
+                    }
+                }
+            });
+
+            console.log(new_cells);
+            console.log(changed_cells);
+
+
+
+            var new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
+
+            new_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
+            .html(function(d){return 'In['+d+']';}).enter()
+            .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
+            .html(function(d){return 'In['+d+']';});
+
+            new_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
+
+            var changed_list = d3.select('#changedlist').select('ul').selectAll('li').data(changed_cells);
+
+            changed_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
+            .html(function(d){return 'In['+d+']';}).enter()
+            .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
+            .html(function(d){return 'In['+d+']';});
+
+            changed_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
+
+            d3.select('#table').selectAll('.cellid').on('click',function (d) {
+                that.set_details(d);
+            });
+        };
+
+        /** @method this creates and renders the actual visual graph **/
+        DepView.prototype.create_graph = function(g){
+
+            var that = this;
             g.nodes().forEach(function(v) {
                 var node = g.node(v);
                 // Round the corners of the nodes
                 node.rx = node.ry = 5;
             });
 
-            var zoom = d3.zoom()
-            .on("zoom", function() {
-            inner.attr("transform", d3.event.transform);
-            });
-            svg.call(zoom);
+            that.dotgraph = Writer.write(g);
 
-            var render = new dagreD3.render();
+            var graphtran = d3.transition()
+            .duration(750)
+            .ease(d3.easeLinear);
 
-            g.graph().transition = function(selection) {
-                return selection.transition().duration(500);
-            };
+            //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
+            d3.select('#svg')
+            .graphviz()
+                .width($('svg').width())
+                .height($('svg').height())
+                .fit(true)
+                .zoom(true)
+                .on('end',that.update_cell_lists())
+                .transition(graphtran)
+            .renderDot(that.dotgraph);
 
-            d3.select("svg g").call(render, g);
+            var dotURL = URL.createObjectURL(new Blob([that.dotgraph], {type: "text/plain;charset=utf-8"}));
+            $('#dot-dl').attr("href",dotURL).attr("download", "graph.dot");
 
-            var initialScale = 0.75;
-            svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - g.graph().width * initialScale) / 2, 20).scale(initialScale));
+            $("g.parentnode.cluster").each(function () {
+                $(this).mouseover(function(){
+                var node = $(this),
+                    cellid = node.find('text').text().substr(that.cell_label.length,6);
 
-            svg.selectAll('#internal').classed('cluster',false).classed('internal',true);
-            // zoom
-            //     .translate([(svg.attr("width") - g.graph().width * initialScale) / 2, 20])
-            //     .scale(initialScale)
-            //     .event(svg);
-            svg.attr('height', $(window).height() * .7);
-
-            svg.selectAll("g.parentnode, .cluster")
-                .on("mouseover",function(){
-                var node = d3.select(this),
-                    cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
-                d3.select('#source-code').select('p').text("In ["+cellid+"]");
-
-                d3.select('#source-code').select('pre').text(Jupyter.notebook.get_code_cell(cellid).get_text());
+                that.set_details(cellid);
 
                 var cell = Jupyter.notebook.get_code_cell(cellid);
-                cell.cell_imm_downstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','red'); svg.selectAll('g.'+cellid+t.substr(0,6)).select('path').style('stroke-width','4px').style('stroke','red'); });
-                cell.cell_imm_upstream_deps.forEach(function (t) { d3.select('#'+t.substr(0,6)+'cluster').select('rect').style('stroke','blue'); svg.selectAll('g.'+t.substr(0,6)+cellid).select('path').style('stroke-width','4px').style('stroke','blue'); });
-                d3.select(this).select("rect").style({"stroke":"green"});
-            }).on("mouseout",function(){
-                var node = d3.select(this),
-                    cellid = node.select('tspan').text().substr("Cell ID: ".length,6);
+                that.dfgraph.get_downstreams(cellid).forEach(function (t) { $('#'+t.substr(0,6)+'cluster').find('polygon').toggleClass('upcell',true); $('g.'+cellid+t.substr(0,6)).find('path').toggleClass('upstream',true); });
+                that.dfgraph.get_imm_upstreams(cellid).forEach(function (t) { $('#'+t.substr(0,6)+'cluster').find('polygon').toggleClass('downcell',true); $('g.'+t.substr(0,6)+cellid).find('path').toggleClass('downstream',true); });
+            })
+                .on("mouseout",function(){
+                var node = $(this),
+                    cellid = node.find('text').text().substr(that.cell_label.length,6);
                 var cell = Jupyter.notebook.get_code_cell(cellid);
-                svg.selectAll('.edgePath').select('path').style('stroke-width','1.5px').style('stroke','black');
-                svg.selectAll('g.parentnode, .cluster').select('rect').style('stroke-width','1.5px').style('stroke','#999');
-            }).on("contextmenu",function() {
+                $('.edge').each(function(){
+                    $(this).find('path').toggleClass('upstream',false).toggleClass('downstream',false);});
+                $('g.parentnode, .cluster').each(function() {
+                    $(this).find('polygon').toggleClass('upcell', false).toggleClass('downcell', false);
+                }).contextmenu(function() {
                 return false;
-            });
+            });})});
 
-
-            $("g.parentnode, .cluster").css('fill',function(t){
-                var cellid = d3.select(this).select('tspan').text().substr("Cell ID: ".length, 6);
-                if(Jupyter.notebook.get_code_cell(cellid).was_changed){ d3.select(this).style('stroke-dasharray', '10,10').style('stroke-width','4px'); return "red";}
-                return;
-            }).on('mousedown',function(event) {
-                console.log(event.which);
-                if(event.ctrlKey && event.which == 1){
-                                    var node = d3.select(this),
-                    cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
-                var visited = [];
-                var down = Jupyter.notebook.get_code_cell(cellid).cell_imm_downstream_deps;
-                while (down.length > 0) {
-                    var child = down.pop();
-                    visited.push(child);
-                    Jupyter.notebook.get_code_cell(cellid.substr(0, 6)).cell_imm_downstream_deps.forEach(function (t) {
-                        var subbed = t.substr(0, 6);
-                        if (!(visited.includes(subbed)) && !(down.includes(subbed))) {
-                            down.push(subbed);
-                        }
+            $("g.child-node").each(function () {
+                $(this).mouseover(function(){
+                    $('.viz-'+$(this).find('title').text()).each(function(){$(this).find('path').toggleClass('upstream',true);
+                    $(this).find('polygon').toggleClass('upcell',true);});
+                })
+                    .mouseout(function () {
+                    $('.viz-'+$(this).find('title').text()).each(function(){$(this).find('path').toggleClass('upstream',false)});
+                    $(this).find('polygon').toggleClass('upcell',false);
                     })
-                }
-                visited.forEach(function (t) {
-                    g.removeNode(t);
                 });
-                d3.select("svg g").call(render, g);
-                }
-                else if(event.which == 1){
-                    close_div();
-                    var node = d3.select(this),
-                        cellid = node.select('tspan').text().substr(9,6);
-                    Jupyter.notebook.select_by_id(cellid);
-                    Jupyter.notebook.scroll_to_cell_id(cellid);
-                }
-                else if(event.which == 3 && !globalselect){
-                    var node = d3.select(this),
-                    cellid = node.select('tspan').text().substr("Cell ID: ".length, 6);
+
+
+            $("g.parentnode.cluster")
+                .each(function(t){
+                    var cellid = $(this).find('text').text().substr(that.cell_label.length, 6);
+                    if(Jupyter.notebook.get_code_cell(cellid).was_changed){
+                        $(this).toggleClass('was-changed',true).select('polygon').toggleClass('was-changed-poly',true);
+                    }
+                })
+                .on('mousedown',function(event) {
+                    if(event.which == 1){
+                            close_and_scroll();
+                    }
+                })
+                .on("contextmenu",function(event){
+                    var cellid = $(this).find('text').text().substr(that.cell_label.length, 6);
                     Jupyter.notebook.get_code_cell(cellid).execute();
-                    Jupyter.notebook.get_code_cell(cellid).was_changed = false;
-                    node.style('fill','yellow');
-                    setTimeout(function (){
-                        var newg = create_node_relations(globaldf,globalselect);
-                        newg.graph().transition = function(selection) {
-                return selection.transition().duration(500);
-            };
-                        create_graph(svg,newg,inner);
-                    }, 2000);
-
-
-                }
-            }).on("contextmenu",function(event){return false;});
-
-
-            d3.selectAll("g.node.childnode").select('rect').on('mouseover',function (inner) {
-                cell_links.forEach(function (links) {
-                    if(links.source == inner){
-                        svg.selectAll('g#'+inner+links.target).select('path').style('stroke-width','4px').style('stroke','red');
-                    }
-                    if(links.target == inner) {
-                        svg.selectAll('g#'+links.source+inner).select('path').style('stroke-width','4px').style('stroke','blue');
-                    }
                 });
-            }).on('mouseout',function(inner){
-                svg.selectAll('.edgePath').select('path').style('stroke-width','1.5px').style('stroke','black');
-            });
 
-            //FIXME: This may be revisted, Clusterlabels get occluded by the arrows
-            d3.selectAll('.cluster').selectAll('tspan').style('stroke','none').style('fill','blue').style('font-family','monospace').style('font-size','1em').style('font-weight','normal').style('fill-opacity',0);
 
         };
 
-        var recreate_graph = function(up,down){
+    /** @method this creates the graphlib data structure that is used to create the visualization **/
+    DepView.prototype.create_node_relations = function(){
+        var that = this;
+        that.cell_links = [];
+        that.cell_list = [];
+        that.cell_child_nums = [];
+        that.output_nodes = [];
+        var outnames = [];
 
-
-            var svg = d3.select('#svg');
-
-            var margin = {top:30, right:120, bottom:20, left: 120},
-            width = svg.width,
-            height = svg.height;
-
-            var inner =  svg.select('g');
-
-            var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
-                return {};
-            });
-
-            var sel = "";
-
-            var updated_cell_list = cell_list.filter(function(a){
-                if(a.level == 0){sel = a.id;}
-                return a.level <= up && a.level >= down;
-            }).map(function(a){ return a.id;});
-
-            updated_cell_list.forEach(function(a){
-                if(output_nodes[a]){
-                    if(a == sel){
-                        g.setNode("Out["+a+"]", {label: "Cell ID: " + a, id:'selected', class:'parentnode'});
+        if(that.dataflow){
+            that.cell_list = that.dfgraph.get_cells();
+            that.cell_list.forEach(function(uuid){
+                that.output_nodes[uuid] = that.dfgraph.get_nodes(uuid);
+                outnames = that.output_nodes[uuid];
+                that.dfgraph.get_upstreams(uuid).forEach(function (b) {
+                    if(outnames.indexOf(uuid) > -1){
+                        that.cell_links.push({source: b, target: uuid});
                     }
                     else{
-                        g.setNode("Out["+a+"]", {label: "Cell ID: " + a, class:'parentnode'});
-                    }
-                }
-            });
-
-            var updated_internal_nodes = Object.keys(internal_nodes).filter(function(a){
-                return updated_cell_list.includes(a);
-            })
-
-            var updated_out_nodes = Object.keys(output_nodes).filter(function(a){
-               return updated_cell_list.includes(a);
-            });
-
-            updated_internal_nodes.forEach(function (a) {
-            if(internal_nodes[a].length){
-            var parent = 'Out['+a+']';
-            var internal = parent + 'internal';
-            g.setNode(internal,{label:'Internal Nodes', id:'internal',clusterLabelPos:'top',labelStyle:'font-family:monospace;font-size:1.3em'});
-            g.setParent(internal,parent);
-                internal_nodes[a].forEach(function (t) {
-                    g.setNode(internal+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(internal+t,internal);
-            })
-            }
-        });
-
-            var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
-            updated_out_nodes.forEach(function (a) {
-                var parent = 'Out['+a+']';
-                var cell = a+'-Cell';
-                g.setNode(cell,{label:'Cell['+a+']',class:'childnode',labelStyle:labelstyles});
-                g.setParent(cell,parent);
-                updated_cell_list.push(a+'-Cell');
-                output_nodes[a].forEach(function (t) {
-                    var uuid = t.substr(4,6);
-                    if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
-                        updated_cell_list.push(uuid);
-                        g.setNode(uuid,{label:parent, class:'childnode',labelStyle:labelstyles}); g.setParent(uuid,parent);
-                    }
-                    else{
-                        updated_cell_list.push(a+t);
-                        g.setNode(a+t,{label:t, class:'childnode',labelStyle:labelstyles}); g.setParent(a+t,parent);
-                    }
-            }) });
-
-            cell_links.forEach(function (a) {
-                if(updated_cell_list.includes(a.source) && updated_cell_list.includes(a.target)) {
-                    g.setEdge(a.source, a.target,{class:a.source.substr(0,6)+a.target.substr(0,6),id:a.source+a.target});
-                }
-            });
-
-
-            create_graph(svg,g,inner);
-
-        };
-
-        var create_node_relations = function(dataflow,selected){
-            cell_links = [];
-        cell_list = [];
-        cell_child_nums = [];
-        output_nodes = [];
-        internal_nodes = [];
-
-            if(dataflow){
-        Jupyter.notebook.get_cells().forEach(function(a) {
-            if (a.cell_type == 'code') {
-                var outnames = [];
-                output_nodes[a.uuid] = [];
-                if((a.output_area.outputs).length >= 1) {
-                    output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error' && d.output_type != 'stream'){
-                            outnames.push(d.metadata.output_tag || a.uuid);
-                            return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
-                        return c;
-                    }, []);
-                }
-
-                internal_nodes[a.uuid] = a.internal_nodes.filter(function(x) { return output_nodes[a.uuid].indexOf(x) < 0});
-
-                cell_list.push({id: a.uuid});
-                a.cell_imm_upstream_deps.forEach(function (b) {
-                    if(outnames.includes(a.uuid)){
-                        cell_links.push({source: b, target: a.uuid});
-                    }
-                    else{
-                        cell_links.push({source: b, target: (a.uuid + "-Cell")})
+                        that.cell_links.push({source: b, target: (uuid + "-Cell")})
                     }
                 });
-            }
-        });}
-        else if(selected){
-            max_level = 0;
-            min_level = 0;
-            var selected_cell = Jupyter.notebook.get_selected_cell();
-            var upstreams = selected_cell.cell_imm_upstream_deps.concat(selected_cell.uuid).reduce(function(a,b){
-                if(!(b.substr(0,6) in a)){ return a.concat(b.substr(0,6));}
-            },[]);
-            var nextset = [];
-            var downstreams = selected_cell.cell_imm_downstream_deps;
-            var cells_list = new Set(upstreams.concat(downstreams));
-            var levels = 1;
-            var copied = upstreams.slice(0);
-            while(upstreams.length > 0){
-                var up = upstreams.pop();
-                var cell = Jupyter.notebook.get_code_cell(up.substr(0,6));
-                var outnames = [];
-                cell_list.push({id: cell.uuid,level:levels});
-                nextset = nextset.concat(cell.cell_imm_upstream_deps);
-                output_nodes[cell.uuid] = [];
-                if((cell.output_area.outputs).length >= 1) {
-                    output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error' && d.output_type != 'stream'){
-                            outnames.push(d.metadata.output_tag || cell.uuid);
-                            return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
-                        return c;
-                    }, []);
-                internal_nodes[cell.uuid] = cell.internal_nodes.filter(function(x) { return output_nodes[cell.uuid].indexOf(x) < 0});
-                }
 
-                cell.cell_imm_upstream_deps.forEach(function (b) {
-                    if(outnames.includes(cell.uuid)){
-                        cell_links.push({source: b, target: cell.uuid});
-                    }
-                    else{
-                        cell_links.push({source: b, target: (cell.uuid + "-Cell")})
-                    }
-                });
-                if(!(upstreams.length)){
-                    if(nextset.length){
-                        levels += 1;
-                        nextset = nextset.reduce(function(a,b){
-                var bstripped = b.substr(0,6);
-                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
-                    cells_list.add(bstripped);
-                    return a.concat(bstripped);
-                }
-                return a;
-            },[]);
-                        upstreams = nextset;
-                        nextset = [];
-                    }
-                }
-            }
-            nextset = [];
-            max_level = levels;
-            levels = -1;
-            copied = downstreams.slice(0);
-            while(downstreams.length > 0){
-                var down = downstreams.pop();
-                var cell = Jupyter.notebook.get_code_cell(down);
-                var outnames = [];
-                cell_list.push({id: cell.uuid,level:levels});
-                output_nodes[cell.uuid] = [];
-                nextset = nextset.concat(cell.cell_imm_downstream_deps);
-                if((cell.output_area.outputs).length >= 1) {
-                    output_nodes[cell.uuid] = cell.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error' && d.output_type != 'stream'){
-                            outnames.push(d.metadata.output_tag || cell.uuid);
-                            return c.concat(d.metadata.output_tag || "Out[" + cell.uuid + "]");}
-                        return c;
-                    }, []);
-                    internal_nodes[cell.uuid] = cell.internal_nodes.filter(function(x) { return output_nodes[cell.uuid].indexOf(x) < 0});
-                }
-                cell.cell_imm_upstream_deps.forEach(function (b) {
-                    if(cells_list.has(b.substr(0,6))) {
-                        if (outnames.includes(cell.uuid)) {
-                            cell_links.push({source: b, target: cell.uuid});
-                        }
-                        else {
-                            cell_links.push({source: b, target: (cell.uuid + "-Cell")})
-                        }
-                    }
-                });
-                if(!(downstreams.length)){
-                    if(nextset.length){
-                        levels -= 1;
-                        nextset = nextset.reduce(function(a,b){
-                var bstripped = b.substr(0,6);
-                if(!(a.includes(bstripped)) && !(cells_list.has(bstripped))){
-                    cells_list.add(bstripped);
-                    return a.concat(bstripped);
-                }
-                return a;
-            },[]);
-                        upstreams = nextset;
-                        nextset = [];
-                    }
-                }
-            }
-            cell_list[0] = {id:selected_cell.uuid,level:0};
-            min_level = cell_list.reduce(function(prev,curr){
-                return prev < curr.level ? prev : curr.level;
-            },0);
-            max_level = cell_list.reduce(function(prev,curr){
-                return prev > curr.level ? prev : curr.level;
-            },0);
-            console.log(cell_list);
+
+            });
+            //FIXME: Change this
+            that.cell_list = that.cell_list.map(function (uuid) {
+                return {'id':uuid};
+            });
         }
         else{
-        Jupyter.notebook.get_cells().forEach(function(a) {
-            if (a.cell_type == 'code') {
-                var outnames = [];
-                if((a.output_area.outputs).length >= 1) {
-                    output_nodes[a.uuid] = a.output_area.outputs.reduce(function (c, d) {
-                        if(d.output_type != 'error' && d.output_type != 'stream'){
-                            outnames.push(d.metadata.output_tag || a.uuid);
-                            return c.concat(d.metadata.output_tag || "Out[" + a.uuid + "]");}
-                        return c;
-                    }, []);
-                    internal_nodes[a.uuid] = a.internal_nodes.filter(function(x) { return output_nodes[a.uuid].indexOf(x) < 0});
-                    if(output_nodes[a.uuid].length == 0){
-                        delete output_nodes[a.uuid];
-                    }
-                    cell_list.push({id: a.uuid});
-                    a.cell_imm_upstream_deps.forEach(function (b) {
-                        if(outnames.includes(a.uuid)){
-                            cell_links.push({source: b, target: a.uuid});
-                        }
-                        else{
-                            outnames.forEach(function (t) { cell_links.push({source: b, target: a.uuid+t}); });
-                        }
-                });
+            that.cell_list = that.dfgraph.get_cells();
+            that.cell_list.forEach(function(uuid){
+
+                that.output_nodes[uuid] = that.dfgraph.get_nodes(uuid);
+                if(that.output_nodes[uuid].length == 0){
+                    delete that.output_nodes[uuid];
+                    return;
                 }
 
+                outnames = that.output_nodes[uuid];
 
-            }
+                if(uuid in that.output_nodes) {
+                    that.dfgraph.get_upstreams(uuid).forEach(function (b) {
+                        if (outnames.indexOf(uuid) > -1) {
+                            that.cell_links.push({source: b, target: uuid});
+                        }
+                        else {
+                            outnames.forEach(function (t) {
+                                that.cell_links.push({source: b, target: uuid + t});
+                            });
+                        }
+                    });
+                }
 
-        });
+            });
+            //FIXME: Change this
+            that.cell_list = Object.keys(that.output_nodes).map(function (t) { return {'id':t} });
         }
-        cell_list.forEach(function(a) {cell_child_nums[a.id] = 0;});
-        cell_links.forEach(function(a){ cell_child_nums[a.source] += 1;});
-        var g = new dagreD3.graphlib.Graph({compound:true}).setGraph({}).setDefaultEdgeLabel(function () {
+
+        that.cell_list.forEach(function(a) {that.cell_child_nums[a.id] = 0;});
+        that.cell_links.forEach(function(a){ that.cell_child_nums[a.source] += 1;});
+        var g = new GraphLib.Graph({compound:true}).setGraph({ranksep:2,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
             return {};
         });
 
 
 
-        cell_list.forEach(function(a){
-            if(output_nodes[a.id]){
-                if(selected && a.level == 0){ g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode'});}
-                else{g.setNode("Out["+a.id+"]", {label: "Cell ID: " + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode'});}
+        that.cell_list.forEach(function(a){
+            if(that.output_nodes[a.id]){
+                if(that.selected && a.level == 0){ g.setNode("Out["+a.id+"]", {label: that.cell_label + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode cellid',shape:'box'});}
+                else{g.setNode("Out["+a.id+"]", {label: that.cell_label + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode cellid',tooltip:' ',shape:'box'});}
             }
         });
 
-        //Label Styles should be set in text so that Dagre can properly size the nodes
-        var labelstyles = 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
-
-
-        Object.keys(internal_nodes).forEach(function (a) {
-            if(internal_nodes[a].length){
+        Object.keys(that.output_nodes).forEach(function (a) {
             var parent = 'Out['+a+']';
-            var internal = parent + 'internal';
-            //FIXME: We have to use IDs because clusters don't actually assign classes for some reason.. this is a shortcoming of DagreD3
-            g.setNode(internal,{label:'Internal Nodes',id:'internal',clusterLabelPos:'top',labelStyle:'font-family:monospace;font-size:1.3em'});
-            g.setParent(internal,parent);
-                internal_nodes[a].forEach(function (t) {
-                    g.setNode(internal+t,{label:t, class:'internalnode childnode', labelStyle:'font-family:monospace;fill:#303F9F;font-size:1.3em;'}); g.setParent(internal+t,internal);
-            })
-            }
-        });
-
-        Object.keys(output_nodes).forEach(function (a) {
-            var parent = 'Out['+a+']';
-            if(dataflow || selected){
+            if(that.dataflow || that.selected){
                 var cell = a+'-Cell';
-                g.setNode(cell,{label:'Cell['+a+']',class:'childnode', labelStyle:labelstyles});
+                g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'box',id:cell});
                 g.setParent(cell,parent);
 
             }
-            output_nodes[a].forEach(function (t) {
+            that.output_nodes[a].forEach(function (t) {
                 var uuid = t.substr(4,6);
-                if(/Out\[[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]\]/.test(t)){
-                    g.setNode(uuid,{label:parent, class:'childnode', labelStyle:labelstyles}); g.setParent(uuid,parent);
+                if(/Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
+                    g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
                 }
                 else{
-                    g.setNode(a+t,{label:t, class:'childnode', labelStyle:labelstyles}); g.setParent(a+t,parent);
+                    g.setNode(a+t,{label:t, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
                 }
 
         }) });
 
-        cell_links.forEach(function (a) {
-            g.setEdge(a.source,a.target,{class:a.source.substr(0,6)+a.target.substr(0,6),id:a.source+a.target});
+        that.cell_links.forEach(function (a) {
+            if(g.hasNode(a.source) && g.hasNode(a.target)) {
+                g.setEdge(a.source, a.target, {
+                    class: a.source.substr(0, 6) + a.target.substr(0, 6) + ' viz-'+a.source,
+                    id: 'viz-'+a.source + a.target,
+                    lhead: 'clusterOut[' + a.target.substr(0, 6) + ']'
+                });
+            }
         });
-        console.log(cell_list);
-        console.log(output_nodes);
-        console.log(cell_links);
+
+        if(that.debug_mode) {
+            console.log(that.cell_list);
+            console.log(that.output_nodes);
+            console.log(that.cell_links);
+            console.log(g.children());
+            console.log(g.nodes());
+            console.log(g.edges());
+            console.log(Writer.write(g));
+        }
+
         return g;
-        };
+    };
 
-    var create_dep_view = function(depdiv,dataflow,selected) {
+    /** @method this opens and closes the depviewer **/
+    DepView.prototype.toggle_dep_view = function() {
 
-        width = $(window).width() - margin.right - margin.left;
-        height = $(window).height() - margin.top - margin.bottom;
-        globaldf = dataflow;
-        globalselect = selected;
+        var that = this;
+        if(this.is_open){
+            that.close_div();
+        }
+        else {
+            that.is_open = true;
 
+            that.active_cell = '';
 
+            //FIXME: Possibly change this?
+            //GraphViz relies on the size of the svg to make the initial adjustments so the svg has to be sized first
+            d3.select(that.parentdiv).transition().delay(100).style('height','60vh').on('end',function () {
+                if(that.dfgraph.was_changed){
+                    that.startGraphCreation();
+                }
+            });
 
-        depdiv.style.zIndex = '100';
-        depdiv.style.width = '100%';
+            d3.select('.end_space').transition().delay(100).style('height','60vh');
+            that.depdiv.style.display = 'block';
 
-        var sourcediv = d3.select('div.dep-div').append('div').attr("width", width + margin.right + margin.left).style('top',(150+height * .65 + margin.top + margin.bottom)+"px")
-                .attr("id","source-code").style('background-color','white');
+        }
+    };
 
-        sourcediv.append('p').attr('class','cellid').text("In []");
-
-        sourcediv.append('pre').style('position','absolute').attr('class','CodeMirror-line pre-scrollable');
-
-        d3.select('#source-code pre').text("Scroll over any cell to see the source code of that cell");
-
-        var svg = d3.select("div.dep-div").append('div').attr('id','svg-div').append("svg")
-                .attr("width", width + margin.right + margin.left)
-                .attr("height", height * .65 + margin.top + margin.bottom)
-                .attr("id","svg").on('contextmenu',function (){return false;}),
-        inner =  svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-
-        var g = create_node_relations(dataflow,selected);
-
-        create_graph(svg,g,inner);
+    DepView.prototype.startGraphCreation = function(){
+        var that = this;
+        var g = this.create_node_relations();
+                this.create_graph(g);
+                that.dfgraph.was_changed = false;
     };
 
      return {
-        create_dep_div: create_dep_div,
-        create_dep_view: create_dep_view,
-         attach_controls: attach_controls,
+        'DepView': DepView
     };
 });
