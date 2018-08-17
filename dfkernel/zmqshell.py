@@ -33,7 +33,8 @@ from typing import List as ListType
 from ast import AST
 import importlib
 
-from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, DataflowNamespace
+from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, \
+    DataflowNamespace, DataflowCellException
 from dfkernel.dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
@@ -313,6 +314,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
+
+        def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
+            # import traceback
+            # traceback.print_tb(tb)
+            # traceback.print_tb(tb.tb_next)
+            # tb = tb.tb_next.tb_next.tb_next
+            retval = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            return retval[:-4] + retval[-1:]
+
+        self.set_custom_exc((DataflowCellException,), cell_exception_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
@@ -792,11 +804,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             etype, value, tb = sys.exc_info()
             if result is not None:
                 result.error_in_exec = value
-            self.CustomTB(etype, value, tb)
+            self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
         except:
             if result is not None:
                 result.error_in_exec = sys.exc_info()[1]
-            self.showtraceback(running_compiled_code=True)
+            self.showtraceback(running_compiled_code=True, tb_offset=2)
         else:
             outflag = False
         return outflag
