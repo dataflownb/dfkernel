@@ -29,6 +29,7 @@ define([
     'notebook/js/scrollmanager',
     'notebook/js/commandpalette',
     'notebook/js/shortcuteditor',
+    './dfgraph.js',
     './utils.js'
 ], function (
     $,
@@ -58,6 +59,7 @@ define([
     scrollmanager,
     commandpalette,
     shortcuteditor,
+    dfgraph,
     dfutils
 ) {
 
@@ -67,6 +69,7 @@ define([
 
     Notebook.prototype.reload_notebook = function(data) {
         var kernelspec = this.metadata.kernelspec;
+        this.init_dfnb();
         var res = this.load_notebook_success(data);
         this.metadata.kernelspec = kernelspec;
         if (this.ncells() === 1 && this.get_cell(0).get_text() == "") {
@@ -77,6 +80,15 @@ define([
             this.mode = 'edit';
         }
         return res;
+    };
+
+    Notebook.prototype.init_dfnb = function() {
+        this.session.dfgraph = new dfgraph.DfGraph();
+
+        // FIXME remove this
+        IPython.dfgraph = this.session.dfgraph;
+
+        // FIXME add last_executed in here when that change is merged
     };
 
     /**
