@@ -569,6 +569,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
+                result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                self.dataflow_history_manager.deleted_cells = []
                 cells = []
                 nodes = []
                 for uid in self.dataflow_history_manager.sorted_keys():
