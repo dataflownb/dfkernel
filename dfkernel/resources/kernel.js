@@ -1,14 +1,37 @@
+var path = '../kernelspecs/dfpython3/df-notebook/lib/'
+
+require.config({
+        paths: {
+            d3: path + "d3/d3.v4.min",
+            graphlib: path + "graphlib/graphlib.core.min",
+            viz: path + "viz/viz",
+            d3graphviz: path + "d3-graphviz/d3-graphviz",
+            lodash: path + "lodash/lodash.min",
+            graphdotwriter: path + "graphlib-dot/writer"
+        },
+        shim: {
+            d3graphviz: {
+              deps: ["d3","viz"],
+              exports: "d3",
+                init: function() {
+                return {
+                    d3: d3,
+                    viz: graphviz
+                };
+        }
+            },
+        }
+        });
+
 define(["jquery",
     "base/js/namespace",
-    './df-notebook/depview.js',
-    './df-notebook/dfgraph.js',
     './df-notebook/codecell.js',
     './df-notebook/completer.js',
     './df-notebook/kernel.js',
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter, depview, dfgraph) {
+    function($, Jupyter) {
 
         Jupyter._dfkernel_loaded = false;
 
