@@ -121,6 +121,7 @@ define([
                     }
                 }
             }
+
         }
         return code_dict;
     };
@@ -421,6 +422,30 @@ define([
         var index = this.get_selected_index();
         this.merge_cells([index, index+1], true);
     };
+
+    (function(_super) {
+        Notebook.prototype.delete_cells = function (indices) {
+            //create a list of the deleted cell uuid
+            if( typeof this.metadata.deleted_cells_uid == 'undefined' && !(this.metadata.deleted_cells_uid instanceof Array) ) {
+                this.metadata.deleted_cells_uid = [];
+            }
+            if (indices === undefined) {
+                indices = this.get_selected_cells_indices();
+            }
+            //pass the list of deleted cell uuid into code_dict
+            //so we can clear the links in the kernel
+            for (var i=0; i < indices.length; i++) {
+                var cell = this.get_cell(indices[i]);
+                this.metadata.deleted_cells_uid.push(cell.uuid);
+                if (!this.get_cell(indices[i]).is_deletable()) {
+                    // If any cell is marked undeletable, cancel
+                    this.metadata.deleted_cells_uid = [];
+                    return this;
+                }
+            }
+            return _super.call(this, indices);
+        };
+    }(Notebook.prototype.delete_cells));
 
     return {Notebook: Notebook};
 
