@@ -316,10 +316,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
         def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
-            # import traceback
-            # traceback.print_tb(tb)
-            # traceback.print_tb(tb.tb_next)
-            # tb = tb.tb_next.tb_next.tb_next
             retval = shell.InteractiveTB.structured_traceback(
                 etype, value, tb, tb_offset=tb_offset)
             return retval[:-4] + retval[-1:]
