@@ -11,11 +11,11 @@
 }
 
 .dftoolbar-inline i.fa-chevron-circle-down {
-    font-size: 1.5em;
+    font-size: 1.4em;
 }
 
 .dftoolbar-inline i.fa-chevron-circle-up {
-    font-size: 1.5em;
+    font-size: 1.4em;
 }
 
 .dftoolbar-links {
@@ -24,7 +24,12 @@
     font-family: monospace;
 }
 
-.dftoolbar-links .btn-default {
+.dftoolbar-inputs .btn-default {
+    color: #303F9F;
+}
+
+
+.dftoolbar-outputs .btn-default {
     color: #D84315;
 }
 

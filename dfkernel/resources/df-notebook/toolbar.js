@@ -49,7 +49,7 @@ define([
                 var container = $(div);
                 var input_div = $('<div class="dftoolbar-inline"/>');
                 var label = $('<i class="fa-chevron-circle-up fa">');
-                var links = $('<div class="dftoolbar-links">');
+                var links = $('<div class="dftoolbar-links dftoolbar-inputs">');
                 input_div.append(label, links);
                 upstream_pairs.forEach(
                     function (v_arr) {
@@ -78,7 +78,7 @@ define([
                 var notebook = cell.notebook;
                 var output_div = $('<div class="dftoolbar-inline"/>');
                 var label = $('<i class="fa-chevron-circle-down fa">');
-                var links = $('<div class="dftoolbar-links">');
+                var links = $('<div class="dftoolbar-links dftoolbar-outputs">');
                 output_div.append(label, links);
                 output_names.forEach(
                     function (v) {
