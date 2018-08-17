@@ -37,6 +37,7 @@ define([
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
+            this.dfgraph = this.notebook.session.dfgraph;
             this.was_changed = true;
             this.internal_nodes = [];
             this.cell_info_area = null;
@@ -44,6 +45,7 @@ define([
             this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
+            this.had_error = false;
         }
     };
 
@@ -136,6 +138,21 @@ define([
         };
     }(CodeCell.prototype.create_element));
 
+    CodeCell.prototype.update_last_executed = function() {
+        var output_tags = this.notebook.get_cell_output_tags(this.uuid);
+        if (output_tags.length === 0) {
+            this.notebook.session.last_executed.unshift('Out[' + this.uuid+ ']');
+        } else if (output_tags.length === 1) {
+            this.notebook.session.last_executed.unshift(output_tags[0]);
+        } else {
+            this.notebook.session.last_executed.unshift('(' + output_tags.join(',') + ')');
+        }
+        if (this.notebook.session.last_executed.length > this.notebook.session.last_executed_num) {
+            this.notebook.session.last_executed.pop();
+        }
+    };
+
+
     CodeCell.prototype.execute = function (stop_on_error) {
         if (!this.kernel) {
             console.log("Can't execute cell since kernel is not set.");
@@ -162,12 +179,10 @@ define([
         this.set_input_prompt('*');
         this.element.addClass("running");
 
-        if (!("last_executed_i" in this.notebook.session)) {
-            this.notebook.session.last_executed_iii = null;
-            this.notebook.session.last_executed_ii = null;
-            this.notebook.session.last_executed_i = null;
+        if (!("last_executed" in this.notebook.session)) {
+            this.notebook.session.last_executed = [];
+            this.notebook.session.last_executed_num = 3;
         }
-
 
         var callbacks = this.get_callbacks();
 
@@ -187,20 +202,18 @@ define([
 
         function handleFinished(evt, data) {
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
-                that.events.trigger('finished_execute.CodeCell', {cell: that});
-                that.events.off('finished_iopub.Kernel', handleFinished);
-                var errflag = true;
+                var errflag = false;
                 (that.output_area.outputs).forEach(function (out) {
                     if (out.output_type == "error") {
-                        errflag = false;
+                        errflag = true;
                     }
                 });
-                //console.log(errflag)
-                if (errflag) {
-                    that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;
-                    that.notebook.session.last_executed_ii = that.notebook.session.last_executed_i;
-                    that.notebook.session.last_executed_i = that.uuid;
+                that.had_error = errflag;
+                if (! errflag) {
+                    that.update_last_executed();
                 }
+                that.events.trigger('finished_execute.CodeCell', {cell: that});
+                that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
 
@@ -242,75 +255,66 @@ define([
 
     (function (_super) {
         CodeCell.prototype._handle_execute_reply = function (msg) {
+            var cc = this;
             var cell = this.notebook.get_code_cell(msg.content.execution_count);
             if (!cell) {
                 cell = this;
             }
-            if (cell == this && msg.metadata.status != "error") {
-                var that = this;
-                if('upstream_deps' in msg.content){
-                    msg.content.upstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        var trailing = '';
-                        if (cid.length > 6) {
-                            trailing = '.' + cid.substr(6);
-                            cid = cid.substr(0, 6);
-                        }
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]" + trailing);
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_upstream_deps.append(new_item);
-                        $('.upstream-deps', that.cell_info_area).show();
-                    });
-                }
+            if (msg.metadata.status != "error") {
+                var that = cell;
 
-                if('downstream_deps' in msg.content) {
-                    msg.content.downstream_deps.forEach(function (cid) {
-                        var new_item = $('<li></li>');
-                        var new_ahref = $('<a></a>');
-                        new_ahref.attr('href', '#' + cid);
-                        new_ahref.text("Cell[" + cid + "]");
-                        new_ahref.click(function () {
-                            that.notebook.select_by_id(cid);
-                            that.notebook.scroll_to_cell_id(cid);
-                            return false;
-                        });
-                        new_item.append(new_ahref);
-                        that.cell_downstream_deps.append(new_item);
-                        $('.downstream-deps', that.cell_info_area).show();
-                    });
-                }
+                /** Rename content for general readability*/
+                var nodes = msg.content.nodes;
+                var uplinks = msg.content.links;
+                var cells = msg.content.cells;
+                var downlinks = msg.content.imm_downstream_deps;
+                var all_ups = msg.content.upstream_deps;
+                var internal_nodes = msg.content.internal_nodes;
+                this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
+
 
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
 
                 if (msg.content.update_downstreams) {
-                    msg.content.update_downstreams.forEach(function (t) {
-                        var uuid = t['key'].substr(0, 6);
-                        if(Jupyter.notebook.has_id(uuid) && t.data){
-                            var upcell = Jupyter.notebook.get_code_cell(uuid);
-                            if (upcell.cell_imm_downstream_deps) {
-                                var updated = upcell.cell_imm_downstream_deps.concat(t['data']).reduce(function(a,b){if(!a.indexOf(b)+1){a.push(b);}return a;},[]);
-                                upcell.cell_imm_downstream_deps = updated;
-                            }
-                            else {
-                                upcell.cell_imm_downstream_deps = t['data'];
-                            }
-                        }
-                    });
+                    this.dfgraph.update_down_links(msg.content.update_downstreams);
+
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));
+
+
+    CodeCell.prototype.update_df_list = function (cell,links,mode) {
+        if(mode === 'upstream'){
+            var listobj = cell.cell_upstream_deps;
+            var classinfo = '.upstream-deps'
+        }
+        else if(mode === 'downstream'){
+            var listobj = cell.cell_downstream_deps;
+            var classinfo = '.downstream-deps'
+        }
+
+        links.forEach(function(cid) {
+            cid = cid.substr(0,6);
+            var new_item = $('<li></li>');
+            var new_ahref = $('<a></a>');
+            new_ahref.attr('href', '#' + cid);
+            new_ahref.text("Cell[" + cid + "]");
+            new_ahref.click(function () {
+                cell.notebook.select_by_id(cid);
+                cell.notebook.scroll_to_cell_id(cid);
+                return false;
+            });
+            new_item.append(new_ahref);
+            listobj.append(new_item);
+            $(classinfo, cell.cell_info_area).show();
+        });
+    };
+
 
     (function (_super) {
         CodeCell.prototype.set_input_prompt = function (number) {

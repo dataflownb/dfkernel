@@ -1,12 +1,13 @@
 """Replacements for ipykernel.displayhook."""
 
-import ipykernel.displayhook
-from ipykernel.displayhook import *
+
+from ipykernel.displayhook import ZMQShellDisplayHook as ipyZMQShellDisplayHook
+from ipykernel.displayhook import sys, ZMQDisplayHook
 from ipykernel.jsonutil import encode_images, json_clean
 
 from dfkernel.dflink import LinkedResult
 
-class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
+class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
     def get_execution_count(self):
         raise NotImplementedError()
 
@@ -39,7 +40,8 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
         if result is not None and not self.quiet():
             self.start_displayhook()
             self.write_output_prompt()
-            if isinstance(result, tuple) and (len(result) == 2) and isinstance(result[0], LinkedResult):
+            if isinstance(result, tuple) and (len(result) == 2) \
+                    and isinstance(result[0], LinkedResult):
                 # FIXME unify this so that the LinkedResult code isn't repeated in the elif
                 self.update_dataflow_ns(result[0])
                 format_dict = {}
@@ -98,7 +100,7 @@ class ZMQShellDisplayHook(ipykernel.displayhook.ZMQShellDisplayHook):
 
     def update_dataflow_ns(self, result):
         self.shell.user_ns._reset_cell(result.__uuid__)
-        for i, (res_tag, res) in enumerate(result.items()):
+        for res_tag in result.keys():
             self.shell.user_ns._add_link(res_tag, result.__uuid__)
 
     def finish_displayhook(self):
