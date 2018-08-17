@@ -39,6 +39,7 @@ define(["require",
         this.is_open = false;
         this.dataflow = true;
         this.selected = false;
+        this.done_rendering = false;
 
         //Turn on console logs
         this.debug_mode = false;
@@ -295,7 +296,10 @@ define(["require",
                 .height($('svg').height())
                 .fit(true)
                 .zoom(true)
-                .on('end',that.update_cell_lists())
+                .on('end',function(){
+                    that.update_cell_lists();
+                    that.done_rendering = true;
+                })
                 .transition(graphtran)
             .renderDot(that.dotgraph);
 
@@ -490,6 +494,7 @@ define(["require",
             //GraphViz relies on the size of the svg to make the initial adjustments so the svg has to be sized first
             d3.select(that.parentdiv).transition().delay(100).style('height','60vh').on('end',function () {
                 if(that.dfgraph.was_changed){
+                    that.done_rendering = false;
                     that.startGraphCreation();
                 }
             });
