@@ -37,6 +37,7 @@ define([
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
+            this.dfgraph = this.notebook.session.dfgraph;
             this.was_changed = true;
             this.internal_nodes = [];
             this.cell_info_area = null;
@@ -257,7 +258,7 @@ define([
                 var downlinks = msg.content.imm_downstream_deps;
                 var all_ups = msg.content.upstream_deps;
                 var internal_nodes = msg.content.internal_nodes;
-                Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
+                this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
 
 
                 that.internal_nodes = msg.content.internal_nodes;
@@ -265,7 +266,7 @@ define([
 
 
                 if (msg.content.update_downstreams) {
-                    Jupyter.DfGraph.update_down_links(msg.content.update_downstreams);
+                    this.dfgraph.update_down_links(msg.content.update_downstreams);
 
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
