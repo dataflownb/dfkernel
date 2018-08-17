@@ -271,6 +271,9 @@ define([
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
             }
+            if(cell === cc){
+                this.dfgraph.update_dep_view();
+            }
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));
