@@ -45,7 +45,7 @@ define([
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
             this.code_cached = '';
-            this.metadata.cell_status = 0;
+            this.metadata.cell_status = 'new';
             this.had_error = false;
         }
     };
@@ -122,51 +122,44 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-            var icon_status = $('<div></div>').addClass("icon_status new-cell verified");
+            var icon_status = $('<div></div>').addClass("icon_status new-cell df-verified");
             this.input.prepend(icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
+                var change_status_for_edited_cell =
+                {'new' : 'edited-new', 'success' : 'edited-success', 'error' : 'edited-error',
+                 'saved-success' : 'edited-saved-success', 'saved-success-first-load' : 'saved-success',
+                 'saved-error' : 'edited-saved-error', 'saved-error-first-load' : 'saved-error'};
+                var revert_status_for_unedited_cell =
+                {'edited-new': 'new', 'edited-success': 'success', 'edited-error': 'error',
+                 'edited-saved-success': 'saved-success', 'saved-success': 'saved-success-first-load',
+                 'edited-saved-error': 'saved-error', 'saved-error': 'saved-error-first-load'};
                 //only if the input is not empty
                 if(that.get_text() !== that.code_cached) {
-                    switch(that.metadata.cell_status) {
-                        case 0:
-                            that.set_icon_status(1);
-                            break;
-                        case 2:
-                            that.set_icon_status(3);
-                            break;
-                        case 4:
-                            that.set_icon_status(5);
-                            break;
-                        case 6:
-                            that.set_icon_status(7);
-                            break;
-                        case 9:
-                            that.set_icon_status(6);
-                            break;
-                        case 10:
-                            that.set_icon_status(11);
-                            break;
-                        case 11:
-                            that.set_icon_status(12);
-                            break;
+                    console.log(that.metadata.cell_status);
+                    if (that.metadata.cell_status in change_status_for_edited_cell) {
+                        console.log(change_status_for_edited_cell[that.metadata.cell_status]);
+                        that.set_icon_status( change_status_for_edited_cell[that.metadata.cell_status] );
                     }
-
                     var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.metadata.cell_status == 2) {
-                            cell.set_icon_status(3);
+                        if (cell.metadata.cell_status == 'success') {
+                            cell.set_icon_status('edited-success');
                         }
                     }
                 }
                 else if (that.get_text() == that.code_cached || that.get_text().trim().length === 0) {
-                    that.set_icon_status(that.metadata.cell_status-1);
+                    console.log(that.metadata.cell_status);
+                    if (that.metadata.cell_status in revert_status_for_unedited_cell) {
+                        console.log(revert_status_for_unedited_cell[that.metadata.cell_status]);
+                        that.set_icon_status( revert_status_for_unedited_cell[that.metadata.cell_status] );
+                    }
                     var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.metadata.cell_status == 3) {
-                            cell.set_icon_status(2);
+                        if (cell.metadata.cell_status == 'edited-success') {
+                            cell.set_icon_status('success');
                         }
                     }
                 }
@@ -243,10 +236,10 @@ define([
         if (this.get_text().trim().length === 0) {
             // nothing to do
             this.set_input_prompt(null);
-            this.set_icon_status(2);
+            this.set_icon_status('success');
             return;
         }
-        this.set_icon_status(8);
+        this.set_icon_status('executing');
         this.element.addClass("running");
 
         if (!("last_executed" in this.notebook.session)) {
@@ -288,7 +281,7 @@ define([
             }
         }
         //set input field icon to success if cell is executed
-        this.set_icon_status(2);
+        this.set_icon_status('success');
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
@@ -314,7 +307,7 @@ define([
                 var cell = that.notebook.get_code_cell(cid);
                 if (cell) {
                     cell.clear_output_imm(false, true);
-                    cell.set_icon_status(8);
+                    cell.set_icon_status('executing');
                     cell.element.addClass("running");
                     cell.render();
                     that.events.trigger('execute.CodeCell', {cell: cell});
@@ -352,11 +345,11 @@ define([
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
                 //set input field icon to success if cell is executed
-                cell.set_icon_status(2);
+                cell.set_icon_status('success');
             }
-            else if(cell == this && msg.metadata.status == "error") {
+            else if(msg.metadata.status == "error") {
                 //set input field icon to error if cell returns error
-                cell.set_icon_status(4);
+                cell.set_icon_status('error');
             }
             _super.apply(cell, arguments);
         }
@@ -437,33 +430,7 @@ define([
 
             _super.call(this, data);
             this.code_cached = this.get_text();
-            switch(this.metadata.cell_status) {
-                case 0:
-                case 1:
-                case 5:
-                case 6:
-                case 7:
-                case 9:
-                case 10:
-                case 11:
-                case 12:
-                    this.set_icon_status(this.metadata.cell_status);
-                    break;
-                case 2:
-                    this.set_icon_status(9);
-                    break;
-                case 3:
-                    this.set_icon_status(7);
-                    this.code_cached = '';
-                    break;
-                case 4:
-                    this.set_icon_status(10);
-                    break;
-                case 5:
-                case 8:
-                    this.set_icon_status(12);
-                    break;
-            }
+            this.set_icon_status(this.metadata.cell_status);
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');

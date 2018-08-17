@@ -304,10 +304,14 @@ define([
             //set input_changed so that we can load the saved notebook with the colored input field
             this.get_cells().forEach(function (d) {
                 if (d.cell_type === 'code') {
-                    if(d.metadata.cell_status == 2) {
-                        d.metadata.cell_status = 9;
-                    } else if(d.metadata.cell_status == 4) {
-                        d.metadata.cell_status = 10;
+                    if(d.metadata.cell_status == 'success') {
+                        d.metadata.cell_status = "saved-success-first-load";
+                    } else if(d.metadata.cell_status == 'error') {
+                        d.metadata.cell_status = "saved-error-first-load";
+                    } else if(d.metadata.cell_status == 'edited-success') {
+                        d.metadata.cell_status = 'edited-saved-success'
+                    } else if(d.metadata.cell_status == 'edited-error') {
+                        d.metadata.cell_status = 'edited-saved-error';
                     }
                 }
             });
@@ -329,10 +333,10 @@ define([
             if( typeof this.metadata.hl_list == 'undefined' && !(this.metadata.hl_list instanceof Array) ) {
                 this.metadata.hl_list = [];
             }
-            var that = _super.call(this, indices);
-            return that;
+            return _super.call(this, indices);
         };
     }(Notebook.prototype.delete_cells));
+
     //undelete a cell if click on the horizontoal line
     Notebook.prototype.undelete_selected_cell = function(uuid) {
         var i ,j , cell_data, new_cell, insert;

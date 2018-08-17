@@ -28,7 +28,7 @@ div.icon_status {
   content: "\f058";
 }
 
-.edited-success::before, .edited-error::before, .edited-saved::before, .edited-saved::before {
+.edited-success::before, .edited-error::before, .edited-saved-success::before, .edited-saved-error::before {
   content: "\f06a";
 }
 
