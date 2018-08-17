@@ -55,35 +55,16 @@ define(["jquery",
                 Jupyter._dfkernel_loaded = true;
             });
 
-            var depdiv = depview.create_dep_div();
-
             Jupyter.toolbar.add_buttons_group([
                   {
-                       'label'   : 'See Cell Dependencies',
+                       'label'   : 'Open/Close Dependency View',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv,true,false);
-
+                                                     nb.session.dfgraph.depview.toggle_dep_view();
                        }
 
-               },{
-                       'label'   : 'See Data Dependencies',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,false);
-
-                       }
-
-               },{
-                       'label'   : 'See Semantic View',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,true);
-                                                     depview.attach_controls(depdiv);
-
-                       }
-
-               }]);
+               }
+               ]);
         };
         return {onload:onload};
 });
