@@ -101,17 +101,15 @@ define([
     var add_auto_update_button = function(div, cell) {
         var container = $(div);
         var refresh = $('<button/>')
-            .addClass("btn btn-default btn-xs");
-        var refresh_icon = $('<span class="fa-stack">' +
-                          '<i class="fa fa-refresh fa-stack-1x"></i>' +
-                          '</span>');
-        if (!(cell.auto_update)) {
-            refresh_icon.addClass('crossed-out');
+            .addClass("btn btn-default btn-xs")
+            .attr('title', 'Auto-Refresh on Upstream Update')
+            .append($('<i class="fa-refresh fa">'));
+        if (cell.auto_update) {
+            refresh.addClass('active');
         }
-        refresh.append(refresh_icon);
         refresh.click(function() {
-            refresh_icon.toggleClass('crossed-out');
-            cell.auto_update = !(refresh_icon.hasClass('crossed-out'));
+            refresh.toggleClass('active');
+            cell.auto_update = refresh.hasClass('active');
             return false;
         });
         container.append(refresh);
