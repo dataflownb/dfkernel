@@ -97,11 +97,17 @@ define([
                 });
             }
             else{
-                that.downlinks[cid].forEach(function (pid) {
-                    if(visited.indexOf(pid) < 0){
-                        downlinks.push(pid);
-                    }
-                })
+                if(cid in that.downlinks) {
+                    that.downlinks[cid].forEach(function (pid) {
+                        if (visited.indexOf(pid) < 0) {
+                            downlinks.push(pid);
+                        }
+                    })
+                }
+                else{
+                    var idx = res.indexOf(cid);
+                    res.splice(idx,1);
+                }
             }
         }
         that.downstream_lists[uuid] = res;
