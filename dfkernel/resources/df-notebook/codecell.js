@@ -256,6 +256,12 @@ define([
     (function (_super) {
         CodeCell.prototype._handle_execute_reply = function (msg) {
             var cc = this;
+
+            /** Remove deleted cells from graph before any additional actions are taken **/
+            (msg.content.deleted_cells || []).forEach(function (d_cell) {
+                cc.dfgraph.remove_cell(d_cell);
+            });
+
             var cell = this.notebook.get_code_cell(msg.content.execution_count);
             if (!cell) {
                 cell = this;
@@ -282,6 +288,11 @@ define([
 
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
+            }
+            else{
+                var that = cell;
+                this.dfgraph.remove_cell(that.uuid);
+                that.clear_df_info();
             }
             _super.apply(cell, arguments);
         }
