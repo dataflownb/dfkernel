@@ -184,17 +184,16 @@ define([
             var that = this;
             var nb = Jupyter.notebook;
             //add event to be notified when cell is deleted
-            nb.events.on('delete.Cell', function(event,{cell,index}) {
-                if (cell === that) {
-                    var horizontal_line = nb.insert_cell_above("raw",index);
+            that.events.on('delete.Cell', function(event,data) {
+                if (data['cell'] === that) {
+                    var horizontal_line = nb.insert_cell_above("raw",data['index']);
                     horizontal_line.inner_cell.height(1).css("backgroundColor","red");
                     horizontal_line.inner_cell[0].childNodes[1].remove();
                     //add the horizontal line into hl_list for undeletion
-                    nb.metadata.hl_list[cell.uuid] = horizontal_line;
+                    nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
                     //undeleted the cell once the corresponding red line is clicked
-                    $(horizontal_line.inner_cell).parent().attr('id',cell.uuid).click(function(event) {
-                        console.log("id",this.id);
-                        Jupyter.notebook.undelete_selected_cell(cell.uuid);
+                    $(horizontal_line.inner_cell).parent().attr('id',data['cell'].uuid).click(function(event) {
+                        Jupyter.notebook.undelete_selected_cell(data['cell'].uuid);
                     });
                 }
             });
