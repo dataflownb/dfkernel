@@ -123,7 +123,7 @@ define([
         var that = this;
         var visited = [];
         var res = [];
-        var downlinks = this.downlinks[uuid].slice(0);
+        var downlinks = (this.downlinks[uuid] || []).slice(0);
         while(downlinks.length > 0){
             var cid = downlinks.pop();
             visited.setadd(cid);
