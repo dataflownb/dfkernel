@@ -76,7 +76,7 @@ define([
           delete that.internal_nodes[uuid];
           delete that.downstream_lists[uuid];
           that.downlinks[uuid].forEach(function (down) {
-              delete that.uplinks[down][uuid];
+              delete (that.uplinks[down])[uuid];
           });
           delete that.downlinks[uuid];
           if(uuid in that.uplinks) {
