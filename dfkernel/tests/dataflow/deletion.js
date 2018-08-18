@@ -31,7 +31,6 @@ casper.notebook_test(function () {
 
     });
 
-
     this.then(function () {
         this.evaluate(function () {
             Jupyter.notebook.delete_cell(0);
@@ -40,7 +39,7 @@ casper.notebook_test(function () {
             cell.set_text('c,d=1,2');
             cell.execute();
         });
-
+      
         this.wait_for_output(0);
 
         this.then(function () {
@@ -89,5 +88,6 @@ casper.notebook_test(function () {
             this.test.assertEquals(outputs[0].metadata.output_tag, 'e', 'cell 2 has the correct output_tag');
         });
     });
+
 });
  

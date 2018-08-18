@@ -37,6 +37,7 @@ define([
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
+            this.dfgraph = this.notebook.session.dfgraph;
             this.was_changed = true;
             this.internal_nodes = [];
             this.cell_info_area = null;
@@ -44,6 +45,7 @@ define([
             this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
+            this.had_error = false;
         }
     };
 
@@ -199,12 +201,10 @@ define([
         this.set_input_prompt('*');
         this.element.addClass("running");
 
-        if (!("last_executed_i" in this.notebook.session)) {
-            this.notebook.session.last_executed_iii = null;
-            this.notebook.session.last_executed_ii = null;
-            this.notebook.session.last_executed_i = null;
+        if (!("last_executed" in this.notebook.session)) {
+            this.notebook.session.last_executed = [];
+            this.notebook.session.last_executed_num = 3;
         }
-
 
         var callbacks = this.get_callbacks();
 
@@ -224,20 +224,18 @@ define([
 
         function handleFinished(evt, data) {
             if (that.kernel.id === data.kernel.id && that.last_msg_id === data.msg_id) {
-                that.events.trigger('finished_execute.CodeCell', {cell: that});
-                that.events.off('finished_iopub.Kernel', handleFinished);
-                var errflag = true;
+                var errflag = false;
                 (that.output_area.outputs).forEach(function (out) {
                     if (out.output_type == "error") {
-                        errflag = false;
+                        errflag = true;
                     }
                 });
-                //console.log(errflag)
-                if (errflag) {
-                    that.notebook.session.last_executed_iii = that.notebook.session.last_executed_ii;
-                    that.notebook.session.last_executed_ii = that.notebook.session.last_executed_i;
-                    that.notebook.session.last_executed_i = that.uuid;
+                that.had_error = errflag;
+                if (! errflag) {
+                    that.update_last_executed();
                 }
+                that.events.trigger('finished_execute.CodeCell', {cell: that});
+                that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
 
@@ -294,7 +292,7 @@ define([
                 var downlinks = msg.content.imm_downstream_deps;
                 var all_ups = msg.content.upstream_deps;
                 var internal_nodes = msg.content.internal_nodes;
-                Jupyter.DfGraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
+                this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
 
 
                 that.internal_nodes = msg.content.internal_nodes;
@@ -302,7 +300,7 @@ define([
 
 
                 if (msg.content.update_downstreams) {
-                    Jupyter.DfGraph.update_down_links(msg.content.update_downstreams);
+                    this.dfgraph.update_down_links(msg.content.update_downstreams);
 
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;

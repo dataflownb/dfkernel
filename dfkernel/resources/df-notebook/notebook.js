@@ -29,6 +29,7 @@ define([
     'notebook/js/scrollmanager',
     'notebook/js/commandpalette',
     'notebook/js/shortcuteditor',
+    './dfgraph.js',
     './utils.js'
 ], function (
     $,
@@ -58,6 +59,7 @@ define([
     scrollmanager,
     commandpalette,
     shortcuteditor,
+    dfgraph,
     dfutils
 ) {
 
@@ -67,6 +69,7 @@ define([
 
     Notebook.prototype.reload_notebook = function(data) {
         var kernelspec = this.metadata.kernelspec;
+        this.init_dfnb();
         var res = this.load_notebook_success(data);
         this.metadata.kernelspec = kernelspec;
         if (this.ncells() === 1 && this.get_cell(0).get_text() == "") {
@@ -77,6 +80,15 @@ define([
             this.mode = 'edit';
         }
         return res;
+    };
+
+    Notebook.prototype.init_dfnb = function() {
+        this.session.dfgraph = new dfgraph.DfGraph();
+
+        // FIXME remove this
+        IPython.dfgraph = this.session.dfgraph;
+
+        // FIXME add last_executed in here when that change is merged
     };
 
     /**
@@ -389,6 +401,30 @@ define([
         var index = this.get_selected_index();
         this.merge_cells([index, index+1], true);
     };
+
+    (function(_super) {
+        Notebook.prototype.delete_cells = function (indices) {
+            //create a list of the deleted cell uuid
+            if( typeof this.metadata.deleted_cells_uid == 'undefined' && !(this.metadata.deleted_cells_uid instanceof Array) ) {
+                this.metadata.deleted_cells_uid = [];
+            }
+            if (indices === undefined) {
+                indices = this.get_selected_cells_indices();
+            }
+            //pass the list of deleted cell uuid into code_dict
+            //so we can clear the links in the kernel
+            for (var i=0; i < indices.length; i++) {
+                var cell = this.get_cell(indices[i]);
+                this.metadata.deleted_cells_uid.push(cell.uuid);
+                if (!this.get_cell(indices[i]).is_deletable()) {
+                    // If any cell is marked undeletable, cancel
+                    this.metadata.deleted_cells_uid = [];
+                    return this;
+                }
+            }
+            return _super.call(this, indices);
+        };
+    }(Notebook.prototype.delete_cells));
 
     return {Notebook: Notebook};
 
