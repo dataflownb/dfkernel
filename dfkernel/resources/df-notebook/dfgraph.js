@@ -66,6 +66,45 @@ define([
         that.update_dep_lists(all_ups,uuid);
     };
 
+    /** @method removes a cell entirely from the graph **/
+    DfGraph.prototype.remove_cell = function(uuid){
+        var that = this;
+        var cell_index = that.cells.indexOf(uuid);
+        if(cell_index > -1){
+          that.cells = that.cells.splice(cell_index,1);
+          delete that.nodes[uuid];
+          delete that.internal_nodes[uuid];
+          delete that.downstream_lists[uuid];
+          that.downlinks[uuid].forEach(function (down) {
+              delete that.uplinks[down][uuid];
+          });
+          delete that.downlinks[uuid];
+          if(uuid in that.uplinks) {
+              var uplinks = Object.keys(that.uplinks[uuid]);
+                  uplinks.forEach(function (up) {
+                      var idx = that.downlinks[up].indexOf(uuid);
+                      that.downlinks[up] = that.downlinks[up].splice(idx,1);
+                  });
+          }
+          delete that.uplinks[uuid];
+          if(uuid in that.upstream_list){
+              var all_ups = that.upstream_list[uuid].slice(0);
+              delete that.upstream_list[uuid];
+              all_ups.forEach(function (up) {
+                      //Better to just invalidate the cached list so you don't have to worry about downstreams too
+                      delete that.downstream_lists[up];
+              });
+              all_ups.forEach(function (up) {
+                  if(Jupyter.notebook.has_id(up)){
+                        var upcell = Jupyter.notebook.get_code_cell(up);
+                        $(upcell.cell_downstream_deps).empty();
+                        upcell.update_df_list(upcell,that.all_downstream(up),'downstream');
+                }
+              });
+          }
+        }
+    };
+
     /** @method set_internal_nodes */
     DfGraph.prototype.set_internal_nodes = function(uuid,internal_nodes){
         this.internal_nodes[uuid] = internal_nodes;
