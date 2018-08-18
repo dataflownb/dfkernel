@@ -71,7 +71,7 @@ define([
         var that = this;
         var cell_index = that.cells.indexOf(uuid);
         if(cell_index > -1){
-          that.cells = that.cells.splice(cell_index,1);
+          that.cells.splice(cell_index,1);
           delete that.nodes[uuid];
           delete that.internal_nodes[uuid];
           delete that.downstream_lists[uuid];
@@ -83,7 +83,7 @@ define([
               var uplinks = Object.keys(that.uplinks[uuid]);
                   uplinks.forEach(function (up) {
                       var idx = that.downlinks[up].indexOf(uuid);
-                      that.downlinks[up] = that.downlinks[up].splice(idx,1);
+                      that.downlinks[up].splice(idx,1);
                   });
           }
           delete that.uplinks[uuid];
