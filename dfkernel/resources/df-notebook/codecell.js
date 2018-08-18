@@ -136,6 +136,44 @@ define([
         };
     }(CodeCell.prototype.create_element));
 
+    (function(_super) {
+        CodeCell.prototype.bind_events = function () {
+            _super.apply(this,arguments);
+            var that = this;
+            var nb = Jupyter.notebook;
+            //add event to be notified when cell is deleted
+            nb.events.on('delete.Cell', function(event,{cell,index}) {
+                if (cell === that) {
+                    var horizontal_line = nb.insert_cell_above("raw",index);
+                    horizontal_line.inner_cell.height(1).css("backgroundColor","red");
+                    horizontal_line.inner_cell[0].childNodes[1].remove();
+                    //add the horizontal line into hl_list for undeletion
+                    nb.metadata.hl_list[cell.uuid] = horizontal_line;
+                    //undeleted the cell once the corresponding red line is clicked
+                    $(horizontal_line.inner_cell).parent().attr('id',cell.uuid).click(function(event) {
+                        console.log("id",this.id);
+                        Jupyter.notebook.undelete_selected_cell(cell.uuid);
+                    });
+                }
+            });
+        };
+    }(CodeCell.prototype.bind_events));
+
+    CodeCell.prototype.update_last_executed = function() {
+        var output_tags = this.notebook.get_cell_output_tags(this.uuid);
+        if (output_tags.length === 0) {
+            this.notebook.session.last_executed.unshift('Out[' + this.uuid+ ']');
+        } else if (output_tags.length === 1) {
+            this.notebook.session.last_executed.unshift(output_tags[0]);
+        } else {
+            this.notebook.session.last_executed.unshift('(' + output_tags.join(',') + ')');
+        }
+        if (this.notebook.session.last_executed.length > this.notebook.session.last_executed_num) {
+            this.notebook.session.last_executed.pop();
+        }
+    };
+
+
     CodeCell.prototype.execute = function (stop_on_error) {
         if (!this.kernel) {
             console.log("Can't execute cell since kernel is not set.");
