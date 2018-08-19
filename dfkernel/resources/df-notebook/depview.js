@@ -93,7 +93,7 @@ define(["require",
         });
         nb.events.on('select.Cell', function(){
             var cell = Jupyter.notebook.get_selected_cell();
-           if(cell.cell_type === 'code'){
+           if(cell.cell_type === 'code' && that.is_open){
                that.set_details(cell.uuid);
            }
         });
