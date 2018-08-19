@@ -142,7 +142,7 @@ define([
                         console.log(change_status_for_edited_cell[that.metadata.cell_status]);
                         that.set_icon_status( change_status_for_edited_cell[that.metadata.cell_status] );
                     }
-                    var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
+                    var downstream = that.dfgraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 'success') {
@@ -156,7 +156,7 @@ define([
                         console.log(revert_status_for_unedited_cell[that.metadata.cell_status]);
                         that.set_icon_status( revert_status_for_unedited_cell[that.metadata.cell_status] );
                     }
-                    var downstream = Jupyter.DfGraph.all_downstream(that.input_prompt_number);
+                    var downstream = that.dfgraph.all_downstream(that.input_prompt_number);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status == 'edited-success') {
