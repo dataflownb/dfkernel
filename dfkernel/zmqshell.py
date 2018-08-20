@@ -184,13 +184,13 @@ class OutputMagics(Magics):
         glob = self.shell.user_ns
         if mode=='eval':
             try:
-                out = eval(code, glob, local_ns)
+                out = eval(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
         else:
             try:
-                exec(code, glob, local_ns)
+                exec(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
