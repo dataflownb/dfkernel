@@ -198,7 +198,7 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return build_linked_result(self.shell.uuid,[],False, **out)
+            return build_linked_result(self.shell.uuid,[],False, list(out.items()))
             # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
