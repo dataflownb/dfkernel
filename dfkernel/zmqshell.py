@@ -658,8 +658,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         compiler=compile, result=None):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
-        closure = True #FIXME Should this even be a config or default behavior?
-        future_elt = False #Flag for determining if there's a __future__ import
+        # FIXME allow closure to be configurable?
+        # if so, need to also adjset tb_offset values (should be config option)
+        closure = True
+        future_elt = False # Flag for determining if there's a __future__ import
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
@@ -701,9 +703,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         libs = list(diff)
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
-                if(len(unnamed) < 1):
-                    closure = False
-                elif(closure and isinstance(nodelist[-1],ast.Expr)):
+                # if(len(unnamed) < 1):
+                #     closure = False
+                if(closure and isinstance(nodelist[-1],ast.Expr)):
                     nnode = ast.Return(nodelist[-1].value)
                     ast.fix_missing_locations(nnode)
                     nodelist[-1] = nnode
@@ -800,10 +802,14 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             etype, value, tb = sys.exc_info()
             if result is not None:
                 result.error_in_exec = value
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
             self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
         except:
             if result is not None:
                 result.error_in_exec = sys.exc_info()[1]
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
             self.showtraceback(running_compiled_code=True, tb_offset=2)
         else:
             outflag = False
