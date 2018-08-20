@@ -10,6 +10,10 @@
     justify-content: center;
 }
 
+.dftoolbar-inline .btn {
+    vertical-align: top;
+}
+
 .dftoolbar-inline i.fa-chevron-circle-down {
     font-size: 1.4em;
 }
@@ -22,15 +26,31 @@
     padding-left: 3px;
     padding-right: 3px;
     font-family: monospace;
+    max-width: 40vw;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    white-space: nowrap;
 }
 
 .dftoolbar-inputs .btn-default {
     color: #303F9F;
+    flex: none;
+    max-width: 16em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden;
+    vertical-align: top;
 }
 
 
 .dftoolbar-outputs .btn-default {
     color: #D84315;
+    flex: none;
+    max-width: 16em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden;
+    vertical-align: top;
 }
 
 
