@@ -68,7 +68,7 @@ define(["jquery",
 
                }]);
                 var stylesheet = $('<link rel="stylesheet" type="text/css">');
-                stylesheet.attr('href',require.toUrl("./df-notebook/icon.css"));
+                stylesheet.attr('href',require.toUrl("./df-notebook/css/icon.css"));
                 $('head').append(stylesheet);
 
         };
