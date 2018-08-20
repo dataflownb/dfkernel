@@ -123,46 +123,51 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-            var icon_status = $('<div></div>').addClass("icon_status new-cell df-verified").prop("title",'New');
-            this.input.prepend(icon_status);
+            this.icon_status = $('<div></div>');
+            this.set_icon_status("new");
+            this.input.prepend(this.icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
-                var change_status_for_edited_cell =
-                {'new' : 'edited-new', 'success' : 'edited-success', 'error' : 'edited-error',
-                 'saved-success' : 'edited-saved-success', 'saved-success-first-load' : 'saved-success',
-                 'saved-error' : 'edited-saved-error', 'saved-error-first-load' : 'saved-error'};
-                var revert_status_for_unedited_cell =
-                {'edited-new': 'new', 'edited-success': 'success', 'edited-error': 'error',
-                 'edited-saved-success': 'saved-success', 'saved-success': 'saved-success-first-load',
-                 'edited-saved-error': 'saved-error', 'saved-error': 'saved-error-first-load'};
+                var change_status_for_edited_cell = {
+                    'new' : 'edited-new',
+                    'success' : 'edited-success',
+                    'error' : 'edited-error',
+                    'saved-success' : 'edited-saved-success',
+                    'saved-success-first-load' : 'saved-success',
+                    'saved-error' : 'edited-saved-error',
+                    'saved-error-first-load' : 'saved-error'
+                };
+
+                var revert_status_for_unedited_cell = {};
+                Object.keys(change_status_for_edited_cell).forEach(
+                    function(k) {
+                        var v = change_status_for_edited_cell[k];
+                        revert_status_for_unedited_cell[v] = k;
+                    });
                 //only if the input is not empty
-                if(that.get_text() !== that.code_cached) {
+                function update_icons(status_map, check_prefix, status_prefix) {
                     console.log(that.metadata.cell_status);
-                    if (that.metadata.cell_status in change_status_for_edited_cell) {
-                        console.log(change_status_for_edited_cell[that.metadata.cell_status]);
-                        that.set_icon_status( change_status_for_edited_cell[that.metadata.cell_status] );
+                    if (that.metadata.cell_status in status_map) {
+                        console.log(status_map[that.metadata.cell_status]);
+                        that.set_icon_status( status_map[that.metadata.cell_status] );
                     }
-                    var downstream = that.dfgraph.all_downstream(that.input_prompt_number);
+                    var downstream = that.dfgraph.all_downstream(that.uuid);
                     for(var i = 0;i<downstream.length;i++) {
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.metadata.cell_status == 'success') {
-                            cell.set_icon_status('edited-success');
+                        if (cell.metadata.cell_status === check_prefix + 'success') {
+                            cell.set_icon_status(status_prefix + 'success');
+                        } else if (cell.metadata.cell_status === check_prefix + 'error') {
+                            cell.set_icon_status(status_prefix + 'error');
                         }
                     }
+
                 }
-                else if (that.get_text() == that.code_cached || that.get_text().trim().length === 0) {
-                    console.log(that.metadata.cell_status);
-                    if (that.metadata.cell_status in revert_status_for_unedited_cell) {
-                        console.log(revert_status_for_unedited_cell[that.metadata.cell_status]);
-                        that.set_icon_status( revert_status_for_unedited_cell[that.metadata.cell_status] );
-                    }
-                    var downstream = that.dfgraph.all_downstream(that.input_prompt_number);
-                    for(var i = 0;i<downstream.length;i++) {
-                        var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.metadata.cell_status == 'edited-success') {
-                            cell.set_icon_status('success');
-                        }
-                    }
+                if(that.get_text() !== that.code_cached) {
+                    update_icons(change_status_for_edited_cell, '', 'edited-');
+                }
+                else if (that.get_text() === that.code_cached ||
+                    that.get_text().trim().length === 0) {
+                    update_icons(revert_status_for_unedited_cell, 'edited-', '');
                 }
                 that.kernel_notified = true;
             });
@@ -465,18 +470,24 @@ define([
     CodeCell.prototype.set_icon_status = function(cell_status) {
         //FIXME update depview here
         var status_to_css_classes =
-         {"new" : ["new-cell df-verified", "New"], "edited-new" : ["edited-new df-unverified", "Edited new"],
-          "success" : ["success-cell df-verified", "Success"], "edited-success" : ["edited-success df-unverified", "Edited success"],
-          "error" : ["error-cell df-error", "Error"], "edited-error" : ["edited-error df-unverified", "Edited error"],
-          "saved-success" : ["saved-success df-unverified", "Saved success"],
-          "edited-saved-success" : ["edited-saved-success df-unverified", "Edited saved success"],
-          "executing" : ["executing df-unverified", "Executing"], "saved-error" : ["saved-error df-unverified", "Saved error"],
-          "edited-saved-error" : ["edited-saved-error df-unverified", "Edited saved error"]};
+            {"new" : ["new-cell df-verified", "New"],
+                "edited-new" : ["edited-new df-unverified", "Edited new"],
+                "success" : ["success-cell df-verified", "Success"],
+                "edited-success" : ["edited-success df-unverified", "Edited success"],
+                "error" : ["error-cell df-error", "Error"],
+                "edited-error" : ["edited-error df-unverified", "Edited error"],
+                "saved-success" : ["saved-success df-unverified", "Saved success"],
+                "edited-saved-success" : ["edited-saved-success df-unverified", "Edited saved success"],
+                "executing" : ["executing df-unverified", "Executing"],
+                "saved-error" : ["saved-error df-unverified", "Saved error"],
+                "edited-saved-error" : ["edited-saved-error df-unverified", "Edited saved error"]
+            };
 
-        $('#'+this.uuid).find('.icon_status').attr("class","icon_status");
         this.metadata.cell_status = cell_status;
-        console.log(status_to_css_classes[cell_status]);
-        $('#'+this.uuid).find('.icon_status').addClass( status_to_css_classes[cell_status][0] ).prop("title",status_to_css_classes[cell_status][1]);
-    }
+        this.icon_status.removeClass()
+            .addClass("icon_status")
+            .addClass( status_to_css_classes[cell_status][0])
+            .prop("title",status_to_css_classes[cell_status][1]);
+    };
     return {CodeCell: CodeCell};
 });
