@@ -138,6 +138,28 @@ define([
         };
     }(CodeCell.prototype.create_element));
 
+    (function(_super) {
+        CodeCell.prototype.bind_events = function () {
+            _super.apply(this,arguments);
+            var that = this;
+            var nb = Jupyter.notebook;
+            //add event to be notified when cell is deleted
+            that.events.on('delete.Cell', function(event,data) {
+                if (data['cell'] === that) {
+                    var horizontal_line = nb.insert_cell_above("raw",data['index']);
+                    horizontal_line.inner_cell.height(1).css("backgroundColor","red");
+                    horizontal_line.inner_cell[0].childNodes[1].remove();
+                    //add the horizontal line into hl_list for undeletion
+                    nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
+                    //undeleted the cell once the corresponding red line is clicked
+                    $(horizontal_line.inner_cell).parent().attr('id',data['cell'].uuid).click(function(event) {
+                        Jupyter.notebook.undelete_selected_cell(data['cell'].uuid);
+                    });
+                }
+            });
+        };
+    }(CodeCell.prototype.bind_events));
+
     CodeCell.prototype.update_last_executed = function() {
         var output_tags = this.notebook.get_cell_output_tags(this.uuid);
         if (output_tags.length === 0) {
@@ -293,6 +315,9 @@ define([
                 var that = cell;
                 this.dfgraph.remove_cell(that.uuid);
                 that.clear_df_info();
+            }
+            if(cell === cc){
+                this.dfgraph.update_dep_view();
             }
             _super.apply(cell, arguments);
         }

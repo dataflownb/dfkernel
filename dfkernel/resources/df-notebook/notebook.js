@@ -105,13 +105,22 @@ define([
             }
         });
         //if there are deleted cells, put it in the code_dict to update the dependencies' links
-        if (this.metadata.deleted_cells_uid && this.metadata.deleted_cells_uid.length > 0) {
-            for(var i = 0;i<this.metadata.deleted_cells_uid.length; i++) {
-                var cell_uuid = this.metadata.deleted_cells_uid[i];
-                code_dict[cell_uuid] = "";
+        if (this.metadata.hl_list && Object.keys(this.metadata.hl_list).length !== 0) {
+            for(var cell_uuid in this.metadata.hl_list) {
+                if(this.metadata.hl_list.hasOwnProperty(cell_uuid)) {
+                    code_dict[cell_uuid] = "";
+                    var horizontal_line = this.metadata.hl_list[cell_uuid];
+                    delete this.metadata.hl_list[cell_uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    // make sure that there is a new cell at the bottom
+                    if (index === (this.ncells()-1)) {
+                        this.insert_cell_at_bottom();
+                        this.set_dirty(true);
+                    }
+                }
             }
-            //empty the list when we're done
-            this.metadata.deleted_cells_uid = [];
         }
         return code_dict;
     };
@@ -309,6 +318,89 @@ define([
             this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
+    
+    (function(_super) {
+        Notebook.prototype.delete_cells = function (indices) {
+            //create a list of the horizontal lines for deleted cells
+            if( typeof this.metadata.hl_list == 'undefined' && !(this.metadata.hl_list instanceof Array) ) {
+                this.metadata.hl_list = [];
+            }
+            var that = _super.call(this, indices);
+            return that;
+        };
+    }(Notebook.prototype.delete_cells));
+    //undelete a cell if click on the horizontoal line
+    Notebook.prototype.undelete_selected_cell = function(uuid) {
+        var i ,j , cell_data, new_cell, insert;
+        insert = $.proxy(this.insert_cell_below, this);
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                cell_data = this.undelete_backup_stack[i].cells[j];
+                if (cell_data.execution_count.toString(16) == uuid) {
+                    //get the clicked horizontal_line
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    delete this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    //undelete the corresponding cell
+                    new_cell = insert(cell_data.cell_type, index);
+                    new_cell.fromJSON(cell_data);
+                    //remove the horizontal line
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    this.undelete_backup_stack[i].cells.splice(j,1);
+                }
+            }
+        }
+        this.set_dirty(true);
+    };
+
+    (function(_super) {
+        Notebook.prototype.undelete_cell = function () {
+            var j = this.undelete_backup_stack.length - 1
+            var length = this.undelete_backup_stack[j].cells.length;
+            for(i=0; i<length ; i++) {
+                var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                //remove the corresponding horizontal line if exist
+                if (this.metadata.hl_list[uuid]) {
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    ce.remove();
+                    delete this.metadata.hl_list[uuid];
+                }
+            }
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.undelete_cell));
+
+    (function(_super) {
+        Notebook.prototype.merge_cells = function (indices,into_last) {
+            _super.apply(this,arguments);
+            // Check if trying to merge above on topmost cell or wrap around
+            // when merging above
+            if (indices.filter(function(item) {return item < 0;}).length > 0) {
+                return;
+            }
+            for (var i=0; i < indices.length; i++) {
+                if(!this.get_cell(indices[i]).is_mergeable()) {
+                    return;
+                }
+            }
+            for (var i=0; i < indices.length; i++) {
+                var ce = this.get_cell_element(indices[i]);
+                ce.remove();
+                delete this.metadata.hl_list[ce[0].id];
+            }
+        };
+    }(Notebook.prototype.merge_cells));
+
+    /**
+     * Merge the selected cell into the cell below it.
+     */
+    Notebook.prototype.merge_cell_below = function () {
+        var index = this.get_selected_index();
+        this.merge_cells([index, index+1], true);
+    };
 
     (function(_super) {
         Notebook.prototype.delete_cells = function (indices) {
