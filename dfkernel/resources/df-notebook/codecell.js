@@ -351,6 +351,9 @@ define([
                 //set input field icon to error if cell returns error
                 cell.set_icon_status('error');
             }
+            if(cell === cc){
+                this.dfgraph.update_dep_view();
+            }
             _super.apply(cell, arguments);
         }
     }(CodeCell.prototype._handle_execute_reply));

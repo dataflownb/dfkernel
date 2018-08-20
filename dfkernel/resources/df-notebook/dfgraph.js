@@ -11,10 +11,12 @@
 
 define([
     'jquery',
-    'base/js/namespace'
+    'base/js/namespace',
+    './depview.js'
 ], function(
     $,
-    Jupyter
+    Jupyter,
+    depview
     ) {
     "use strict";
 
@@ -35,6 +37,7 @@ define([
          *  internal_nodes: A dictionary of all internal name nodes for each cell
          *
          */
+        this.was_changed = false;
         this.cells = cells || [];
         this.nodes = nodes || [];
         this.uplinks = uplinks || {};
@@ -44,6 +47,8 @@ define([
         //Cache downstream lists
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
+        this.depview = new depview.DepView(this);
+
 
     };
 
@@ -53,6 +58,9 @@ define([
     /** @method update_graph */
     DfGraph.prototype.update_graph = function(cells,nodes,uplinks,downlinks,uuid,all_ups,internal_nodes){
         var that = this;
+        if(that.depview.is_open === false){
+            that.was_changed = true;
+        }
         that.cells = cells;
         that.nodes[uuid] = nodes || [];
         if(uuid in that.uplinks){
@@ -77,6 +85,15 @@ define([
         if(that.indexOf(item) < 0){
             that.push(item);
         }
+    };
+
+    /** @method update_graph */
+    DfGraph.prototype.update_dep_view = function() {
+    var depview = this.depview;
+    if(depview.is_open){
+        var g = depview.create_node_relations(depview.globaldf, depview.globalselect);
+        depview.create_graph(g);
+    }
     };
 
     /** @method recursively yield all downstream deps */
@@ -175,7 +192,7 @@ define([
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
     DfGraph.prototype.get_internal_nodes = function (uuid) {
-        return this.internal_nodes[uuid];
+        return this.internal_nodes[uuid] || [];
     };
 
     /** @method returns all nodes for a cell*/
