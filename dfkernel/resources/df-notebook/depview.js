@@ -488,7 +488,7 @@ define(["require",
         else {
             that.is_open = true;
 
-            that.active_cell = Jupyter.notebook.get_selected_cell();
+            that.active_cell = Jupyter.notebook.get_selected_cell().uuid;
 
             //FIXME: Possibly change this?
             //GraphViz relies on the size of the svg to make the initial adjustments so the svg has to be sized first
