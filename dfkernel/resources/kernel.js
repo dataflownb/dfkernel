@@ -1,14 +1,37 @@
+var path = '../kernelspecs/dfpython3/df-notebook/lib/'
+
+require.config({
+        paths: {
+            d3: path + "d3/d3.v4.min",
+            graphlib: path + "graphlib/graphlib.core.min",
+            viz: path + "viz/viz",
+            d3graphviz: path + "d3-graphviz/d3-graphviz",
+            lodash: path + "lodash/lodash.min",
+            graphdotwriter: path + "graphlib-dot/writer"
+        },
+        shim: {
+            d3graphviz: {
+              deps: ["d3","viz"],
+              exports: "d3",
+                init: function() {
+                return {
+                    d3: d3,
+                    viz: graphviz
+                };
+        }
+            },
+        }
+        });
+
 define(["jquery",
     "base/js/namespace",
-    './df-notebook/depview.js',
-    './df-notebook/dfgraph.js',
     './df-notebook/codecell.js',
     './df-notebook/completer.js',
     './df-notebook/kernel.js',
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter, depview, dfgraph) {
+    function($, Jupyter) {
 
         Jupyter._dfkernel_loaded = false;
 
@@ -32,35 +55,16 @@ define(["jquery",
                 Jupyter._dfkernel_loaded = true;
             });
 
-            var depdiv = depview.create_dep_div();
-
             Jupyter.toolbar.add_buttons_group([
                   {
-                       'label'   : 'See Cell Dependencies',
+                       'label'   : 'Open/Close Dependency View',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv,true,false);
-
+                                                     nb.session.dfgraph.depview.toggle_dep_view();
                        }
 
-               },{
-                       'label'   : 'See Data Dependencies',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,false);
-
-                       }
-
-               },{
-                       'label'   : 'See Semantic View',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,true);
-                                                     depview.attach_controls(depdiv);
-
-                       }
-
-               }]);
+               }
+               ]);
         };
         return {onload:onload};
 });
