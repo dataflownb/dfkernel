@@ -8,6 +8,7 @@ class LinkedResult(OrderedDict):
             for kwarg in diff:
                 idx = keys.index(kwarg)
                 if k_v_tuples[idx][1] is None:
+                    keys.remove(kwarg)
                     del k_v_tuples[idx]
         super().__init__(k_v_tuples)
         self.__libs__ = __libs
