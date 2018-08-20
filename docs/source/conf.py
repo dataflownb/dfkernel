@@ -47,8 +47,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'dfpy_kernel'
-copyright = '2017, Colin Brown'
-author = 'Colin Brown'
+copyright = '2018, Dataflow Kernel Developers'
+author = 'Dataflow Kernel Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -128,7 +128,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'dfpy_kernel.tex', 'dfpy\\_kernel Documentation',
-     'Colin Brown', 'manual'),
+     'Dataflow Kernel Developers', 'manual'),
 ]
 
 
