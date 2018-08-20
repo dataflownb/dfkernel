@@ -123,7 +123,7 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-            var icon_status = $('<div></div>').addClass("icon_status new-cell df-verified");
+            var icon_status = $('<div></div>').addClass("icon_status new-cell df-verified").prop("title",'New');
             this.input.prepend(icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
@@ -326,7 +326,7 @@ define([
             }
             if (msg.metadata.status != "error") {
                 var that = cell;
-
+                cell.set_icon_status('success');
                 /** Rename content for general readability*/
                 var nodes = msg.content.nodes;
                 var uplinks = msg.content.links;
@@ -346,7 +346,6 @@ define([
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
                 //set input field icon to success if cell is executed
-                cell.set_icon_status('success');
             }
             else if(msg.metadata.status == "error") {
                 //set input field icon to error if cell returns error
