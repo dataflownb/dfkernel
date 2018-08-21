@@ -99,9 +99,9 @@ define([
     Notebook.prototype.get_code_dict = function () {
         var code_dict = {};
         this.get_cells().forEach(function (d) {
-            if (d.cell_type === 'code' && d.was_changed) {
+            if (d.cell_type === 'code' && d.kernel_notified) {
                 code_dict[d.uuid] = d.get_text();
-                d.was_changed = false;
+                d.kernel_notified = false;
             }
         });
         //if there are deleted cells, put it in the code_dict to update the dependencies' links
@@ -121,6 +121,7 @@ define([
                     }
                 }
             }
+
         }
         return code_dict;
     };
@@ -178,7 +179,7 @@ define([
     Notebook.prototype.invalidate_cells = function() {
         this.get_cells().forEach(function (d) {
             if (d.cell_type == 'code') {
-                d.was_changed = true;
+                d.kernel_notified = true;
             }
         });
     };
@@ -312,6 +313,26 @@ define([
     }(Notebook.prototype.paste_cell_below));
 
     (function(_super) {
+        Notebook.prototype.save_notebook = function (check_last_modified) {
+            //set input_changed so that we can load the saved notebook with the colored input field
+            this.get_cells().forEach(function (d) {
+                if (d.cell_type === 'code') {
+                    if(d.metadata.cell_status == 'success') {
+                        d.metadata.cell_status = "saved-success-first-load";
+                    } else if(d.metadata.cell_status == 'error') {
+                        d.metadata.cell_status = "saved-error-first-load";
+                    } else if(d.metadata.cell_status == 'edited-success') {
+                        d.metadata.cell_status = 'edited-saved-success'
+                    } else if(d.metadata.cell_status == 'edited-error') {
+                        d.metadata.cell_status = 'edited-saved-error';
+                    }
+                }
+            });
+            return _super.call(this, check_last_modified);
+        };
+    }(Notebook.prototype.save_notebook));
+
+    (function(_super) {
         Notebook.prototype.paste_cell_replace = function () {
             var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
@@ -325,10 +346,10 @@ define([
             if( typeof this.metadata.hl_list == 'undefined' && !(this.metadata.hl_list instanceof Array) ) {
                 this.metadata.hl_list = [];
             }
-            var that = _super.call(this, indices);
-            return that;
+            return _super.call(this, indices);
         };
     }(Notebook.prototype.delete_cells));
+
     //undelete a cell if click on the horizontoal line
     Notebook.prototype.undelete_selected_cell = function(uuid) {
         var i ,j , cell_data, new_cell, insert;
