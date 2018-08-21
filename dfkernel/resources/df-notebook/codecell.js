@@ -151,6 +151,7 @@ define([
                     }
                     var downstream = that.dfgraph.all_downstream(that.uuid);
                     for(var i = 0;i<downstream.length;i++) {
+                        Jupyter.notebook.session.dfgraph.depview.decorate_cell(downstream[i],'changed-cell',true);
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status === check_prefix + 'success') {
                             cell.set_icon_status(status_prefix + 'success');
@@ -162,10 +163,12 @@ define([
                 }
                 if(that.get_text() !== that.code_cached) {
                     update_icons(change_status_for_edited_cell, '', 'edited-');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',true);
                 }
                 else if (that.get_text() === that.code_cached ||
                     that.get_text().trim().length === 0) {
                     update_icons(revert_status_for_unedited_cell, 'edited-', '');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',false);
                 }
                 that.kernel_notified = true;
             });
