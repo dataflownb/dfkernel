@@ -234,8 +234,7 @@ define(["require",
             Jupyter.notebook.get_cells().map(function(cell){
                 if(cell.cell_type === 'code'){
                     if(cells.indexOf(cell.uuid) > -1){
-                        //FIXME: Change this to whatever identifier we use to detect if cell was changed
-                        if(cell.was_changed){
+                        if(cell.metadata.cell_status.substr(0,'edited'.length) === 'edited'){
                             changed_cells.push(cell.uuid);
                         }
                     }
