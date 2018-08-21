@@ -361,6 +361,8 @@ define(["require",
                     })
                 });
 
+            var deleted_cells = Jupyter.notebook.metadata.deleted_cells_uid || [];
+            that.decorate_cells(deleted_cells,'deleted-cell',true);
 
             $("g.parentnode.cluster")
                 .on('mousedown',function(event) {

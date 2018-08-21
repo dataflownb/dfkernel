@@ -367,6 +367,7 @@ define([
                     new_cell.fromJSON(cell_data);
                     //remove the horizontal line
                     var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
                     ce.remove();
                     this.undelete_backup_stack[i].cells.splice(j,1);
                 }
@@ -386,6 +387,7 @@ define([
                     var horizontal_line = this.metadata.hl_list[uuid];
                     var index = this.find_cell_index(horizontal_line);
                     var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
                     ce.remove();
                     delete this.metadata.hl_list[uuid];
                 }
