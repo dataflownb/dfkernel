@@ -85,8 +85,7 @@ define(["require",
         var that = this;
         var nb = Jupyter.notebook;
 
-        nb.events.on('create.Cell', function() {
-            //FIXME: This triggers on undelete update cell styles in here too
+        nb.events.on('create.Cell', function(evt,cell) {
             if(that.is_open){
                 that.update_cell_lists();
             }
@@ -97,10 +96,9 @@ define(["require",
                that.set_details(cell.uuid);
            }
         });
-        nb.events.on('delete.Cell',function () {
-           //FIXME: Update cell styles in here to ensure proper cells show deleted status
+        nb.events.on('delete.Cell',function (evt,cell) {
             if(that.is_open){
-                console.log('Cell Deleted');
+                that.decorate_cell(cell.cell.uuid,'deleted-cell',true);
             }
         });
     };
@@ -244,10 +242,6 @@ define(["require",
                 }
             });
 
-            console.log(new_cells);
-            console.log(changed_cells);
-
-
 
             var new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
 
@@ -270,7 +264,35 @@ define(["require",
             d3.select('#table').selectAll('.cellid').on('click',function (d) {
                 that.set_details(d);
             });
+
+            that.decorate_cells(changed_cells,'changed-cell',true);
+
+
         };
+
+
+        DepView.prototype.decorate_cells = function(cells,css_class,all_cells){
+
+            cells = cells || [];
+            all_cells = all_cells || false;
+
+            if(all_cells) {
+                $('.cluster').find('polygon').toggleClass(css_class, false);
+            }
+
+            cells.forEach(function (uuid) {
+                $('#'+uuid+'cluster').find('polygon').toggleClass(css_class,true);
+            });
+
+        };
+
+        DepView.prototype.decorate_cell = function(uuid,css_class,toggle){
+            if(this.is_open) {
+                uuid = uuid || '';
+                $('#' + uuid + 'cluster').find('polygon').toggleClass(css_class, toggle);
+            }
+        };
+
 
         /** @method this creates and renders the actual visual graph **/
         DepView.prototype.create_graph = function(g){
@@ -341,12 +363,6 @@ define(["require",
 
 
             $("g.parentnode.cluster")
-                .each(function(t){
-                    var cellid = $(this).find('text').text().substr(that.cell_label.length, 6);
-                    if(Jupyter.notebook.get_code_cell(cellid).was_changed){
-                        $(this).toggleClass('was-changed',true).select('polygon').toggleClass('was-changed-poly',true);
-                    }
-                })
                 .on('mousedown',function(event) {
                     if(event.which == 1){
                             close_and_scroll();
