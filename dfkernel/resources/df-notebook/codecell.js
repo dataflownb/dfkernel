@@ -283,8 +283,6 @@ define([
                 that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
-        //set input field icon to success if cell is executed
-        this.set_icon_status('success');
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
