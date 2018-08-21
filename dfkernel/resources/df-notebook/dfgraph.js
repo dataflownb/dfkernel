@@ -65,7 +65,7 @@ define([
         that.uplinks[uuid] = uplinks;
         that.downlinks[uuid] = downlinks || [];
         that.internal_nodes[uuid] = internal_nodes;
-        // that.update_dep_lists(all_ups,uuid);
+        that.update_dep_lists(all_ups,uuid);
         celltoolbar.CellToolbar.rebuild_all();
     };
 
@@ -146,9 +146,9 @@ define([
         that.downstream_lists = {};
     };
 
-    // /** @method update_dep_lists */
-    // DfGraph.prototype.update_dep_lists = function(all_ups,uuid){
-    //     var that = this;
+    /** @method update_dep_lists */
+    DfGraph.prototype.update_dep_lists = function(all_ups,uuid){
+        var that = this;
     //     var cell = Jupyter.notebook.get_code_cell(uuid);
     //
     //     if(cell.last_msg_id){
@@ -159,11 +159,11 @@ define([
     //         cell.update_df_list(cell,that.all_downstream(uuid),'downstream');
     //     }
     //
-    //     if(all_ups.length > 0){
-    //        that.upstream_list[uuid] = all_ups;
+        if(all_ups.length > 0){
+           that.upstream_list[uuid] = all_ups;
     //        cell.update_df_list(cell,all_ups,'upstream');
-    //     }
-    // };
+        }
+    };
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
     DfGraph.prototype.get_all_upstreams = function (uuid) {
