@@ -16,7 +16,7 @@ define([
         var link = $("<link/>")
             .attr('type', 'text/css')
             .attr('rel', 'stylesheet')
-            .attr('href', require.toUrl('./toolbar.css'));
+            .attr('href', require.toUrl('./css/toolbar.css'));
         $("head").append(link);
 
         var dfdiv = $('<div class="dftoolbar">');
