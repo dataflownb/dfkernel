@@ -90,10 +90,6 @@ g text {
     fill:white;
 }
 
-.cluster.stale {
-    fill: red;
-}
-
 .cluster rect{
     stroke: #999;
     fill-opacity: 1;
@@ -148,10 +144,6 @@ polygon.selected{
 .was-changed {
     stroke-dasharray: 10,10;
     stroke-width: 4px;
-}
-
-.was-changed-poly {
-    fill:red;
 }
 
 path.downstream {
@@ -227,4 +219,16 @@ span.cellid{
 
 .child-node polygon{
     fill: white;
+}
+
+polygon.deleted-cell, polygon.deleted-cell.changed-cell{
+    fill:rgba(255, 0, 0, 0.5) !important;
+}
+
+polygon.changed-cell{
+    fill:rgba(255, 255, 0, 0.5) !important;
+}
+
+.cluster polygon{
+    fill:rgba(0, 255, 0, 0.5) !important;
 }
