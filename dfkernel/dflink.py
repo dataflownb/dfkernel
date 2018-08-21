@@ -10,6 +10,10 @@ class LinkedResult(OrderedDict):
                 if k_v_tuples[idx][1] is None:
                     keys.remove(kwarg)
                     del k_v_tuples[idx]
+                elif isinstance(k_v_tuples[idx][1], LinkedResult):
+                    keys.remove(kwarg)
+                    k_v_tuples.extend(k_v_tuples[idx][1].items())
+                    del k_v_tuples[idx]
         super().__init__(k_v_tuples)
         self.__libs__ = __libs
         self.__uuid__ = __uuid
