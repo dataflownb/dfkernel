@@ -8,6 +8,7 @@
     display:flex;
     align-items:center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .dftoolbar-inline .btn {
@@ -15,21 +16,37 @@
 }
 
 .dftoolbar-inline i.fa-chevron-circle-down {
-    font-size: 1.4em;
+    font-size: 1.2em;
 }
 
 .dftoolbar-inline i.fa-chevron-circle-up {
-    font-size: 1.4em;
+    font-size: 1.2em;
+}
+
+.dftoolbar > .btn-default, .dftoolbar-inline > .btn-default {
+    margin-left: 2px;
+    margin-right: 2px;
 }
 
 .dftoolbar-links {
-    padding-left: 3px;
-    padding-right: 3px;
     font-family: monospace;
-    max-width: 40vw;
+    max-width: 30vw;
     overflow-x: scroll;
     overflow-y: hidden;
     white-space: nowrap;
+}
+
+.dftoolbar-links {
+    -ms-overflow-style: none;
+}
+
+/* FIXME deal with Firefox */
+/*.dftoolbar-links {*/
+    /*overflow: -moz-scrollbars-none;*/
+/*}*/
+
+.dftoolbar-links::-webkit-scrollbar {
+    display: none;
 }
 
 .dftoolbar-inputs .btn-default {

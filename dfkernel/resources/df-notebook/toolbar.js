@@ -48,23 +48,22 @@ define([
                 var notebook = cell.notebook;
                 var container = $(div);
                 var input_div = $('<div class="dftoolbar-inline"/>');
-                var label = $('<i class="fa-chevron-circle-up fa">');
-                var links = $('<div class="dftoolbar-links dftoolbar-inputs">');
-                input_div.append(label, links);
-                upstream_pairs.forEach(
-                    function (v_arr) {
-                        links.append(add_variable(v_arr[0], v_arr[1], notebook));
-                    });
                 var highlight = $('<button/>')
                     .addClass("btn btn-default btn-xs")
                     .attr('title','Highlight Upstream Cells')
-                    .append($('<i class="fa-angle-double-up fa">'));
+                    .append($('<i class="fa-chevron-circle-up fa">'));
                 highlight.click(function() {
                     var upstreams = cell.dfgraph.all_upstream_cell_ids(cell.uuid);
                     notebook.select_cells_by_id(upstreams);
                     return false;
                 });
-                links.append(highlight);
+                input_div.append(highlight);
+                var links = $('<div class="dftoolbar-links dftoolbar-inputs">');
+                input_div.append(links);
+                upstream_pairs.forEach(
+                    function (v_arr) {
+                        links.append(add_variable(v_arr[0], v_arr[1], notebook));
+                    });
                 container.append(input_div);
             }
         }
@@ -77,23 +76,23 @@ define([
                 var container = $(div);
                 var notebook = cell.notebook;
                 var output_div = $('<div class="dftoolbar-inline"/>');
-                var label = $('<i class="fa-chevron-circle-down fa">');
-                var links = $('<div class="dftoolbar-links dftoolbar-outputs">');
-                output_div.append(label, links);
-                output_names.forEach(
-                    function (v) {
-                        links.append(add_variable(v));
-                    });
                 var highlight = $('<button/>')
                     .addClass("btn btn-default btn-xs")
                     .attr('title', 'Highlight Downstream Cells')
-                    .append($('<i class="fa-angle-double-down fa">'));
+                    .append($('<i class="fa-chevron-circle-down fa">'));
                 highlight.click(function() {
                     var downstreams = cell.dfgraph.all_downstream(cell.uuid);
                     notebook.select_cells_by_id(downstreams);
                     return false;
                 });
-                links.append(highlight);
+                output_div.append(highlight);
+
+                var links = $('<div class="dftoolbar-links dftoolbar-outputs">');
+                output_div.append(links);
+                output_names.forEach(
+                    function (v) {
+                        links.append(add_variable(v));
+                    });
                 container.append(output_div);
             }
         }
