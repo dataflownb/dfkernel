@@ -404,6 +404,12 @@ class DataflowNamespace(dict):
                 raise
             # print("Got result", res)
             self.__do_not_link__.difference_update(rev_links)
+            try:
+                import ipywidgets
+                if isinstance(res[k], ipywidgets.Widget):
+                    return res[k].value
+            except ImportError:
+                pass
             return res[k]
         return super().__getitem__(k)
 
