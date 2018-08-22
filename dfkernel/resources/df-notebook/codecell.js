@@ -41,8 +41,6 @@ define([
             this.dfgraph = this.notebook.session.dfgraph;
             this.internal_nodes = [];
             this.cell_info_area = null;
-            this.cell_imm_upstream_deps = [];
-            this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
             this.code_cached = '';
@@ -342,15 +340,12 @@ define([
                 this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
 
                 that.internal_nodes = msg.content.internal_nodes;
-                that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
 
                 if (msg.content.update_downstreams) {
                     this.dfgraph.update_down_links(msg.content.update_downstreams);
 
                 }
-                that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
-                //set input field icon to success if cell is executed
             }
             else if(msg.metadata.status == "error") {
                 //set input field icon to error if cell returns error
