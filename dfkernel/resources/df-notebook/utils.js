@@ -1,16 +1,19 @@
-/**
- * Created by dkoop on 7/6/17.
- */
+// Copyright (c) Dataflow Notebook Development Team.
+// Distributed under the terms of the BSD-3 License.
+
 define(function() {
     "use strict";
 
-    
+    //String prototype from MDN
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith
     if (!String.prototype.startsWith) {
         String.prototype.startsWith = function(search, pos) {
             return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
         };
     }
 
+    //String prototype from MDN
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/repeat
     if (!String.prototype.repeat) {
       String.prototype.repeat = function(count) {
         'use strict';
