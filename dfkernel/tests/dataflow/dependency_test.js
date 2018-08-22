@@ -20,19 +20,6 @@ casper.notebook_test(function () {
         return outputs;
     }
 
-    function get_all_up_dep_text(cell_idx) {
-        var outputs = casper.evaluate(function (cell_idx) {
-            var cell = Jupyter.notebook.get_cell(cell_idx);
-            var childnodes = [];
-            var children = cell.cell_upstream_deps[0].children;
-            for (var i = 0; i < children.length; i++) {
-                childnodes.push(children[i].innerText);
-            }
-            return childnodes;
-        }, {cell_idx: cell_idx});
-        return outputs;
-    }
-
     function get_imm_up_deps(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
@@ -162,8 +149,6 @@ casper.notebook_test(function () {
             this.test.assertEquals(outputs[0].data['text/plain'], '4', 'cell 2 produces the correct output');
             var immupdeps = get_imm_up_deps(2);
             this.test.assertEquals(immupdeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Upstream Dependencies");
-            var allupdeps = get_all_up_dep_text(2);
-            this.test.assertEquals(allupdeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Upstream Dependencies");
             var outputs = get_outputs(3);
             this.test.assertEquals(outputs[0].data['text/plain'], '14', 'cell 3 produces the correct output');
             var immupdeps = get_imm_up_deps(3);

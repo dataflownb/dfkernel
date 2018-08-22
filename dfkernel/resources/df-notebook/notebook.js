@@ -155,6 +155,16 @@ define([
         return output_tags;
     };
 
+    Notebook.prototype.get_auto_update_flags = function() {
+        return this.get_code_cells().map(
+            function(c) { return [c.uuid, c.auto_update]; });
+    };
+
+    Notebook.prototype.get_force_cached_flags = function() {
+        return this.get_code_cells().map(
+            function(c) { return [c.uuid, c.force_cached]; });
+    };
+
     Notebook.prototype.has_id = function(id) {
         return this.get_cells().some(function (d) {
             return (d.cell_type == 'code' && d.uuid == id);
@@ -190,6 +200,11 @@ define([
             return (d.cell_type == 'code' && d.uuid == uid);
         });
         return (retval.length > 0) ? retval[0] : null;
+    };
+
+    Notebook.prototype.get_code_cells = function() {
+        return this.get_cells().filter(
+            function(d) { return (d.cell_type === 'code'); });
     };
 
     Notebook.prototype.get_code_cell_index = function(uid) {
