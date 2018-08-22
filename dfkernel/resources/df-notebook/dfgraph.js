@@ -102,13 +102,6 @@ define([
                       //Better to just invalidate the cached list so you don't have to worry about downstreams too
                       delete that.downstream_lists[up];
               });
-              all_ups.forEach(function (up) {
-                  if(Jupyter.notebook.has_id(up)){
-                        var upcell = Jupyter.notebook.get_code_cell(up);
-                        $(upcell.cell_downstream_deps).empty();
-                        upcell.update_df_list(upcell,that.all_downstream(up),'downstream');
-                }
-              });
           }
         }
     };
