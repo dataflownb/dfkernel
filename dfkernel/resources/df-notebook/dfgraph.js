@@ -151,15 +151,6 @@ define([
                 that.downlinks[uuid] = t['data'];
             }
         });
-        //Have to first update all downstreams then recursively yield them afterwards
-        downupdates.forEach(function (t) {
-            var uuid = t['key'].substr(0, 6);
-            if(Jupyter.notebook.has_id(uuid) && t.data){
-                var upcell = Jupyter.notebook.get_code_cell(uuid);
-                $(upcell.cell_downstream_deps).empty();
-                // upcell.update_df_list(upcell,that.all_downstream(uuid),'downstream');
-            }
-        });
         that.downstream_lists = {};
     };
 
