@@ -33,7 +33,8 @@ from typing import List as ListType
 from ast import AST
 import importlib
 
-from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, DataflowNamespace
+from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, \
+    DataflowNamespace, DataflowCellException
 from dfkernel.dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
@@ -156,7 +157,7 @@ class OutputMagics(Magics):
         help="""Expression to output"""
     )
 
-    def display(self, line):
+    def display(self, line, local_ns=None):
         args = magic_arguments.parse_argstring(self.display, line)
 
         names = args.names
@@ -180,16 +181,17 @@ class OutputMagics(Magics):
             mode = 'exec'
             source = '<display exec>'
         code = self.shell.compile(expr_ast, source, mode)
+
         glob = self.shell.user_ns
         if mode=='eval':
             try:
-                out = eval(code, glob, self.shell.user_ns)
+                out = eval(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
         else:
             try:
-                exec(code, glob, self.shell.user_ns)
+                exec(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
@@ -198,7 +200,7 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return build_linked_result(self.shell.uuid,[],False, **out)
+            return build_linked_result(self.shell.uuid,[],False, list(out.items()))
             # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
@@ -211,22 +213,24 @@ class OutputMagics(Magics):
             return collections.namedtuple('namedtuple', ' '.join(names))(out)
         return out
 
+    @needs_local_scope
     @line_magic
-    def split_out(self, line):
+    def split_out(self, line, local_ns=None):
         """Takes an output and splits into multiple outputs.
         mapping -> each key-value pair becomes a separate output
         tuple -> each tuple becomes a separate output
         list -> each entry becomes a separate output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
+    @needs_local_scope
     @line_magic
-    def name_out(self, line):
+    def name_out(self, line, local_ns=None):
         """Adds names to an output.
         Mirrors split_out except that this makes sense for a single output.
         object -> adds a name to the output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
 # TODO move to its own package
 def expr2id(node):
@@ -313,6 +317,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
+
+        def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
+            retval = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            return retval[:-4] + retval[-1:]
+
+        self.set_custom_exc((DataflowCellException,), cell_exception_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
@@ -575,6 +586,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
+                result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                self.dataflow_history_manager.deleted_cells = []
                 cells = []
                 nodes = []
                 for uid in self.dataflow_history_manager.sorted_keys():
@@ -587,6 +600,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.nodes = nodes
                 result.cells = cells
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
+                result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                self.dataflow_history_manager.deleted_cells = []
                 result.internal_nodes = internalnodes
 
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
@@ -659,8 +674,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         compiler=compile, result=None):
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
-        closure = True #FIXME Should this even be a config or default behavior?
-        future_elt = False #Flag for determining if there's a __future__ import
+        # FIXME allow closure to be configurable?
+        # if so, need to also adjset tb_offset values (should be config option)
+        closure = True
+        future_elt = False # Flag for determining if there's a __future__ import
         if interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
@@ -702,34 +719,33 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         libs = list(diff)
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
-                if(len(unnamed) < 1):
-                    closure = False
-                elif(closure and isinstance(nodelist[-1],ast.Expr)):
+                # if(len(unnamed) < 1):
+                #     closure = False
+                if(closure and isinstance(nodelist[-1],ast.Expr)):
                     nnode = ast.Return(nodelist[-1].value)
                     ast.fix_missing_locations(nnode)
                     nodelist[-1] = nnode
 
             if create_node:
-                keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in (libs+vars)]
+                keywords = [ast.Tuple([ast.Str(var), ast.Name(var, ast.Load())],ast.Load()) for var in (libs+vars)]
                 none_flag = bool(len(vars))
                 for out in unnamed:
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
                     if(len(unnamed)+len(vars) == 1):
-                        keywords.append(ast.keyword('Out[' + self.uuid + ']', out[1]))
+                        keywords.append(ast.Tuple([ast.Str('Out[' + self.uuid + ']'), out[1]],ast.Load()))
                     elif(out[0]>=0):
-                        keywords.insert(out[0]+len(libs), ast.keyword(self.uuid + str(out[0]),out[1]))
+                        keywords.insert(out[0]+len(libs), ast.Tuple([ast.Str(self.uuid + str(out[0])),out[1]],ast.Load()))
                     else:
-                        keywords.append(ast.keyword(self.uuid +  str(len(vars)),out[1]))
+                        keywords.append(ast.Tuple([ast.Str(self.uuid +  str(len(vars))),out[1]],ast.Load()))
 
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
-                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords),
-                        nodelist[-1].value],
+                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())], [])],
                     ast.Load()))
                 else:
-                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords)
+                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())],[])
                     if closure:
                         nnode = ast.Return(innercall)
                     else:
@@ -801,11 +817,15 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             etype, value, tb = sys.exc_info()
             if result is not None:
                 result.error_in_exec = value
-            self.CustomTB(etype, value, tb)
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
+            self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
         except:
             if result is not None:
                 result.error_in_exec = sys.exc_info()[1]
-            self.showtraceback(running_compiled_code=True)
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
+            self.showtraceback(running_compiled_code=True, tb_offset=2)
         else:
             outflag = False
         return outflag

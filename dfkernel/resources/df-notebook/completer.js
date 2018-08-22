@@ -19,6 +19,17 @@ define([
         return false;
     };
 
+    Completer.prototype.add_underscores = function(cell_str, start, end) {
+        var piece = cell_str.slice(start, end);
+        var notebook = this.cell.notebook;
+        var retval = [];
+
+        if ('_'.repeat(notebook.session.last_executed_num).indexOf(piece) !== -1) {
+            return notebook.session.last_executed.slice(0,piece.length);
+        }
+        return retval;
+    };
+
 
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);
@@ -31,24 +42,10 @@ define([
             return retval;
         }
 
-        if (piece.startsWith('_')) {
-            if (((piece == '_') || (piece == '__') || (piece == '___')) && notebook.session.last_executed_iii) {
-                retval.push(notebook.session.last_executed_iii);
-            }
-            if (((piece == '_') || (piece == '__')) && notebook.session.last_executed_ii) {
-                retval.push(notebook.session.last_executed_ii);
-            }
-            if (((piece == '_')) && notebook.session.last_executed_i) {
-                retval.push(notebook.session.last_executed_i);
-            }
-
-            return retval;
-        }
-
         // be slow here
         retval = notebook.get_cells()
             .filter(function (d) {
-                return (d.cell_type == 'code' && d.uuid.startsWith(piece)); })
+                return (d.cell_type == 'code' && d.uuid.startsWith(piece) && !notebook.get_code_cell(d.uuid).had_error); })
             .map(function(d) { return d.uuid; });
         return retval;
     };
@@ -147,6 +144,16 @@ define([
             from = this.editor.posFromIndex(token.start);
             to = this.editor.posFromIndex(token.end);
         }
+
+        var underscore_matches = this.add_underscores(this.editor.getValue(), start, end);
+        underscore_matches.forEach(function(obj) {
+           filtered_results.unshift({
+               str: obj,
+               type: "underscore",
+               from: from,
+               to: to
+           });
+        });
 
         var cell_matches = this.add_cell_ids(this.editor.getValue(), start, end);
         cell_matches.forEach(function(cid) {

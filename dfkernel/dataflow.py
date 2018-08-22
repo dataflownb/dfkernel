@@ -10,7 +10,15 @@ class DataflowCacheException(Exception):
     def __str__(self):
         return "Cell '{}' has not yet been computed".format(self.cid)
 
+class DataflowCellException(Exception):
+    def __init__(self, cid):
+        self.cid = cid
+
+    def __str__(self):
+        return "Cell '{}' raised an exception".format(self.cid)
+
 class DataflowHistoryManager(object):
+    deleted_cells = []
     storeditems = []
     tup_flag = False
 
@@ -28,10 +36,28 @@ class DataflowHistoryManager(object):
 
     def update_code(self, key, code):
         # print("CALLING UPDATE CODE", key)
-        if key not in self.code_cache or self.code_cache[key] != code:
+        # if code is empty, remove the code_cache, remove links
+        if code == '' and key in self.value_cache:
+            self.set_stale(key)
+            del self.value_cache[key]
+            del self.code_cache[key]
+            for child in self.all_downstream(key):
+                self.remove_dependencies(key, child)
+                self.remove_semantic_dependencies(key, child)
+            for parent in self.all_upstream(key):
+                self.remove_dependencies(key, parent)
+                self.remove_semantic_dependencies(key, parent)
+            self.shell.user_ns._reset_cell(key)
+            self.deleted_cells.append(key)
+        elif key not in self.code_cache or self.code_cache[key] != code:
+            # clear out the old __links__ and __rev_links__ (if exist)
+            if self.shell.user_ns.__rev_links__[key]:
+                for tag in self.shell.user_ns.__rev_links__[key]:
+                    del self.shell.user_ns.__links__[tag]
+                del self.shell.user_ns.__rev_links__[key]
+            self.func_cached[key] = False
             self.code_cache[key] = code
             self.set_stale(key)
-            self.func_cached[key] = False
             if key not in self.auto_update_flags:
                 self.auto_update_flags[key] = False;
             if key not in self.force_cached_flags:
@@ -188,9 +214,7 @@ class DataflowHistoryManager(object):
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
         if not retval.success:
-            # FIXME really want to just raise this error and not the bits of the
-            # stack that are internal (get_item, etc.)
-            retval.raise_error()
+            raise DataflowCellException(k)
         # FIXME can we just rely on run_cell?
         self.shell.uuid = child_uuid
         return retval.result

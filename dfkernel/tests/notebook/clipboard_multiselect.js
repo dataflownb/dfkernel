@@ -26,7 +26,13 @@ casper.notebook_test(function () {
         this.evaluate(function () {
             $("#paste_cell_replace").click();
         });
+    });
 
+    this.thenEvaluate(function () {
+        Jupyter.notebook.get_code_dict();
+    });
+
+    this.then(function () {
         var expected_state = ['', '1', '2', '3', '4', 'a5', '1' ,'2' ,'3', 'd8'];
 
         for (var i=1; i<expected_state.length; i++){

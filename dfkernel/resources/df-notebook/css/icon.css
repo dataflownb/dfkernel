@@ -1,0 +1,59 @@
+div.icon_status {
+    display: inline-block;
+    cursor: auto;
+    color: #333;
+    padding-left: 1px;
+    padding-right: 1px;
+    padding-top: 0.4ex;
+
+    font-family: FontAwesome;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: inherit;
+    font-size: 1.4em;
+
+}
+
+.new-cell::before {
+    content: "\f055";
+}
+
+.edited-new::before {
+  content: "\f055";
+}
+
+.success-cell::before {
+  content: "\f058";
+}
+
+.edited-success::before, .edited-error::before, .edited-saved-success::before, .edited-saved-error::before {
+  content: "\f06a";
+}
+
+.error-cell::before {
+  content: "\f057";
+}
+
+.saved-success::before, .saved-success::before {
+  content: "\f058";
+}
+
+.executing::before {
+  content: "\f017";
+}
+
+.saved-error::before, .saved-error::before {
+  content: "\f057";
+}
+
+.df-verified::before {
+  color : #008800;
+}
+
+.df-unverified::before {
+  color : #eac234;
+}
+
+.df-error::before {
+  color : #ff0000;
+}

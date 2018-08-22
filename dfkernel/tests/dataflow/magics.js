@@ -13,19 +13,30 @@ casper.notebook_test(function () {
 
     this.wait_for_kernel_ready();
 
-    this.then(function() {
-
+    this.then(function(){
         this.evaluate(function () {
-            Jupyter.notebook.insert_cell_at_index("code", 0);
+            Jupyter.notebook.insert_cell_at_index("code",0);
             var cell = Jupyter.notebook.get_cell(0);
-            cell.set_text('%split_out {"a":3,"b":4}');
+            cell.set_text('from collections import OrderedDict');
             cell.execute();
         });
 
         this.wait_for_output(0);
+    });
+
+    this.then(function() {
+
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 1);
+            var cell = Jupyter.notebook.get_cell(1);
+            cell.set_text('%split_out OrderedDict([("a",3),("b",4)])');
+            cell.execute();
+        });
+
+        this.wait_for_output(1);
 
         this.then(function () {
-            var outputs = get_outputs(0);
+            var outputs = get_outputs(1);
             this.test.assertEquals(outputs.length, 2, 'cell 0 has the right number of outputs');
             this.test.assertEquals(outputs[0].metadata.output_tag, 'a', 'cell 0 has the correct first output_tag');
             this.test.assertEquals(outputs[0].data['text/plain'], '3', 'cell 0 produces the correct output');
@@ -35,24 +46,9 @@ casper.notebook_test(function () {
 
 
         this.evaluate(function () {
-            Jupyter.notebook.insert_cell_at_index("code", 1);
-            var cell = Jupyter.notebook.get_cell(1);
-            cell.set_text('dic={"c":3,"d":4}');
-            cell.execute();
-        });
-
-        this.wait_for_output(1);
-
-        this.then(function () {
-            var outputs = get_outputs(1);
-            this.test.assertEquals(outputs.length, 1, 'cell 1 has the right number of outputs');
-            this.test.assertEquals(outputs[0].data['text/plain'], "{'c': 3, 'd': 4}", 'cell 1 produces the correct output');
-        });
-
-        this.evaluate(function () {
             Jupyter.notebook.insert_cell_at_index("code", 2);
             var cell = Jupyter.notebook.get_cell(2);
-            cell.set_text('%split_out dic');
+            cell.set_text('dic=OrderedDict([("c",3),("d",4)])');
             cell.execute();
         });
 
@@ -60,6 +56,21 @@ casper.notebook_test(function () {
 
         this.then(function () {
             var outputs = get_outputs(2);
+            this.test.assertEquals(outputs.length, 1, 'cell 1 has the right number of outputs');
+            this.test.assertEquals(outputs[0].data['text/plain'], "OrderedDict([('c', 3), ('d', 4)])", 'cell 1 produces the correct output');
+        });
+
+        this.evaluate(function () {
+            Jupyter.notebook.insert_cell_at_index("code", 3);
+            var cell = Jupyter.notebook.get_cell(3);
+            cell.set_text('%split_out dic');
+            cell.execute();
+        });
+
+        this.wait_for_output(3);
+
+        this.then(function () {
+            var outputs = get_outputs(3);
             this.test.assertEquals(outputs.length, 2, 'cell 2 has the right number of outputs');
             this.test.assertEquals(outputs[0].metadata.output_tag, 'c', 'cell 2 has the correct first output_tag');
             this.test.assertEquals(outputs[0].data['text/plain'], '3', 'cell 2 produces the correct output');

@@ -1,5 +1,31 @@
+var path = '../kernelspecs/dfpython3/df-notebook/lib/'
+
+require.config({
+        paths: {
+            d3: path + "d3/d3.v4.min",
+            graphlib: path + "graphlib/graphlib.core.min",
+            viz: path + "viz/viz",
+            d3graphviz: path + "d3-graphviz/d3-graphviz",
+            lodash: path + "lodash/lodash.min",
+            graphdotwriter: path + "graphlib-dot/writer"
+        },
+        shim: {
+            d3graphviz: {
+              deps: ["d3","viz"],
+              exports: "d3",
+                init: function() {
+                return {
+                    d3: d3,
+                    viz: graphviz
+                };
+        }
+            },
+        }
+        });
+
 define(["jquery",
         "base/js/namespace",
+        "require",
         './df-notebook/depview.js',
         './df-notebook/dfgraph.js',
         './df-notebook/toolbar.js',
@@ -9,7 +35,7 @@ define(["jquery",
         './df-notebook/notebook.js',
         './df-notebook/outputarea.js',
     ],
-    function($, Jupyter, depview, dfgraph, df_toolbar) {
+    function($, Jupyter, require, depview, dfgraph, df_toolbar) {
 
         Jupyter._dfkernel_loaded = false;
 
@@ -39,41 +65,19 @@ define(["jquery",
                 Jupyter._dfkernel_loaded = true;
             });
 
-            // nb.events.on('preset_activated.CellToolbar', function(event, data) {
-            //     if (data.name === 'Dataflow') {
-            //         df_toolbar.update_overflows();
-            //     }
-            // });
-
-            var depdiv = depview.create_dep_div();
-
             Jupyter.toolbar.add_buttons_group([
                   {
-                       'label'   : 'See Cell Dependencies',
+                       'label'   : 'Open/Close Dependency View',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
-                                                     depview.create_dep_view(depdiv,true,false);
-
-                       }
-
-               },{
-                       'label'   : 'See Data Dependencies',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,false);
-
-                       }
-
-               },{
-                       'label'   : 'See Semantic View',
-                       'icon'    : 'fa-bar-chart',
-                       'callback': function () {
-                                                     depview.create_dep_view(depdiv,false,true);
-                                                     depview.attach_controls(depdiv);
-
+                                                     nb.session.dfgraph.depview.toggle_dep_view();
                        }
 
                }]);
+                var stylesheet = $('<link rel="stylesheet" type="text/css">');
+                stylesheet.attr('href',require.toUrl("./df-notebook/css/icon.css"));
+                $('head').append(stylesheet);
+
         };
         return {onload:onload};
 });

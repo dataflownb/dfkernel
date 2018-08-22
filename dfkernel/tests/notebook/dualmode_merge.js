@@ -81,7 +81,7 @@ casper.notebook_test(function () {
         this.select_cell(0);
     });
     this.thenEvaluate(function() {
-        IPython.notebook.merge_cell_above();
+        Jupyter.notebook.merge_cell_above();
     });
     this.then(function() {
         this.test.assertEquals(this.get_cells_length(), N, 'Merge cell 0 above: There are still '+N+' cells');
@@ -110,7 +110,7 @@ casper.notebook_test(function () {
         this.select_cell(1);
     });
     this.thenEvaluate(function () {
-        IPython.notebook.merge_cell_above();
+        Jupyter.notebook.merge_cell_above();
     });
     this.then(function () {
         this.test.assertEquals(this.get_cells_length(), N, 'Merge cell 1 up: There are still '+N+' cells');
@@ -152,7 +152,7 @@ casper.notebook_test(function () {
         this.select_cell(2);
     });
     this.thenEvaluate(function () {
-        IPython.notebook.merge_cell_above();
+        Jupyter.notebook.merge_cell_above();
     });
     this.then(function () {
         this.test.assertEquals(this.get_cells_length(), N, 'Merge cell 2 up: There are still '+N+' cells');
