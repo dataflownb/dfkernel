@@ -88,7 +88,7 @@ define([
                     for(var i = 0;i<downstream.length;i++) {
                         Jupyter.notebook.session.dfgraph.depview.decorate_cell(downstream[i],'changed-cell',true);
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.get_text() === cell.code_cached) {
+                        if (cell !== null && cell.get_text() === cell.code_cached) {
                             if (cell.metadata.cell_status === check_prefix + 'success') {
                                 cell.set_icon_status(status_prefix + 'success');
                             } else if (cell.metadata.cell_status === check_prefix + 'error') {
