@@ -358,11 +358,9 @@ define([
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
                 //set input field icon to success if cell is executed
             }
-            else if(msg.metadata.status == "error") {
+            else{
                 //set input field icon to error if cell returns error
                 cell.set_icon_status('error');
-            }
-            else{
                 var that = cell;
                 this.dfgraph.remove_cell(that.uuid);
                 that.clear_df_info();
