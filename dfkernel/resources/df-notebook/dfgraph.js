@@ -83,8 +83,10 @@ define([
           delete that.nodes[uuid];
           delete that.internal_nodes[uuid];
           delete that.downstream_lists[uuid];
-          that.downlinks[uuid].forEach(function (down) {
-              delete (that.uplinks[down])[uuid];
+          (that.downlinks[uuid] || []).forEach(function (down) {
+              if(down in that.uplinks && uuid in that.uplinks[down]){
+                  delete (that.uplinks[down])[uuid];
+              }
           });
           delete that.downlinks[uuid];
           if(uuid in that.uplinks) {

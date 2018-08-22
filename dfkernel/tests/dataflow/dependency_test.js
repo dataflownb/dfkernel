@@ -201,7 +201,7 @@ casper.notebook_test(function () {
 
        this.then(function () {
           var immupdeps = get_imm_up_deps_uuid('dddddd');
-          this.test.assertEquals(immupdeps, null, "cell 3 produces the correct Immediate Upstream Dependencies");
+          this.test.assertEquals(immupdeps, [], "cell 3 produces the correct Immediate Upstream Dependencies");
           var immdowndeps = get_imm_downstreams(2);
           this.test.assertEquals(immdowndeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
        });
