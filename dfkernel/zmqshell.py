@@ -424,6 +424,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             raw_cell, store_history, silent, shell_futures)
         result = ExecutionResult(info)
 
+        result.deleted_cells = self.dataflow_history_manager.deleted_cells
+        self.dataflow_history_manager.deleted_cells = []
+
+
         if (not raw_cell) or raw_cell.isspace():
             self.last_execution_succeeded = True
             return result
@@ -580,8 +584,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
-                result.deleted_cells = self.dataflow_history_manager.deleted_cells
-                self.dataflow_history_manager.deleted_cells = []
                 cells = []
                 nodes = []
                 for uid in self.dataflow_history_manager.sorted_keys():
