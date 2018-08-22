@@ -195,10 +195,6 @@ span.cellid{
     float:right;
 }
 
-/*#dot-dl, #out-toggle, #graphsum {*/
-    /*padding: .1rem 1.0rem;*/
-/*}*/
-
 .card-body::-webkit-scrollbar {
   width: 6px;
   background-color: #F5F5F5; }
@@ -230,5 +226,5 @@ polygon.changed-cell{
 }
 
 .cluster polygon{
-    fill:rgba(0, 255, 0, 0.5) !important;
+    fill:rgba(0, 255, 0, 0.5);
 }

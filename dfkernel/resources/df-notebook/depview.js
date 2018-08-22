@@ -361,7 +361,7 @@ define(["require",
                     })
                 });
 
-            var deleted_cells = Jupyter.notebook.metadata.deleted_cells_uid || [];
+            var deleted_cells = Object.keys(Jupyter.notebook.metadata.hl_list || []);
             that.decorate_cells(deleted_cells,'deleted-cell',true);
 
             $("g.parentnode.cluster")
@@ -506,6 +506,9 @@ define(["require",
             that.is_open = true;
 
             that.active_cell = Jupyter.notebook.get_selected_cell().uuid;
+
+            var deleted_cells = Object.keys(Jupyter.notebook.metadata.hl_list || []);
+            that.decorate_cells(deleted_cells,'deleted-cell',true);
 
             //FIXME: Possibly change this?
             //GraphViz relies on the size of the svg to make the initial adjustments so the svg has to be sized first
