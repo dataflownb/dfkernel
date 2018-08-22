@@ -112,13 +112,15 @@ define([
                     code_dict[cell_uuid] = "";
                     var horizontal_line = this.metadata.hl_list[cell_uuid];
                     delete this.metadata.hl_list[cell_uuid];
-                    var index = this.find_cell_index(horizontal_line);
-                    var ce = this.get_cell_element(index);
-                    ce.remove();
-                    // make sure that there is a new cell at the bottom
-                    if (index === (this.ncells()-1)) {
-                        this.insert_cell_at_bottom();
-                        this.set_dirty(true);
+                    if(horizontal_line !== null) {
+                        var index = this.find_cell_index(horizontal_line);
+                        var ce = this.get_cell_element(index);
+                        ce.remove();
+                        // make sure that there is a new cell at the bottom
+                        if (index === (this.ncells()-1)) {
+                            this.insert_cell_at_bottom();
+                            this.set_dirty(true);
+                        }
                     }
                 }
             }
