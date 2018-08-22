@@ -34,7 +34,7 @@ from ast import AST
 import importlib
 
 from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, \
-    DataflowNamespace, DataflowCellException
+    DataflowNamespace, DataflowCellException, DuplicateNameError
 from dfkernel.dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
@@ -324,6 +324,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             return retval[:-4] + retval[-1:]
 
         self.set_custom_exc((DataflowCellException,), cell_exception_handler)
+
+        def duplicate_name_handler(shell, etype, value, tb, tb_offset=None):
+            retval = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            return retval[:-4] + retval[-1:]
+        self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
