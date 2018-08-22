@@ -3,6 +3,13 @@ from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from dfkernel.dflink import LinkedResult
 import itertools
 
+class DataflowCellException(Exception):
+    def __init__(self, cid):
+        self.cid = cid
+
+    def __str__(self):
+        return "Cell '{}' raised an exception".format(self.cid)
+
 class DataflowHistoryManager(object):
     deleted_cells = []    
     storeditems = []
@@ -188,9 +195,7 @@ class DataflowHistoryManager(object):
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
         if not retval.success:
-            # FIXME really want to just raise this error and not the bits of the
-            # stack that are internal (get_item, etc.)
-            retval.raise_error()
+            raise DataflowCellException(k)
         # FIXME can we just rely on run_cell?
         self.shell.uuid = child_uuid
         return retval.result
