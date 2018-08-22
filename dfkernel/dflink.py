@@ -1,13 +1,20 @@
 from collections import OrderedDict
 class LinkedResult(OrderedDict):
     __dfhist__ = None
-    def __init__(self, __uuid, __libs, __none_flag, *args, **kwargs):
-        diff = set(list(kwargs)) - set(list(__libs))
+    def __init__(self, __uuid, __libs, __none_flag, k_v_tuples):
+        keys = [tup[0] for tup in k_v_tuples]
+        diff = set(keys) - set(list(__libs))
         if len(diff) <= 1 and not __none_flag:
             for kwarg in diff:
-                if kwargs[kwarg] is None:
-                    del kwargs[kwarg]
-        super().__init__(self, *args, **kwargs)
+                idx = keys.index(kwarg)
+                if k_v_tuples[idx][1] is None:
+                    keys.remove(kwarg)
+                    del k_v_tuples[idx]
+                elif isinstance(k_v_tuples[idx][1], LinkedResult):
+                    keys.remove(kwarg)
+                    k_v_tuples.extend(k_v_tuples[idx][1].items())
+                    del k_v_tuples[idx]
+        super().__init__(k_v_tuples)
         self.__libs__ = __libs
         self.__uuid__ = __uuid
 
@@ -54,5 +61,5 @@ class DFTuple(tuple):
     def __getitem__(self, item):
         return self.__ref__.__getitem__(item)
 
-def build_linked_result(__uuid, __libs, __none_flag, *args, **kwargs):
-    return LinkedResult(__uuid, __libs, __none_flag, *args, **kwargs)
+def build_linked_result(__uuid, __libs, __none_flag, k_v_tuples):
+    return LinkedResult(__uuid, __libs, __none_flag, k_v_tuples)

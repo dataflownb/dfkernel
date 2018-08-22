@@ -81,21 +81,25 @@ script:
 
 matrix:
     include:
-        - python: 3.4
-          env: GROUP=python
-        - python: 3.4
-          env: GROUP=dataflow
         - python: 3.5
           env: GROUP=python
         - python: 3.5
-          env: GROUP=dataflow
-        - python: "3.7-dev"
+          env: GROUP=js/dataflow
+        - python: 3.7
+          dist: xenial
+          sudo: true
           env: GROUP=python
-        - python: "3.7-dev"
+        - python: 3.7
+          dist: xenial
+          sudo: true
           env: GROUP=js/base
-        - python: "3.7-dev"
+        - python: 3.7
+          dist: xenial
+          sudo: true
           env: GROUP=js/services
-        - python: "3.7-dev"
+        - python: 3.7
+          dist: xenial
+          sudo: true
           env: GROUP=js/dataflow
 
 after_success:

@@ -25,13 +25,16 @@ require.config({
 
 define(["jquery",
     "base/js/namespace",
+    "require",
+    './df-notebook/depview.js',
+    './df-notebook/dfgraph.js',
     './df-notebook/codecell.js',
     './df-notebook/completer.js',
     './df-notebook/kernel.js',
     './df-notebook/notebook.js',
     './df-notebook/outputarea.js'
     ],
-    function($, Jupyter) {
+    function($, Jupyter, require, depview, dfgraph) {
 
         Jupyter._dfkernel_loaded = false;
 
@@ -63,8 +66,11 @@ define(["jquery",
                                                      nb.session.dfgraph.depview.toggle_dep_view();
                        }
 
-               }
-               ]);
+               }]);
+                var stylesheet = $('<link rel="stylesheet" type="text/css">');
+                stylesheet.attr('href',require.toUrl("./df-notebook/css/icon.css"));
+                $('head').append(stylesheet);
+
         };
         return {onload:onload};
 });
