@@ -16,13 +16,8 @@
 
 #svg-div {
     width: 76%;
-    height:82%;
-   text-align: center;
-}
-
-#svg {
-    width: 100%;
     height: 100%;
+   text-align: center;
 }
 
 #table {
