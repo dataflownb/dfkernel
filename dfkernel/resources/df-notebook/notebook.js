@@ -420,7 +420,7 @@ define([
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
                 ce.remove();
-                delete this.metadata.hl_list[ce[0].id];
+                this.metadata.hl_list[ce[0].id] = null;
             }
         };
     }(Notebook.prototype.merge_cells));
