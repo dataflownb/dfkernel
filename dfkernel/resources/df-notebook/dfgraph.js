@@ -74,6 +74,40 @@ define([
         that.update_dep_lists(all_ups,uuid);
     };
 
+    /** @method removes a cell entirely from the graph **/
+    DfGraph.prototype.remove_cell = function(uuid){
+        var that = this;
+        var cell_index = that.cells.indexOf(uuid);
+        if(cell_index > -1){
+          that.cells.splice(cell_index,1);
+          delete that.nodes[uuid];
+          delete that.internal_nodes[uuid];
+          delete that.downstream_lists[uuid];
+          (that.downlinks[uuid] || []).forEach(function (down) {
+              if(down in that.uplinks && uuid in that.uplinks[down]){
+                  delete (that.uplinks[down])[uuid];
+              }
+          });
+          delete that.downlinks[uuid];
+          if(uuid in that.uplinks) {
+              var uplinks = Object.keys(that.uplinks[uuid]);
+                  uplinks.forEach(function (up) {
+                      var idx = that.downlinks[up].indexOf(uuid);
+                      that.downlinks[up].splice(idx,1);
+                  });
+          }
+          delete that.uplinks[uuid];
+          if(uuid in that.upstream_list){
+              var all_ups = that.upstream_list[uuid].slice(0);
+              delete that.upstream_list[uuid];
+              all_ups.forEach(function (up) {
+                      //Better to just invalidate the cached list so you don't have to worry about downstreams too
+                      delete that.downstream_lists[up];
+              });
+          }
+        }
+    };
+
     /** @method set_internal_nodes */
     DfGraph.prototype.set_internal_nodes = function(uuid,internal_nodes){
         this.internal_nodes[uuid] = internal_nodes;
@@ -114,11 +148,17 @@ define([
                 });
             }
             else{
-                that.downlinks[cid].forEach(function (pid) {
-                    if(visited.indexOf(pid) < 0){
-                        downlinks.push(pid);
-                    }
-                })
+                if(cid in that.downlinks) {
+                    that.downlinks[cid].forEach(function (pid) {
+                        if (visited.indexOf(pid) < 0) {
+                            downlinks.push(pid);
+                        }
+                    })
+                }
+                else{
+                    var idx = res.indexOf(cid);
+                    res.splice(idx,1);
+                }
             }
         }
         that.downstream_lists[uuid] = res;
@@ -173,7 +213,7 @@ define([
     /** @method returns upstreams for a cell with a given uuid */
     DfGraph.prototype.get_upstreams = function(uuid){
         var that = this;
-        return Object.keys(that.uplinks[uuid]).reduce(function (arr,uplink) {
+        return Object.keys(that.uplinks[uuid] || []).reduce(function (arr,uplink) {
            var links = that.uplinks[uuid][uplink].map(function (item){
                return uplink === item ? item : uplink+item;}) || [];
             return arr.concat(links);
@@ -198,7 +238,7 @@ define([
     /** @method returns all nodes for a cell*/
     DfGraph.prototype.get_nodes = function(uuid){
         var that = this;
-        if(that.nodes[uuid].length > 0){
+        if((that.nodes[uuid] || []).length > 0){
             return that.nodes[uuid];
         }
         return [];

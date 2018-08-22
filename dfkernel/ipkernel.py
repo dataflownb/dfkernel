@@ -141,9 +141,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         else:
             err = res.error_in_exec
 
+        reply_content[u'deleted_cells'] = res.deleted_cells
+
         if res.success:
             print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
-            reply_content[u'deleted_cells'] = res.deleted_cells
             reply_content[u'status'] = u'ok'
             reply_content[u'nodes'] = res.nodes
             reply_content[u'links'] = res.links
