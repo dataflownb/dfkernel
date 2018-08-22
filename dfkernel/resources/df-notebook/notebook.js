@@ -72,6 +72,7 @@ define([
         this.init_dfnb();
         var res = this.load_notebook_success(data);
         this.metadata.kernelspec = kernelspec;
+        this.metadata.hl_list = [];
         if (this.ncells() === 1 && this.get_cell(0).get_text() == "") {
             // Hack that seems to work to get the first cell into edit mode
             this.mode = 'command';
@@ -339,16 +340,6 @@ define([
             this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
-    
-    (function(_super) {
-        Notebook.prototype.delete_cells = function (indices) {
-            //create a list of the horizontal lines for deleted cells
-            if( typeof this.metadata.hl_list == 'undefined' && !(this.metadata.hl_list instanceof Array) ) {
-                this.metadata.hl_list = [];
-            }
-            return _super.call(this, indices);
-        };
-    }(Notebook.prototype.delete_cells));
 
     //undelete a cell if click on the horizontoal line
     Notebook.prototype.undelete_selected_cell = function(uuid) {
@@ -367,6 +358,7 @@ define([
                     new_cell.fromJSON(cell_data);
                     //remove the horizontal line
                     var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
                     ce.remove();
                     this.undelete_backup_stack[i].cells.splice(j,1);
                 }
@@ -386,6 +378,7 @@ define([
                     var horizontal_line = this.metadata.hl_list[uuid];
                     var index = this.find_cell_index(horizontal_line);
                     var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
                     ce.remove();
                     delete this.metadata.hl_list[uuid];
                 }
@@ -422,30 +415,6 @@ define([
         var index = this.get_selected_index();
         this.merge_cells([index, index+1], true);
     };
-
-    (function(_super) {
-        Notebook.prototype.delete_cells = function (indices) {
-            //create a list of the deleted cell uuid
-            if( typeof this.metadata.deleted_cells_uid == 'undefined' && !(this.metadata.deleted_cells_uid instanceof Array) ) {
-                this.metadata.deleted_cells_uid = [];
-            }
-            if (indices === undefined) {
-                indices = this.get_selected_cells_indices();
-            }
-            //pass the list of deleted cell uuid into code_dict
-            //so we can clear the links in the kernel
-            for (var i=0; i < indices.length; i++) {
-                var cell = this.get_cell(indices[i]);
-                this.metadata.deleted_cells_uid.push(cell.uuid);
-                if (!this.get_cell(indices[i]).is_deletable()) {
-                    // If any cell is marked undeletable, cancel
-                    this.metadata.deleted_cells_uid = [];
-                    return this;
-                }
-            }
-            return _super.call(this, indices);
-        };
-    }(Notebook.prototype.delete_cells));
 
     return {Notebook: Notebook};
 

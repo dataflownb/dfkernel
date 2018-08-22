@@ -41,8 +41,6 @@ define([
             this.dfgraph = this.notebook.session.dfgraph;
             this.internal_nodes = [];
             this.cell_info_area = null;
-            this.cell_imm_upstream_deps = [];
-            this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
             this.code_cached = '';
@@ -151,6 +149,7 @@ define([
                     }
                     var downstream = that.dfgraph.all_downstream(that.uuid);
                     for(var i = 0;i<downstream.length;i++) {
+                        Jupyter.notebook.session.dfgraph.depview.decorate_cell(downstream[i],'changed-cell',true);
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status === check_prefix + 'success') {
                             cell.set_icon_status(status_prefix + 'success');
@@ -162,10 +161,12 @@ define([
                 }
                 if(that.get_text() !== that.code_cached) {
                     update_icons(change_status_for_edited_cell, '', 'edited-');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',true);
                 }
                 else if (that.get_text() === that.code_cached ||
                     that.get_text().trim().length === 0) {
                     update_icons(revert_status_for_unedited_cell, 'edited-', '');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',false);
                 }
                 that.kernel_notified = true;
             });
@@ -347,15 +348,12 @@ define([
                 this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
 
                 that.internal_nodes = msg.content.internal_nodes;
-                that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
 
 
                 if (msg.content.update_downstreams) {
                     this.dfgraph.update_down_links(msg.content.update_downstreams);
 
                 }
-                that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
-
             }
             else{
                 //set input field icon to error if cell returns error
