@@ -218,7 +218,7 @@ define([
     /** @method returns upstreams for a cell with a given uuid */
     DfGraph.prototype.get_upstreams = function(uuid){
         var that = this;
-        return Object.keys(that.uplinks[uuid]).reduce(function (arr,uplink) {
+        return Object.keys(that.uplinks[uuid] || []).reduce(function (arr,uplink) {
            var links = that.uplinks[uuid][uplink].map(function (item){
                return uplink === item ? item : uplink+item;}) || [];
             return arr.concat(links);
@@ -243,7 +243,7 @@ define([
     /** @method returns all nodes for a cell*/
     DfGraph.prototype.get_nodes = function(uuid){
         var that = this;
-        if(that.nodes[uuid].length > 0){
+        if((that.nodes[uuid] || []).length > 0){
             return that.nodes[uuid];
         }
         return [];
