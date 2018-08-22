@@ -125,6 +125,20 @@ define([
                 }
             }
         }
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                var cell_data = this.undelete_backup_stack[i].cells[j];
+                if(cell_data.metadata.cell_status == 'success') {
+                    cell_data.metadata.cell_status = "saved-success-first-load";
+                } else if(cell_data.metadata.cell_status == 'error') {
+                    cell_data.metadata.cell_status = "saved-error-first-load";
+                } else if(cell_data.metadata.cell_status == 'edited-success') {
+                    cell_data.metadata.cell_status = 'edited-saved-success'
+                } else if(cell_data.metadata.cell_status == 'edited-error') {
+                    cell_data.metadata.cell_status = 'edited-saved-error';
+                }
+            }
+        }
         return code_dict;
     };
 
