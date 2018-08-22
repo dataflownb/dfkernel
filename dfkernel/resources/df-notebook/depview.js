@@ -366,7 +366,7 @@ define(["require",
             $("g.parentnode.cluster")
                 .on('mousedown',function(event) {
                     if(event.which == 1){
-                            close_and_scroll();
+                            that.close_and_scroll();
                     }
                 })
                 .on("contextmenu",function(event){
