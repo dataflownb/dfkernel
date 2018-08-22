@@ -81,14 +81,10 @@ script:
 
 matrix:
     include:
-        - python: 3.4
-          env: GROUP=python
-        - python: 3.4
-          env: GROUP=dataflow
         - python: 3.5
           env: GROUP=python
         - python: 3.5
-          env: GROUP=dataflow
+          env: GROUP=js/dataflow
         - python: 3.7
           dist: xenial
           sudo: true

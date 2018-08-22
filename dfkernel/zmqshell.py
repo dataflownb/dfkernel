@@ -157,7 +157,7 @@ class OutputMagics(Magics):
         help="""Expression to output"""
     )
 
-    def display(self, line):
+    def display(self, line, local_ns=None):
         args = magic_arguments.parse_argstring(self.display, line)
 
         names = args.names
@@ -181,16 +181,17 @@ class OutputMagics(Magics):
             mode = 'exec'
             source = '<display exec>'
         code = self.shell.compile(expr_ast, source, mode)
+
         glob = self.shell.user_ns
         if mode=='eval':
             try:
-                out = eval(code, glob, self.shell.user_ns)
+                out = eval(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
         else:
             try:
-                exec(code, glob, self.shell.user_ns)
+                exec(code, local_ns, glob)
             except:
                 self.shell.showtraceback()
                 return
@@ -199,7 +200,7 @@ class OutputMagics(Magics):
         if isinstance(out, collections.Mapping):
             # wrap out according to names
             # if is dictionary-like
-            return build_linked_result(self.shell.uuid,[],False, **out)
+            return build_linked_result(self.shell.uuid,[],False, list(out.items()))
             # return nameddict.from_mapping(out)
         elif isinstance(out, collections.Sequence):
             # wrap out according to names or indicies
@@ -212,22 +213,24 @@ class OutputMagics(Magics):
             return collections.namedtuple('namedtuple', ' '.join(names))(out)
         return out
 
+    @needs_local_scope
     @line_magic
-    def split_out(self, line):
+    def split_out(self, line, local_ns=None):
         """Takes an output and splits into multiple outputs.
         mapping -> each key-value pair becomes a separate output
         tuple -> each tuple becomes a separate output
         list -> each entry becomes a separate output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
+    @needs_local_scope
     @line_magic
-    def name_out(self, line):
+    def name_out(self, line, local_ns=None):
         """Adds names to an output.
         Mirrors split_out except that this makes sense for a single output.
         object -> adds a name to the output
         """
-        return self.display(line)
+        return self.display(line, local_ns)
 
 # TODO move to its own package
 def expr2id(node):
@@ -715,26 +718,25 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     nodelist[-1] = nnode
 
             if create_node:
-                keywords = [ast.keyword(var, ast.Name(var, ast.Load())) for var in (libs+vars)]
+                keywords = [ast.Tuple([ast.Str(var), ast.Name(var, ast.Load())],ast.Load()) for var in (libs+vars)]
                 none_flag = bool(len(vars))
                 for out in unnamed:
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
                     if(len(unnamed)+len(vars) == 1):
-                        keywords.append(ast.keyword('Out[' + self.uuid + ']', out[1]))
+                        keywords.append(ast.Tuple([ast.Str('Out[' + self.uuid + ']'), out[1]],ast.Load()))
                     elif(out[0]>=0):
-                        keywords.insert(out[0]+len(libs), ast.keyword(self.uuid + str(out[0]),out[1]))
+                        keywords.insert(out[0]+len(libs), ast.Tuple([ast.Str(self.uuid + str(out[0])),out[1]],ast.Load()))
                     else:
-                        keywords.append(ast.keyword(self.uuid +  str(len(vars)),out[1]))
+                        keywords.append(ast.Tuple([ast.Str(self.uuid +  str(len(vars))),out[1]],ast.Load()))
 
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
                         [ast.Call(ast.Name('_build_linked_result', ast.Load()),
-                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords),
-                        nodelist[-1].value],
+                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())], [])],
                     ast.Load()))
                 else:
-                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag)], keywords)
+                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())],[])
                     if closure:
                         nnode = ast.Return(innercall)
                     else:
