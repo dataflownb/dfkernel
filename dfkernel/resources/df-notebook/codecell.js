@@ -37,14 +37,16 @@ define([
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
             this.uuid = this.notebook.get_new_id();
+            this.kernel_notified = true;
             this.dfgraph = this.notebook.session.dfgraph;
-            this.was_changed = true;
             this.internal_nodes = [];
             this.cell_info_area = null;
             this.cell_imm_upstream_deps = [];
             this.cell_imm_downstream_deps = [];
             this.cell_upstream_deps = null;
             this.cell_downstream_deps = null;
+            this.code_cached = '';
+            this.metadata.cell_status = 'new';
             this.had_error = false;
         }
     };
@@ -121,10 +123,53 @@ define([
             }
 
             var _super_result = _super.apply(this, arguments);
-
+            this.icon_status = $('<div></div>');
+            this.set_icon_status("new");
+            this.input.prepend(this.icon_status);
             var that = this;
             this.code_mirror.on('change', function () {
-                that.was_changed = true;
+                var change_status_for_edited_cell = {
+                    'new' : 'edited-new',
+                    'success' : 'edited-success',
+                    'error' : 'edited-error',
+                    'saved-success' : 'edited-saved-success',
+                    'saved-success-first-load' : 'saved-success',
+                    'saved-error' : 'edited-saved-error',
+                    'saved-error-first-load' : 'saved-error'
+                };
+
+                var revert_status_for_unedited_cell = {};
+                Object.keys(change_status_for_edited_cell).forEach(
+                    function(k) {
+                        var v = change_status_for_edited_cell[k];
+                        revert_status_for_unedited_cell[v] = k;
+                    });
+                //only if the input is not empty
+                function update_icons(status_map, check_prefix, status_prefix) {
+                    console.log(that.metadata.cell_status);
+                    if (that.metadata.cell_status in status_map) {
+                        console.log(status_map[that.metadata.cell_status]);
+                        that.set_icon_status( status_map[that.metadata.cell_status] );
+                    }
+                    var downstream = that.dfgraph.all_downstream(that.uuid);
+                    for(var i = 0;i<downstream.length;i++) {
+                        var cell = Jupyter.notebook.get_code_cell(downstream[i]);
+                        if (cell.metadata.cell_status === check_prefix + 'success') {
+                            cell.set_icon_status(status_prefix + 'success');
+                        } else if (cell.metadata.cell_status === check_prefix + 'error') {
+                            cell.set_icon_status(status_prefix + 'error');
+                        }
+                    }
+
+                }
+                if(that.get_text() !== that.code_cached) {
+                    update_icons(change_status_for_edited_cell, '', 'edited-');
+                }
+                else if (that.get_text() === that.code_cached ||
+                    that.get_text().trim().length === 0) {
+                    update_icons(revert_status_for_unedited_cell, 'edited-', '');
+                }
+                that.kernel_notified = true;
             });
 
             this.create_df_info();
@@ -137,6 +182,28 @@ define([
             return _super_result;
         };
     }(CodeCell.prototype.create_element));
+
+    (function(_super) {
+        CodeCell.prototype.bind_events = function () {
+            _super.apply(this,arguments);
+            var that = this;
+            var nb = Jupyter.notebook;
+            //add event to be notified when cell is deleted
+            that.events.on('delete.Cell', function(event,data) {
+                if (data['cell'] === that) {
+                    var horizontal_line = nb.insert_cell_above("raw",data['index']);
+                    horizontal_line.inner_cell.height(1).css("backgroundColor","red");
+                    horizontal_line.inner_cell[0].childNodes[1].remove();
+                    //add the horizontal line into hl_list for undeletion
+                    nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
+                    //undeleted the cell once the corresponding red line is clicked
+                    $(horizontal_line.inner_cell).parent().attr('id',data['cell'].uuid).click(function(event) {
+                        Jupyter.notebook.undelete_selected_cell(data['cell'].uuid);
+                    });
+                }
+            });
+        };
+    }(CodeCell.prototype.bind_events));
 
     CodeCell.prototype.update_last_executed = function() {
         var output_tags = this.notebook.get_cell_output_tags(this.uuid);
@@ -174,9 +241,10 @@ define([
         if (this.get_text().trim().length === 0) {
             // nothing to do
             this.set_input_prompt(null);
+            this.set_icon_status('success');
             return;
         }
-        this.set_input_prompt('*');
+        this.set_icon_status('executing');
         this.element.addClass("running");
 
         if (!("last_executed" in this.notebook.session)) {
@@ -187,6 +255,7 @@ define([
         var callbacks = this.get_callbacks();
 
         var code_dict = this.notebook.get_code_dict();
+        this.code_cached = code_dict[this.uuid];
         var output_tags = this.notebook.get_output_tags(Object.keys(code_dict));
         this.last_msg_id = this.kernel.execute(this.get_text(), callbacks, {
             silent: false, store_history: true,
@@ -216,7 +285,8 @@ define([
                 that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
-
+        //set input field icon to success if cell is executed
+        this.set_icon_status('success');
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
@@ -242,13 +312,12 @@ define([
                 var cell = that.notebook.get_code_cell(cid);
                 if (cell) {
                     cell.clear_output_imm(false, true);
-                    cell.set_input_prompt('*');
+                    cell.set_icon_status('executing');
                     cell.element.addClass("running");
                     cell.render();
                     that.events.trigger('execute.CodeCell', {cell: cell});
                 }
             };
-
             return callbacks;
         }
     }(CodeCell.prototype.get_callbacks));
@@ -262,7 +331,7 @@ define([
             }
             if (msg.metadata.status != "error") {
                 var that = cell;
-
+                cell.set_icon_status('success');
                 /** Rename content for general readability*/
                 var nodes = msg.content.nodes;
                 var uplinks = msg.content.links;
@@ -271,7 +340,6 @@ define([
                 var all_ups = msg.content.upstream_deps;
                 var internal_nodes = msg.content.internal_nodes;
                 this.dfgraph.update_graph(cells,nodes,uplinks,downlinks,cell.uuid,all_ups,internal_nodes);
-
 
                 that.internal_nodes = msg.content.internal_nodes;
                 that.cell_imm_upstream_deps = msg.content.imm_upstream_deps;
@@ -282,6 +350,14 @@ define([
 
                 }
                 that.cell_imm_downstream_deps = msg.content.imm_downstream_deps;
+                //set input field icon to success if cell is executed
+            }
+            else if(msg.metadata.status == "error") {
+                //set input field icon to error if cell returns error
+                cell.set_icon_status('error');
+            }
+            if(cell === cc){
+                this.dfgraph.update_dep_view();
             }
             _super.apply(cell, arguments);
         }
@@ -361,14 +437,15 @@ define([
 
 
             _super.call(this, data);
-
+            this.code_cached = this.get_text();
+            this.set_icon_status(this.metadata.cell_status);
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
             aname.attr('name', this.uuid);
             this.element.append(aname);
             this.set_input_prompt();
-            this.was_changed = true;
+            this.kernel_notified = true;
 
         };
     }(CodeCell.prototype.fromJSON));
@@ -390,5 +467,27 @@ define([
         }
     }(CodeCell.prototype.toJSON));
 
+    CodeCell.prototype.set_icon_status = function(cell_status) {
+        //FIXME update depview here
+        var status_to_css_classes =
+            {"new" : ["new-cell df-verified", "New"],
+                "edited-new" : ["edited-new df-unverified", "Edited new"],
+                "success" : ["success-cell df-verified", "Success"],
+                "edited-success" : ["edited-success df-unverified", "Edited success"],
+                "error" : ["error-cell df-error", "Error"],
+                "edited-error" : ["edited-error df-unverified", "Edited error"],
+                "saved-success" : ["saved-success df-unverified", "Saved success"],
+                "edited-saved-success" : ["edited-saved-success df-unverified", "Edited saved success"],
+                "executing" : ["executing df-unverified", "Executing"],
+                "saved-error" : ["saved-error df-unverified", "Saved error"],
+                "edited-saved-error" : ["edited-saved-error df-unverified", "Edited saved error"]
+            };
+
+        this.metadata.cell_status = cell_status;
+        this.icon_status.removeClass()
+            .addClass("icon_status")
+            .addClass( status_to_css_classes[cell_status][0])
+            .prop("title",status_to_css_classes[cell_status][1]);
+    };
     return {CodeCell: CodeCell};
 });

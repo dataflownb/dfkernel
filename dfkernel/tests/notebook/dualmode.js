@@ -101,7 +101,15 @@ casper.notebook_test(function () {
 
         // Cell deletion
         this.trigger_keydown('esc', 'd', 'd');
+    });
+
+    this.thenEvaluate(function () {
+        Jupyter.notebook.get_code_dict();
+    });
+
+    this.then(function () {
         this.test.assertEquals(this.get_cells_length(), 3, 'dd actually deletes a cell');
+        this.select_cell(2);
         this.validate_notebook_state('dd', 'command', 2);
 
         // Make sure that if the time between d presses is too long, nothing gets removed.
