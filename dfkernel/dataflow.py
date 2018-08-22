@@ -49,6 +49,7 @@ class DataflowHistoryManager(object):
                 self.remove_semantic_dependencies(key, parent)
             self.shell.user_ns._reset_cell(key)
             self.deleted_cells.append(key)
+            del self.last_calculated[key]
         elif key not in self.code_cache or self.code_cache[key] != code:
             # clear out the old __links__ and __rev_links__ (if exist)
             if self.shell.user_ns.__rev_links__[key]:

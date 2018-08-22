@@ -28,6 +28,13 @@ casper.notebook_test(function () {
         return outputs;
     }
 
+    function get_imm_up_deps_uuid(uuid) {
+        var outputs = casper.evaluate(function (uuid) {
+            return Jupyter.notebook.session.dfgraph.get_upstreams(uuid);
+        }, {uuid: uuid});
+        return outputs;
+    }
+
     function get_imm_downstreams(cell_idx) {
         var outputs = casper.evaluate(function (cell_idx) {
             var cell = Jupyter.notebook.get_cell(cell_idx);
@@ -151,5 +158,82 @@ casper.notebook_test(function () {
 
         });
     });
+
+    this.then(function () {
+
+       this.evaluate(function () {
+          Jupyter.notebook.delete_cell(3);
+       });
+
+       this.then(function () {
+          var immupdeps = get_imm_up_deps_uuid('dddddd');
+          this.test.assertEquals(immupdeps.sort().join(','), ["bbbbbb", "ccccccc"].sort().join(','), "cell 3 produces the correct Immediate Upstream Dependencies");
+          var immdowndeps = get_imm_downstreams(2);
+          this.test.assertEquals(immdowndeps.sort().join(','), ["dddddd"].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
+       });
+
+    });
+
+    this.then(function () {
+       this.evaluate(function () {
+           Jupyter.notebook.insert_cell_at_index("code", 3);
+            var cell = Jupyter.notebook.get_cell(3);
+            cell.set_text('raise()');
+            cell.execute();
+       });
+
+       this.wait_for_output(3);
+
+       this.then(function () {
+          var immupdeps = get_imm_up_deps_uuid('dddddd');
+          this.test.assertEquals(immupdeps, [], "cell 3 produces the correct Immediate Upstream Dependencies");
+          var immdowndeps = get_imm_downstreams(2);
+          this.test.assertEquals(immdowndeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
+       });
+
+    });
+
+    this.then(function () {
+        this.then(function () {
+           this.evaluate(function () {
+               Jupyter.notebook.insert_cell_at_index("code", 4);
+               var cell = Jupyter.notebook.get_cell(4);
+               cell.uuid = 'eeeeee';
+               cell.set_text('d = c+50');
+               cell.execute();
+           });
+       });
+
+        this.wait_for_output(4);
+
+       this.then(function () {
+          var immupdeps = get_imm_up_deps_uuid('eeeeee');
+          this.test.assertEquals(immupdeps, ['ccccccc'], "cell 3 produces the correct Immediate Upstream Dependencies");
+       });
+
+    });
+
+    this.then(function () {
+        this.then(function () {
+            this.evaluate(function () {
+                var cell = Jupyter.notebook.get_cell(2);
+                cell.set_text('c = 5/0');
+                cell.execute();
+            });
+        });
+
+       this.wait_for_output(2);
+
+       this.then(function () {
+          var immupdeps = get_imm_up_deps_uuid('eeeeee');
+          this.test.assertEquals(immupdeps, [], "cell 3 produces the correct Immediate Upstream Dependencies");
+          // var immdowndeps = get_imm_downstreams(2);
+          // this.test.assertEquals(immdowndeps.sort().join(','), [].sort().join(','), "cell 2 produces the correct Immediate Downstream Dependencies");
+       });
+
+    })
+
+
+
 
 });

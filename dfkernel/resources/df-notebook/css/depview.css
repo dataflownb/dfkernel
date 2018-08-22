@@ -90,10 +90,6 @@ g text {
     fill:white;
 }
 
-.cluster.stale {
-    fill: red;
-}
-
 .cluster rect{
     stroke: #999;
     fill-opacity: 1;
@@ -150,10 +146,6 @@ polygon.selected{
     stroke-width: 4px;
 }
 
-.was-changed-poly {
-    fill:red;
-}
-
 path.downstream {
     stroke-width: 4px;
     stroke:red;
@@ -203,10 +195,6 @@ span.cellid{
     float:right;
 }
 
-/*#dot-dl, #out-toggle, #graphsum {*/
-    /*padding: .1rem 1.0rem;*/
-/*}*/
-
 .card-body::-webkit-scrollbar {
   width: 6px;
   background-color: #F5F5F5; }
@@ -227,4 +215,16 @@ span.cellid{
 
 .child-node polygon{
     fill: white;
+}
+
+polygon.deleted-cell, polygon.deleted-cell.changed-cell{
+    fill:rgba(255, 0, 0, 0.5) !important;
+}
+
+polygon.changed-cell{
+    fill:rgba(255, 255, 0, 0.5) !important;
+}
+
+.cluster polygon{
+    fill:rgba(0, 255, 0, 0.5);
 }

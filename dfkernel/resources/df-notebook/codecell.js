@@ -81,13 +81,12 @@ define([
                     });
                 //only if the input is not empty
                 function update_icons(status_map, check_prefix, status_prefix) {
-                    console.log(that.metadata.cell_status);
                     if (that.metadata.cell_status in status_map) {
-                        console.log(status_map[that.metadata.cell_status]);
                         that.set_icon_status( status_map[that.metadata.cell_status] );
                     }
                     var downstream = that.dfgraph.all_downstream(that.uuid);
                     for(var i = 0;i<downstream.length;i++) {
+                        Jupyter.notebook.session.dfgraph.depview.decorate_cell(downstream[i],'changed-cell',true);
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
                         if (cell.metadata.cell_status === check_prefix + 'success') {
                             cell.set_icon_status(status_prefix + 'success');
@@ -99,10 +98,12 @@ define([
                 }
                 if(that.get_text() !== that.code_cached) {
                     update_icons(change_status_for_edited_cell, '', 'edited-');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',true);
                 }
                 else if (that.get_text() === that.code_cached ||
                     that.get_text().trim().length === 0) {
                     update_icons(revert_status_for_unedited_cell, 'edited-', '');
+                    Jupyter.notebook.session.dfgraph.depview.decorate_cell(that.uuid,'changed-cell',false);
                 }
                 that.kernel_notified = true;
             });
@@ -221,8 +222,6 @@ define([
                 that.events.off('finished_iopub.Kernel', handleFinished);
             }
         }
-        //set input field icon to success if cell is executed
-        this.set_icon_status('success');
         this.events.on('finished_iopub.Kernel', handleFinished);
     };
 
@@ -261,13 +260,22 @@ define([
     (function (_super) {
         CodeCell.prototype._handle_execute_reply = function (msg) {
             var cc = this;
+
+            /** Remove deleted cells from graph before any additional actions are taken **/
+            (msg.content.deleted_cells || []).forEach(function (d_cell) {
+                cc.dfgraph.remove_cell(d_cell);
+            });
+
             var cell = this.notebook.get_code_cell(msg.content.execution_count);
             if (!cell) {
                 cell = this;
             }
             if (msg.metadata.status != "error") {
                 var that = cell;
+
+                //set input field icon to success if cell is executed
                 cell.set_icon_status('success');
+
                 /** Rename content for general readability*/
                 var nodes = msg.content.nodes;
                 var uplinks = msg.content.links;
@@ -284,11 +292,13 @@ define([
                     this.dfgraph.update_down_links(msg.content.update_downstreams);
 
                 }
-                //set input field icon to success if cell is executed
             }
-            else if(msg.metadata.status == "error") {
+            else{
                 //set input field icon to error if cell returns error
                 cell.set_icon_status('error');
+                var that = cell;
+                this.dfgraph.remove_cell(that.uuid);
+                that.clear_df_info();
             }
             if(cell === cc){
                 this.dfgraph.update_dep_view();
