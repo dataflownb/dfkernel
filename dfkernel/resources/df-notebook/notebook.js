@@ -282,6 +282,16 @@ define([
                 if(cell_data.cell_type == 'code') {
                     var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
                         this.get_default_id_length());
+                    if (this.metadata.hl_list[uuid]) {
+                        var horizontal_line = this.metadata.hl_list[uuid];
+                        delete this.metadata.hl_list[uuid];
+                        var index = this.find_cell_index(horizontal_line);
+                        //remove the horizontal line
+                        var ce = this.get_cell_element(index);
+                        if (horizontal_line !== null && horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                        }
+                    }                    
                     //FIXME: Will this cause issues with speed?
                     this.undelete_backup_stack = this.undelete_backup_stack.map(
                         function(stack){
