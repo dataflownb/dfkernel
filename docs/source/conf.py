@@ -17,8 +17,8 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import requests
 # sys.path.insert(0, os.path.abspath('.'))
 
 
@@ -36,9 +36,21 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.linkcode',
     'sphinx.ext.napoleon'
 ]
+
+#Credits to Parsl documentation for the idea to use requests to grab notebooks for the tutorial
+#https://github.com/Parsl/parsl/blob/master/docs/conf.py
+tutorials = ['dependency-cell-toolbar','dep-view-tutorial','dfkernel-statuses','dfkernel-tutorial','notebook-interactions']
+extension = '.ipynb'
+for tutorial in tutorials:
+    url = 'https://rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/'+tutorial+extension
+    r = requests.get(url)
+    with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'wb') as f:
+        f.write(r.content)
+
+nbsphinx_execute = 'never'
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['ntemplates']
