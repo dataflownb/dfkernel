@@ -356,26 +356,6 @@ define([
     }(Notebook.prototype.paste_cell_below));
 
     (function(_super) {
-        Notebook.prototype.save_notebook = function (check_last_modified) {
-            //set input_changed so that we can load the saved notebook with the colored input field
-            this.get_cells().forEach(function (d) {
-                if (d.cell_type === 'code') {
-                    if(d.metadata.cell_status == 'success') {
-                        d.metadata.cell_status = "saved-success-first-load";
-                    } else if(d.metadata.cell_status == 'error') {
-                        d.metadata.cell_status = "saved-error-first-load";
-                    } else if(d.metadata.cell_status == 'edited-success') {
-                        d.metadata.cell_status = 'edited-saved-success'
-                    } else if(d.metadata.cell_status == 'edited-error') {
-                        d.metadata.cell_status = 'edited-saved-error';
-                    }
-                }
-            });
-            return _super.call(this, check_last_modified);
-        };
-    }(Notebook.prototype.save_notebook));
-
-    (function(_super) {
         Notebook.prototype.paste_cell_replace = function () {
             var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
