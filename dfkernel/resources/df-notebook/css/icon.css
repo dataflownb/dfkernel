@@ -81,5 +81,10 @@ div.output_prompt {
 }
 
 div.out_prompt_overlay {
-    min-width : 10em;
+    min-width : 20ex;
+}
+
+div.output_area div.prompt {
+    min-width: 17ex;
+    width: 10vw;
 }
