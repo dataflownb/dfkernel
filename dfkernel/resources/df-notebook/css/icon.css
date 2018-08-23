@@ -67,9 +67,14 @@ div.prompt_container {
     text-align: right;
 }
 
+div.code_cell div.input_prompt {
+    min-width: 17ex;
+    width: 10vw;
+}
+
 div.output_prompt {
-    min-width : 15ex;
-    max-width: 15vw;
+    min-width : 17ex;
+    width: 10vw;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
