@@ -271,9 +271,8 @@ define([
             if (!cell) {
                 cell = this;
             }
-            if (msg.metadata.status != "error") {
+            if (msg.metadata.status != "error" && msg.metadata.status != "aborted") {
                 var that = cell;
-
                 //set input field icon to success if cell is executed
                 cell.set_icon_status('success');
 
@@ -299,7 +298,6 @@ define([
                 cell.set_icon_status('error');
                 var that = cell;
                 this.dfgraph.remove_cell(that.uuid);
-                that.clear_df_info();
             }
             if(cell === cc){
                 this.dfgraph.update_dep_view();
