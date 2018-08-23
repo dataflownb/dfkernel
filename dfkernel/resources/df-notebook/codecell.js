@@ -88,10 +88,12 @@ define([
                     for(var i = 0;i<downstream.length;i++) {
                         Jupyter.notebook.session.dfgraph.depview.decorate_cell(downstream[i],'changed-cell',true);
                         var cell = Jupyter.notebook.get_code_cell(downstream[i]);
-                        if (cell.metadata.cell_status === check_prefix + 'success') {
-                            cell.set_icon_status(status_prefix + 'success');
-                        } else if (cell.metadata.cell_status === check_prefix + 'error') {
-                            cell.set_icon_status(status_prefix + 'error');
+                        if (cell !== null && cell.get_text() === cell.code_cached) {
+                            if (cell.metadata.cell_status === check_prefix + 'success') {
+                                cell.set_icon_status(status_prefix + 'success');
+                            } else if (cell.metadata.cell_status === check_prefix + 'error') {
+                                cell.set_icon_status(status_prefix + 'error');
+                            }
                         }
                     }
 
@@ -330,7 +332,11 @@ define([
 
             _super.call(this, data);
             this.code_cached = this.get_text();
-            this.set_icon_status(this.metadata.cell_status || 'edited-new');
+            this.metadata.cell_status = this.metadata.cell_status || 'edited-new';
+            if(this.metadata.cell_status.indexOf('undelete-') !== -1) {
+                this.metadata.cell_status = this.metadata.cell_status.substr(9);
+            }
+            this.set_icon_status(this.metadata.cell_status);
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
