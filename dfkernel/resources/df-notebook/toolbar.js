@@ -107,12 +107,12 @@ define([
             .addClass("btn btn-default btn-xs")
             .attr('title', 'Auto-Refresh on Upstream Update')
             .append($('<i class="fa-refresh fa">'));
-        if (cell.auto_update) {
+        if (cell.metadata.auto_update) {
             refresh.addClass('active');
         }
         refresh.click(function() {
             refresh.toggleClass('active');
-            cell.auto_update = refresh.hasClass('active');
+            cell.metadata.auto_update = refresh.hasClass('active');
             return false;
         });
         container.append(refresh);
@@ -124,12 +124,12 @@ define([
             .addClass("btn btn-default btn-xs")
             .attr('title', 'Only Update Explicitly')
             .append($('<i class="fa-database fa">'));
-        if (cell.force_cached) {
+        if (cell.metadata.force_cached) {
             prompt.addClass('active');
         }
         prompt.click(function() {
             prompt.toggleClass('active');
-            cell.force_cached = prompt.hasClass('active');
+            cell.metadata.force_cached = prompt.hasClass('active');
             return false;
         });
         container.append(prompt);

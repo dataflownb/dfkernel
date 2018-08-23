@@ -39,10 +39,10 @@ define([
             this.uuid = this.notebook.get_new_id();
             this.kernel_notified = true;
             this.dfgraph = this.notebook.session.dfgraph;
-            this.auto_update = false;
-            this.force_cached = false;
             this.internal_nodes = [];
             this.code_cached = '';
+            this.metadata.auto_update = false;
+            this.metadata.force_cached = false;
             this.metadata.cell_status = 'new';
             this.had_error = false;
         }
@@ -337,6 +337,12 @@ define([
                 this.metadata.cell_status = this.metadata.cell_status.substr(9);
             }
             this.set_icon_status(this.metadata.cell_status);
+            if (!(this.metadata.auto_update)) {
+                this.metadata.auto_update = false;
+            }
+            if (!(this.metadata.force_cached)) {
+                this.metadata.force_cached = false;
+            }
             this.uuid = uuid;
             this.element.attr('id', this.uuid);
             var aname = $('<a/>');
