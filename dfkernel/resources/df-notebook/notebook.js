@@ -378,7 +378,7 @@ define([
         for(i=0; i < this.undelete_backup_stack.length ; i++) {
             for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
                 cell_data = this.undelete_backup_stack[i].cells[j];
-                if (cell_data.execution_count.toString(16) == uuid) {
+                if (cell_data.cell_type === 'code' && cell_data.execution_count.toString(16) == uuid) {
                     //get the clicked horizontal_line
                     var horizontal_line = this.metadata.hl_list[uuid];
                     delete this.metadata.hl_list[uuid];
@@ -403,19 +403,21 @@ define([
             var j = this.undelete_backup_stack.length - 1
             var length = this.undelete_backup_stack[j].cells.length;
             for(i=0; i<length ; i++) {
-                var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
-                var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
-                if(cell_status.indexOf('saved') === -1) {
-                    this.undelete_backup_stack[j].cells[i].metadata.cell_status = 'undelete-'+cell_status;
-                }
-                //remove the corresponding horizontal line if exist
-                if (this.metadata.hl_list[uuid]) {
-                    var horizontal_line = this.metadata.hl_list[uuid];
-                    var index = this.find_cell_index(horizontal_line);
-                    var ce = this.get_cell_element(index);
-                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
-                    delete this.metadata.hl_list[uuid];
+                if (this.undelete_backup_stack[j].cells[i].cell_type === 'code') {
+                    var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                    var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
+                    if(cell_status.indexOf('saved') === -1) {
+                        this.undelete_backup_stack[j].cells[i].metadata.cell_status = 'undelete-'+cell_status;
+                    }
+                    //remove the corresponding horizontal line if exist
+                    if (this.metadata.hl_list[uuid]) {
+                        var horizontal_line = this.metadata.hl_list[uuid];
+                        var index = this.find_cell_index(horizontal_line);
+                        var ce = this.get_cell_element(index);
+                        this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
+                        ce.remove();
+                        delete this.metadata.hl_list[uuid];
+                    }
                 }
             }
             _super.apply(this, arguments);
@@ -437,8 +439,11 @@ define([
             }
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
-                ce.remove();
-                this.metadata.hl_list[ce[0].id] = null;
+                if (ce[0].id && this.metadata.hl_list[ce[0].id]
+                    && ce[0] === this.metadata.hl_list[ce[0].id].element[0]) {
+                    ce.remove();
+                    this.metadata.hl_list[ce[0].id] = null;
+                }
             }
         };
     }(Notebook.prototype.merge_cells));
