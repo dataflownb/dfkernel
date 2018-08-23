@@ -115,11 +115,13 @@ define([
                     if(horizontal_line !== null) {
                         var index = this.find_cell_index(horizontal_line);
                         var ce = this.get_cell_element(index);
-                        ce.remove();
-                        // make sure that there is a new cell at the bottom
-                        if (index === (this.ncells()-1)) {
-                            this.insert_cell_at_bottom();
-                            this.set_dirty(true);
+                        if (horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                            // make sure that there is a new cell at the bottom
+                            if (index === (this.ncells()-1)) {
+                                this.insert_cell_at_bottom();
+                                this.set_dirty(true);
+                            }
                         }
                     }
                 }
@@ -390,7 +392,9 @@ define([
                     //remove the horizontal line
                     var ce = this.get_cell_element(index);
                     this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
+                    if (horizontal_line.element[0] === ce[0]) {
+                        ce.remove();
+                    }
                     this.undelete_backup_stack[i].cells.splice(j,1);
                 }
             }
@@ -403,21 +407,18 @@ define([
             var j = this.undelete_backup_stack.length - 1
             var length = this.undelete_backup_stack[j].cells.length;
             for(i=0; i<length ; i++) {
-                if (this.undelete_backup_stack[j].cells[i].cell_type === 'code') {
-                    var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
-                    var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
+                if (this.undelete_backup_stack[j].cells[i].cell_type === 'code') {var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
                     if(cell_status.indexOf('saved') === -1) {
                         this.undelete_backup_stack[j].cells[i].metadata.cell_status = 'undelete-'+cell_status;
-                    }
-                    //remove the corresponding horizontal line if exist
-                    if (this.metadata.hl_list[uuid]) {
-                        var horizontal_line = this.metadata.hl_list[uuid];
-                        var index = this.find_cell_index(horizontal_line);
-                        var ce = this.get_cell_element(index);
-                        this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                        ce.remove();
-                        delete this.metadata.hl_list[uuid];
-                    }
+                    }//remove the corresponding horizontal line if exist
+                if (this.metadata.hl_list[uuid]) {
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
+                    if (horizontal_line.element[0] === ce[0]) {ce.remove();}
+                    delete this.metadata.hl_list[uuid];}
                 }
             }
             _super.apply(this, arguments);
@@ -431,11 +432,6 @@ define([
             // when merging above
             if (indices.filter(function(item) {return item < 0;}).length > 0) {
                 return;
-            }
-            for (var i=0; i < indices.length; i++) {
-                if(!this.get_cell(indices[i]).is_mergeable()) {
-                    return;
-                }
             }
             for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
