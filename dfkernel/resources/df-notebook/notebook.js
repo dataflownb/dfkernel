@@ -174,12 +174,12 @@ define([
 
     Notebook.prototype.get_auto_update_flags = function() {
         return this.get_code_cells().map(
-            function(c) { return [c.uuid, c.auto_update]; });
+            function(c) { return [c.uuid, c.metadata.auto_update]; });
     };
 
     Notebook.prototype.get_force_cached_flags = function() {
         return this.get_code_cells().map(
-            function(c) { return [c.uuid, c.force_cached]; });
+            function(c) { return [c.uuid, c.metadata.force_cached]; });
     };
 
     Notebook.prototype.has_id = function(id) {
