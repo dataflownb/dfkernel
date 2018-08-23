@@ -39,6 +39,9 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
+def setup(app):
+    app.add_stylesheet('extra.css')
+
 #Credits to Parsl documentation for the idea to use requests to grab notebooks for the tutorial
 #https://github.com/Parsl/parsl/blob/master/docs/conf.py
 tutorials = ['dependency-cell-toolbar','dep-view-tutorial','dfkernel-statuses','dfkernel-tutorial','notebook-interactions']
