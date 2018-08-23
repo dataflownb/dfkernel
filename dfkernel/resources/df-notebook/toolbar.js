@@ -13,18 +13,21 @@ define([
     var CellToolbar = celltoolbar.CellToolbar;
 
     var setup_toolbar = function(div, cell) {
-        var link = $("<link/>")
-            .attr('type', 'text/css')
-            .attr('rel', 'stylesheet')
-            .attr('href', require.toUrl('./css/toolbar.css'));
-        $("head").append(link);
+        if (!("dftoolbar_css_added" in CellToolbar)) {
+            var link = $('<link type="text/css" rel="stylesheet"/>')
+                .attr('href', require.toUrl('./css/toolbar.css'));
+            $("head").append(link);
+            CellToolbar.dftoolbar_css_added = true;
+        }
 
-        var dfdiv = $('<div class="dftoolbar">');
-        update_inputs(dfdiv, cell);
-        update_outputs(dfdiv, cell);
-        add_force_cached_button(dfdiv, cell);
-        add_auto_update_button(dfdiv, cell);
-        $(div).append(dfdiv);
+        if (cell.cell_type === 'code') {
+            var dfdiv = $('<div class="dftoolbar">');
+            update_inputs(dfdiv, cell);
+            update_outputs(dfdiv, cell);
+            add_force_cached_button(dfdiv, cell);
+            add_auto_update_button(dfdiv, cell);
+            $(div).append(dfdiv);
+        }
     };
 
     var add_variable = function(name, cid, notebook) {
