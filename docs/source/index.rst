@@ -26,9 +26,12 @@ Contents
 ^^^^^^^^
 
 .. toctree::
-   :maxdepth: 3
-   
-   Usage
+
+   dfkernel-tutorial.ipynb
+   notebook-interactions.ipynb
+   dfkernel-statuses.ipynb
+   dep-view-tutorial.ipynb
+   dependency-cell-toolbar.ipynb
    IPykernel Compatibility
    Contact
 
