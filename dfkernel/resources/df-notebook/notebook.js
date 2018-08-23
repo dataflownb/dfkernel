@@ -417,11 +417,6 @@ define([
                 return;
             }
             for (var i=0; i < indices.length; i++) {
-                if(!this.get_cell(indices[i]).is_mergeable()) {
-                    return;
-                }
-            }
-            for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
                 if (ce[0].id && this.metadata.hl_list[ce[0].id]
                     && ce[0] === this.metadata.hl_list[ce[0].id].element[0]) {
