@@ -115,12 +115,14 @@ define([
                     if(horizontal_line !== null) {
                         var index = this.find_cell_index(horizontal_line);
                         var ce = this.get_cell_element(index);
-                        ce.remove();
-                        // make sure that there is a new cell at the bottom
-                        if (index === (this.ncells()-1)) {
-                            this.insert_cell_at_bottom();
-                            this.set_dirty(true);
-                        }
+                        if (horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                            // make sure that there is a new cell at the bottom
+                            if (index === (this.ncells()-1)) {
+                                this.insert_cell_at_bottom();
+                                this.set_dirty(true);
+                            }
+                        }          
                     }
                 }
             }
@@ -376,7 +378,9 @@ define([
                     //remove the horizontal line
                     var ce = this.get_cell_element(index);
                     this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
+                    if (horizontal_line.element[0] === ce[0]) {
+                        ce.remove();
+                    }
                     this.undelete_backup_stack[i].cells.splice(j,1);
                 }
             }
@@ -396,7 +400,9 @@ define([
                     var index = this.find_cell_index(horizontal_line);
                     var ce = this.get_cell_element(index);
                     this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
+                    if (horizontal_line.element[0] === ce[0]) {
+                        ce.remove();
+                    }
                     delete this.metadata.hl_list[uuid];
                 }
             }
@@ -413,14 +419,12 @@ define([
                 return;
             }
             for (var i=0; i < indices.length; i++) {
-                if(!this.get_cell(indices[i]).is_mergeable()) {
-                    return;
-                }
-            }
-            for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
-                ce.remove();
-                this.metadata.hl_list[ce[0].id] = null;
+                if (ce[0].id && this.metadata.hl_list[ce[0].id]
+                    && ce[0] === this.metadata.hl_list[ce[0].id].element[0]) {
+                    ce.remove();
+                    this.metadata.hl_list[ce[0].id] = null;
+                }
             }
         };
     }(Notebook.prototype.merge_cells));
