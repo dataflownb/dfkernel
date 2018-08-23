@@ -112,15 +112,17 @@ define([
                     code_dict[cell_uuid] = "";
                     var horizontal_line = this.metadata.hl_list[cell_uuid];
                     delete this.metadata.hl_list[cell_uuid];
-                    var index = this.find_cell_index(horizontal_line);
-                    var ce = this.get_cell_element(index);
-                    if (horizontal_line.element[0] === ce[0]) {
-                        ce.remove();
-                        // make sure that there is a new cell at the bottom
-                        if (index === (this.ncells()-1)) {
-                            this.insert_cell_at_bottom();
-                            this.set_dirty(true);
-                        }                    
+                    if(horizontal_line !== null) {
+                        var index = this.find_cell_index(horizontal_line);
+                        var ce = this.get_cell_element(index);
+                        if (horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                            // make sure that there is a new cell at the bottom
+                            if (index === (this.ncells()-1)) {
+                                this.insert_cell_at_bottom();
+                                this.set_dirty(true);
+                            }
+                        }          
                     }
                 }
             }
@@ -435,6 +437,38 @@ define([
         this.merge_cells([index, index+1], true);
     };
 
+    (function(_super) {
+        Notebook.prototype.to_markdown = function (index) {
+            var i = this.index_or_selected(index);
+            if (this.is_valid_cell_index(i)) {
+                var source_cell = this.get_cell(i);
+                if (!(source_cell instanceof textcell.MarkdownCell) && source_cell.is_editable()) {
+                    if (source_cell.cell_type === 'code') {
+                        this.metadata.hl_list[source_cell.uuid] = null;
+                        this.metadata.cell_status = 'new';
+                    }
+                }
+            }
+            _super.apply(this,arguments);
+        };
+    }(Notebook.prototype.to_markdown));
+
+    (function(_super) {
+        Notebook.prototype.to_raw = function (index) {
+            var i = this.index_or_selected(index);
+            if (this.is_valid_cell_index(i)) {
+                var source_cell = this.get_cell(i);
+                if (!(source_cell instanceof textcell.RawCell) && source_cell.is_editable()) {
+                    if (source_cell.cell_type === 'code') {
+                        this.metadata.hl_list[source_cell.uuid] = null;
+                        this.metadata.cell_status = 'new';
+                    }
+                }
+            }
+            _super.apply(this,arguments);
+        };
+    }(Notebook.prototype.to_raw));
+    
     return {Notebook: Notebook};
 
 });

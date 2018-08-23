@@ -129,6 +129,7 @@ define([
                     horizontal_line.inner_cell.height(1).css("backgroundColor","red");
                     horizontal_line.inner_cell[0].childNodes[1].remove();
                     horizontal_line.metadata.deletable = false;
+                    horizontal_line.celltoolbar.element.remove();
                     //add the horizontal line into hl_list for undeletion
                     nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
                     //undeleted the cell once the corresponding red line is clicked
@@ -271,9 +272,8 @@ define([
             if (!cell) {
                 cell = this;
             }
-            if (msg.metadata.status != "error") {
+            if (msg.metadata.status != "error" && msg.metadata.status != "aborted") {
                 var that = cell;
-
                 //set input field icon to success if cell is executed
                 cell.set_icon_status('success');
 
@@ -299,7 +299,6 @@ define([
                 cell.set_icon_status('error');
                 var that = cell;
                 this.dfgraph.remove_cell(that.uuid);
-                that.clear_df_info();
             }
             if(cell === cc){
                 this.dfgraph.update_dep_view();

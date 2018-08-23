@@ -186,8 +186,7 @@ define(["require",
         });
         executeactions.append('a').text("Close and Go to Cell").attr('id', 'close-scroll').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true).on('click', function () {that.close_and_scroll();});
 
-        this.svg = d3.select("div.dep-div").append('div').attr('id', 'svg-div').append("svg")
-            .attr("id", "svg").on('contextmenu', function () {
+        this.svg = d3.select("div.dep-div").append('div').attr('id', 'svg-div').on('contextmenu', function () {
                 return false;
             });
     };
@@ -202,7 +201,7 @@ define(["require",
                 var rect_points = $('#' + that.active_cell + 'cluster').find('polygon').attr('points').split(' ');
                 var rect_top = rect_points[1].split(',');
                 var height = Math.abs(rect_top[1]-rect_points[0].split(',')[1]);
-                d3.select('#svg svg g').insert('g', '#a_graph0 + *').attr('id', 'select-identifier').append('rect').attr('x', parseInt(rect_top[0])-3).attr('y', parseInt(rect_top[1])).attr('height', height).attr('width', '3px');
+                d3.select('#svg-div svg g').insert('g', '#a_graph0 + *').attr('id', 'select-identifier').append('rect').attr('x', parseInt(rect_top[0])-3).attr('y', parseInt(rect_top[1])).attr('height', height).attr('width', '3px');
             }
             Jupyter.notebook.select_by_id(that.active_cell);
             Jupyter.notebook.scroll_to_cell_id(that.active_cell);
@@ -311,10 +310,10 @@ define(["require",
             .ease(d3.easeLinear);
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
-            d3.select('#svg')
+            d3.select('#svg-div')
             .graphviz()
-                .width($('svg').width())
-                .height($('svg').height())
+                .width($('#svg-div').width())
+                .height($('#svg-div').height())
                 .fit(true)
                 .zoom(true)
                 .on('end',function(){
@@ -367,7 +366,7 @@ define(["require",
             $("g.parentnode.cluster")
                 .on('mousedown',function(event) {
                     if(event.which == 1){
-                            close_and_scroll();
+                            that.close_and_scroll();
                     }
                 })
                 .on("contextmenu",function(event){
