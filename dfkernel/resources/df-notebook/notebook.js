@@ -130,15 +130,13 @@ define([
         for(i=0; i < this.undelete_backup_stack.length ; i++) {
             for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
                 var cell_data = this.undelete_backup_stack[i].cells[j];
-                if(cell_data.metadata.cell_status == 'success') {
-                    cell_data.metadata.cell_status = "saved-success-first-load";
-                } else if(cell_data.metadata.cell_status == 'error') {
-                    cell_data.metadata.cell_status = "saved-error-first-load";
-                } else if(cell_data.metadata.cell_status == 'edited-success') {
-                    cell_data.metadata.cell_status = 'edited-saved-success'
-                } else if(cell_data.metadata.cell_status == 'edited-error') {
-                    cell_data.metadata.cell_status = 'edited-saved-error';
-                }
+                cell_data = this.to_saved_cell_status(cell_data,false);
+            }
+        }
+        if (this.clipboard) {
+            for (i = 0; i < this.clipboard.length; i++) {
+                var cell_data = this.clipboard[i];
+                cell_data = this.to_saved_cell_status(cell_data,false);
             }
         }
         return code_dict;
@@ -295,9 +293,11 @@ define([
                 if(cell_data.cell_type == 'code') {
                     var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
                         this.get_default_id_length());
+                    cell_data.metadata.cell_status = 'undelete-'+cell_data.metadata.cell_status;
                     if (this.metadata.hl_list[uuid]) {
                         var horizontal_line = this.metadata.hl_list[uuid];
                         delete this.metadata.hl_list[uuid];
+                        this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
                         var index = this.find_cell_index(horizontal_line);
                         //remove the horizontal line
                         var ce = this.get_cell_element(index);
@@ -323,6 +323,7 @@ define([
                         remap[uuid] = new_id;
                         cell_data.execution_count = new_id;
                         cell_data.outputs = [];
+                        cell_data.metadata.cell_status = 'new';
                     }
                 }
             }
@@ -473,7 +474,55 @@ define([
             _super.apply(this,arguments);
         };
     }(Notebook.prototype.to_raw));
-    
+
+    (function(_super) {
+        Notebook.prototype.delete_cells = function (indices) {
+            var that =  _super.call(this, indices);
+            for(i=0; i < this.undelete_backup_stack.length ; i++) {
+                for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                    var cell_data = this.undelete_backup_stack[i].cells[j];
+                    cell_data = this.to_saved_cell_status(cell_data,true);
+                }
+            }
+            return that;
+        };
+    }(Notebook.prototype.delete_cells));
+     Notebook.prototype.to_saved_cell_status = function(cell_data, reverse) {
+        var status_to_saved_map = {
+            'success' : 'saved-success-first-load',
+            'error' : 'saved-error-first-load',
+            'edited-success' : 'edited-saved-success',
+            'edited-error' : 'edited-saved-error'
+        };
+        var revert_status_to_saved_map = {};
+        Object.keys(status_to_saved_map).forEach(
+            function(k) {
+                var v = status_to_saved_map[k];
+                revert_status_to_saved_map[v] = k;
+            });
+        //set correct cell_status for saved codecell
+        if (cell_data.cell_type === 'code') {
+            if (reverse === false) {
+                cell_data.metadata.cell_status = status_to_saved_map[cell_data.metadata.cell_status];
+            }
+            else {
+                cell_data.metadata.cell_status = revert_status_to_saved_map[cell_data.metadata.cell_status];
+            }
+        }
+        return cell_data;
+    };
+     (function(_super) {
+        Notebook.prototype.cut_cell = function () {
+            _super.apply(this,arguments);
+            if (this.clipboard) {
+                for (i = 0; i < this.clipboard.length; i++) {
+                    var cell_data = this.clipboard[i];
+                    cell_data = this.to_saved_cell_status(cell_data,true);
+                }
+            }
+        };
+    }(Notebook.prototype.cut_cell));
+
     return {Notebook: Notebook};
 
 });
