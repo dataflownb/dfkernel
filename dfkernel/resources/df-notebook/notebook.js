@@ -473,6 +473,18 @@ define([
             _super.apply(this,arguments);
         };
     }(Notebook.prototype.to_raw));
+   
+     (function(_super) {
+        Notebook.prototype._restart_kernel = function (options) {
+            promise = _super.call(this, options);
+            this.get_cells().forEach(function (d) {
+                if (d.cell_type === 'code') {
+                    d.set_icon_status('new');
+                }
+            });
+            return promise;
+        };
+    }(Notebook.prototype._restart_kernel));
     
     return {Notebook: Notebook};
 
