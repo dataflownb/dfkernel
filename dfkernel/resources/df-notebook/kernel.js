@@ -28,6 +28,6 @@ define([
             callback(msg);
         }
     };
-
     return {Kernel: Kernel};
 });
+
