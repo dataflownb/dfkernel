@@ -5,26 +5,28 @@ define([
     'jquery',
     'require',
     'notebook/js/celltoolbar',
-    'base/js/dialog',
-    'base/js/i18n'
-], function($, require, celltoolbar, dialog, i18n) {
+    'base/js/dialog'
+], function($, require, celltoolbar, dialog) {
     "use strict";
 
     var CellToolbar = celltoolbar.CellToolbar;
 
     var setup_toolbar = function(div, cell) {
-        var link = $("<link/>")
-            .attr('type', 'text/css')
-            .attr('rel', 'stylesheet')
-            .attr('href', require.toUrl('./css/toolbar.css'));
-        $("head").append(link);
+        if (!("dftoolbar_css_added" in CellToolbar)) {
+            var link = $('<link type="text/css" rel="stylesheet"/>')
+                .attr('href', require.toUrl('./css/toolbar.css'));
+            $("head").append(link);
+            CellToolbar.dftoolbar_css_added = true;
+        }
 
-        var dfdiv = $('<div class="dftoolbar">');
-        update_inputs(dfdiv, cell);
-        update_outputs(dfdiv, cell);
-        add_force_cached_button(dfdiv, cell);
-        add_auto_update_button(dfdiv, cell);
-        $(div).append(dfdiv);
+        if (cell.cell_type === 'code') {
+            var dfdiv = $('<div class="dftoolbar">');
+            update_inputs(dfdiv, cell);
+            update_outputs(dfdiv, cell);
+            add_force_cached_button(dfdiv, cell);
+            add_auto_update_button(dfdiv, cell);
+            $(div).append(dfdiv);
+        }
     };
 
     var add_variable = function(name, cid, notebook) {
@@ -104,12 +106,12 @@ define([
             .addClass("btn btn-default btn-xs")
             .attr('title', 'Auto-Refresh on Upstream Update')
             .append($('<i class="fa-refresh fa">'));
-        if (cell.auto_update) {
+        if (cell.metadata.auto_update) {
             refresh.addClass('active');
         }
         refresh.click(function() {
             refresh.toggleClass('active');
-            cell.auto_update = refresh.hasClass('active');
+            cell.metadata.auto_update = refresh.hasClass('active');
             return false;
         });
         container.append(refresh);
@@ -121,12 +123,12 @@ define([
             .addClass("btn btn-default btn-xs")
             .attr('title', 'Only Update Explicitly')
             .append($('<i class="fa-database fa">'));
-        if (cell.force_cached) {
+        if (cell.metadata.force_cached) {
             prompt.addClass('active');
         }
         prompt.click(function() {
             prompt.toggleClass('active');
-            cell.force_cached = prompt.hasClass('active');
+            cell.metadata.force_cached = prompt.hasClass('active');
             return false;
         });
         container.append(prompt);
@@ -134,7 +136,7 @@ define([
 
     var register = function (notebook) {
         CellToolbar.register_callback('dfkernel.deps', setup_toolbar);
-        CellToolbar.register_preset(i18n.msg._('Dataflow'), ['dfkernel.deps'], notebook);
+        CellToolbar.register_preset('Dataflow', ['dfkernel.deps'], notebook);
     };
     return {'register': register};
 });

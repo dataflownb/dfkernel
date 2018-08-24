@@ -115,16 +115,31 @@ define([
                     if(horizontal_line !== null) {
                         var index = this.find_cell_index(horizontal_line);
                         var ce = this.get_cell_element(index);
-                        ce.remove();
-                        // make sure that there is a new cell at the bottom
-                        if (index === (this.ncells()-1)) {
-                            this.insert_cell_at_bottom();
-                            this.set_dirty(true);
+                        if (horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                            // make sure that there is a new cell at the bottom
+                            if (index === (this.ncells()-1)) {
+                                this.insert_cell_at_bottom();
+                                this.set_dirty(true);
+                            }
                         }
                     }
                 }
             }
-
+        }
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                var cell_data = this.undelete_backup_stack[i].cells[j];
+                if(cell_data.metadata.cell_status == 'success') {
+                    cell_data.metadata.cell_status = "saved-success-first-load";
+                } else if(cell_data.metadata.cell_status == 'error') {
+                    cell_data.metadata.cell_status = "saved-error-first-load";
+                } else if(cell_data.metadata.cell_status == 'edited-success') {
+                    cell_data.metadata.cell_status = 'edited-saved-success'
+                } else if(cell_data.metadata.cell_status == 'edited-error') {
+                    cell_data.metadata.cell_status = 'edited-saved-error';
+                }
+            }
         }
         return code_dict;
     };
@@ -159,12 +174,12 @@ define([
 
     Notebook.prototype.get_auto_update_flags = function() {
         return this.get_code_cells().map(
-            function(c) { return [c.uuid, c.auto_update]; });
+            function(c) { return [c.uuid, c.metadata.auto_update]; });
     };
 
     Notebook.prototype.get_force_cached_flags = function() {
         return this.get_code_cells().map(
-            function(c) { return [c.uuid, c.force_cached]; });
+            function(c) { return [c.uuid, c.metadata.force_cached]; });
     };
 
     Notebook.prototype.has_id = function(id) {
@@ -280,6 +295,16 @@ define([
                 if(cell_data.cell_type == 'code') {
                     var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
                         this.get_default_id_length());
+                    if (this.metadata.hl_list[uuid]) {
+                        var horizontal_line = this.metadata.hl_list[uuid];
+                        delete this.metadata.hl_list[uuid];
+                        var index = this.find_cell_index(horizontal_line);
+                        //remove the horizontal line
+                        var ce = this.get_cell_element(index);
+                        if (horizontal_line !== null && horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                        }
+                    }                    
                     //FIXME: Will this cause issues with speed?
                     this.undelete_backup_stack = this.undelete_backup_stack.map(
                         function(stack){
@@ -365,18 +390,21 @@ define([
         for(i=0; i < this.undelete_backup_stack.length ; i++) {
             for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
                 cell_data = this.undelete_backup_stack[i].cells[j];
-                if (cell_data.execution_count.toString(16) == uuid) {
+                if (cell_data.cell_type === 'code' && cell_data.execution_count.toString(16) == uuid) {
                     //get the clicked horizontal_line
                     var horizontal_line = this.metadata.hl_list[uuid];
                     delete this.metadata.hl_list[uuid];
                     var index = this.find_cell_index(horizontal_line);
                     //undelete the corresponding cell
                     new_cell = insert(cell_data.cell_type, index);
+                    cell_data.metadata.cell_status = 'undelete-'+cell_data.metadata.cell_status;
                     new_cell.fromJSON(cell_data);
                     //remove the horizontal line
                     var ce = this.get_cell_element(index);
                     this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
+                    if (horizontal_line.element[0] === ce[0]) {
+                        ce.remove();
+                    }
                     this.undelete_backup_stack[i].cells.splice(j,1);
                 }
             }
@@ -389,15 +417,18 @@ define([
             var j = this.undelete_backup_stack.length - 1
             var length = this.undelete_backup_stack[j].cells.length;
             for(i=0; i<length ; i++) {
-                var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
-                //remove the corresponding horizontal line if exist
+                if (this.undelete_backup_stack[j].cells[i].cell_type === 'code') {var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
+                    if(cell_status.indexOf('saved') === -1) {
+                        this.undelete_backup_stack[j].cells[i].metadata.cell_status = 'undelete-'+cell_status;
+                    }//remove the corresponding horizontal line if exist
                 if (this.metadata.hl_list[uuid]) {
                     var horizontal_line = this.metadata.hl_list[uuid];
                     var index = this.find_cell_index(horizontal_line);
                     var ce = this.get_cell_element(index);
                     this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
-                    ce.remove();
-                    delete this.metadata.hl_list[uuid];
+                    if (horizontal_line.element[0] === ce[0]) {ce.remove();}
+                    delete this.metadata.hl_list[uuid];}
                 }
             }
             _super.apply(this, arguments);
@@ -413,14 +444,12 @@ define([
                 return;
             }
             for (var i=0; i < indices.length; i++) {
-                if(!this.get_cell(indices[i]).is_mergeable()) {
-                    return;
-                }
-            }
-            for (var i=0; i < indices.length; i++) {
                 var ce = this.get_cell_element(indices[i]);
-                ce.remove();
-                this.metadata.hl_list[ce[0].id] = null;
+                if (ce[0].id && this.metadata.hl_list[ce[0].id]
+                    && ce[0] === this.metadata.hl_list[ce[0].id].element[0]) {
+                    ce.remove();
+                    this.metadata.hl_list[ce[0].id] = null;
+                }
             }
         };
     }(Notebook.prototype.merge_cells));
