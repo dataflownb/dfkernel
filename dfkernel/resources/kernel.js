@@ -67,7 +67,7 @@ define(["jquery",
 
             Jupyter.toolbar.add_buttons_group([
                   {
-                       'label'   : 'Open/Close Dependency View',
+                       'label'   : 'Dependency Viewer',
                        'icon'    : 'fa-bar-chart',
                        'callback': function () {
                                                      nb.session.dfgraph.depview.toggle_dep_view();
