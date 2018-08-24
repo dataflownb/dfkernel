@@ -7,24 +7,35 @@ from ipykernel.zmqshell import *
 import ipykernel.zmqshell
 
 import ast
+import collections
 import sys
 
-from IPython.core.interactiveshell import InteractiveShellABC
-from IPython.core.interactiveshell import ExecutionResult
+from IPython.core import magic_arguments
+from IPython.core.interactiveshell import InteractiveShellABC, \
+    _assign_nodes, _single_targets_nodes
+from IPython.core.interactiveshell import ExecutionResult, ExecutionInfo
 from IPython.core.compilerop import CachingCompiler
-from IPython.core.magic import magics_class, Magics, cell_magic
+from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
+    needs_local_scope
 from IPython.core.history import HistoryManager
 from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import unicode_type
+from dfkernel.dflink import LinkedResult
 from dfkernel.displayhook import ZMQShellDisplayHook
+from dfkernel.safe_attr import safe_attr
 from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )
 from warnings import warn
+from typing import List as ListType
+from ast import AST
+import importlib
 
-from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager
+from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, \
+    DataflowNamespace, DataflowCellException, DuplicateNameError
+from dfkernel.dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
 # Functions and classes
@@ -60,7 +71,7 @@ class ZMQDisplayPublisher(ipykernel.zmqshell.ZMQDisplayPublisher):
         content['data'] = encode_images(data)
         content['metadata'] = metadata
         content['transient'] = transient
-        content['execution_count'] = self.get_execution_count()
+        #content['execution_count'] = self.get_execution_count()
 
         msg_type = 'update_display_data' if update else 'display_data'
 
@@ -103,6 +114,176 @@ class FunctionMagics(Magics):
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
 
+class nameddict(collections.Mapping):
+    def __init__(self, *args, **kwargs):
+        self.__raw_mapping__ = {}
+        self._fields = []
+        self.__field_mapping__ = {}
+
+    def __getattr__(self, item):
+        if item in self._fields:
+            return self.__field_mapping__[item]
+        return getattr(self.__raw_mapping__, item)
+
+    def __getitem__(self, key):
+        if key in self._fields:
+            return self.__field_mapping__[key]
+        return self.__raw_mapping__[key]
+
+    def __iter__(self):
+        return iter(self.__raw_mapping__)
+
+    def __len__(self):
+        return len(self.__raw_mapping__)
+
+    @staticmethod
+    def from_mapping(mapping):
+        nd = nameddict()
+        nd.__raw_mapping__ = nd
+        for key, value in sorted(mapping.items(), key=lambda x: str(x[0])):
+            attr = safe_attr(key)
+            nd._fields.append(attr)
+            nd.__field_mapping__[attr] = value
+        return nd
+
+@magics_class
+class OutputMagics(Magics):
+    @magic_arguments.magic_arguments()
+    @magic_arguments.argument(
+        '-n', '--names', default="",
+        help="""Specify output names."""
+    )
+    @magic_arguments.argument('expr', nargs='*',
+        help="""Expression to output"""
+    )
+
+    def display(self, line, local_ns=None):
+        args = magic_arguments.parse_argstring(self.display, line)
+
+        names = args.names
+        if (names and
+                ((names.startswith('"') and names.endswith('"'))
+                or (names.startswith("'") and names.endswith("'")))):
+            names = names[1:-1]
+        names = [x.strip() for x in names.split(',') if x.strip() != ""]
+
+        line = ' '.join(args.expr)
+
+        # follow %time code...
+        expr = self.shell.input_transformer_manager.transform_cell(line)
+        expr_ast = self.shell.compile.ast_parse(expr)
+        expr_ast = self.shell.transform_ast(expr_ast)
+        if len(expr_ast.body)==1 and isinstance(expr_ast.body[0], ast.Expr):
+            mode = 'eval'
+            source = '<display eval>'
+            expr_ast = ast.Expression(expr_ast.body[0].value)
+        else:
+            mode = 'exec'
+            source = '<display exec>'
+        code = self.shell.compile(expr_ast, source, mode)
+
+        glob = self.shell.user_ns
+        if mode=='eval':
+            try:
+                out = eval(code, local_ns, glob)
+            except:
+                self.shell.showtraceback()
+                return
+        else:
+            try:
+                exec(code, local_ns, glob)
+            except:
+                self.shell.showtraceback()
+                return
+            out = None
+
+        if isinstance(out, collections.Mapping):
+            # wrap out according to names
+            # if is dictionary-like
+            return build_linked_result(self.shell.uuid,[],False, list(out.items()))
+            # return nameddict.from_mapping(out)
+        elif isinstance(out, collections.Sequence):
+            # wrap out according to names or indicies
+            names = [safe_attr(names[i] if i < len(names) else i)
+                     for i in range(len(out))]
+            return collections.namedtuple('namedtuple', ' '.join(names))(*out)
+        else:
+            if len(names) < 1:
+                names = ['res']
+            return collections.namedtuple('namedtuple', ' '.join(names))(out)
+        return out
+
+    @needs_local_scope
+    @line_magic
+    def split_out(self, line, local_ns=None):
+        """Takes an output and splits into multiple outputs.
+        mapping -> each key-value pair becomes a separate output
+        tuple -> each tuple becomes a separate output
+        list -> each entry becomes a separate output
+        """
+        return self.display(line, local_ns)
+
+    @needs_local_scope
+    @line_magic
+    def name_out(self, line, local_ns=None):
+        """Adds names to an output.
+        Mirrors split_out except that this makes sense for a single output.
+        object -> adds a name to the output
+        """
+        return self.display(line, local_ns)
+
+# TODO move to its own package
+def expr2id(node):
+    """Convert ast node to valid python identifier.
+
+    If the expression is just an identifier, return the identifier.
+    If the expression contains a function, return the function name.
+    If the expression contains an operator, return the name of the operator followed by the subexpressions.
+    """
+    # print("expr2id", ast.dump(node))
+    if isinstance(node, str):
+        node = ast.parse(node)
+        if len(node.body) != 1:
+            raise ValueError("Node should have only one expression")
+        if not isinstance(node.body[0], ast.Expr):
+            raise ValueError("Node must be an expression")
+        node = node.body[0]
+
+    if isinstance(node, ast.Name):
+        return node.id
+    elif isinstance(node, ast.Num):
+        return 'c' # node.n
+    elif isinstance(node, ast.Str):
+        return 'c' # node.s
+    elif isinstance(node, ast.Attribute):
+        # concatenate?
+        return expr2id(node.value) + "_" + node.attr
+    elif isinstance(node, ast.Subscript):
+        slice = ""
+        if isinstance(node.slice, ast.Index):
+            if isinstance(node.slice.value, ast.Num):
+                slice = "_{}".format(node.slice.value.n)
+            elif isinstance(node.slice.value, ast.Str):
+                slice = "_{}".format(node.slice.value.s)
+        return expr2id(node.value) + slice
+    elif isinstance(node, ast.Index):
+        return expr2id(node.value)
+    else:
+        return 'x'
+
+# FIXME should mix the pprint for seq and dict
+# FIXME use normal printer if _fields doesn't exist
+def tuple_formatter(arg, p, cycle):
+    with p.group(1, '(', ')'):
+        for i in range(len(arg)):
+            if hasattr(arg, '_fields'):
+                p.text(arg._fields[i] + ": ")
+            p.pretty(arg[i])
+            if i != len(arg) - 1:
+                p.text(',')
+                p.breakable()
+
+
 class CellIdTransformer(ast.NodeTransformer):
     def visit_Subscript(self, node):
         super().generic_visit(node)
@@ -129,8 +310,26 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
     def __init__(self, *args, **kwargs):
+        if 'user_ns' not in kwargs or kwargs['user_ns'] is None:
+            kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
+        #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
+        self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
+        self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
+
+        def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
+            retval = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            return retval[:-4] + retval[-1:]
+
+        self.set_custom_exc((DataflowCellException,), cell_exception_handler)
+
+        def duplicate_name_handler(shell, etype, value, tb, tb_offset=None):
+            retval = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            return retval[:-4] + retval[-1:]
+        self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
@@ -164,7 +363,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     def init_magics(self):
         super(ZMQInteractiveShell, self).init_magics()
-        self.register_magics(FunctionMagics)
+        #self.register_magics(FunctionMagics)
+        self.register_magics(OutputMagics)
 
     # FIXME hack to be notified of change before it happens?
     @validate('uuid')
@@ -176,7 +376,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             sys.stderr.flush()
         return proposal['value']
 
-    def run_cell(self, raw_cell, uuid=None, code_dict={},
+    def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
                      store_history=False, silent=False, shell_futures=True,
                      update_downstream_deps=False):
         """Run a complete IPython cell.
@@ -203,22 +403,42 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         result : :class:`ExecutionResult`
         """
 
+        code_dict = dfkernel_data.get("code_dict", {})
+        output_tags = dfkernel_data.get("output_tags", {})
+        auto_update_flags = dfkernel_data.get("auto_update_flags", [])
+        force_cached_flags = dfkernel_data.get("force_cached_flags", [])
         # print("CODE_DICT:", code_dict)
-        # print("RUNNING CELL", uuid, raw_cell)
+        #print("RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
         self._last_traceback = None
+        old_deps = []
 
         if store_history:
             self.dataflow_history_manager.update_codes(code_dict)
+            self.dataflow_history_manager.update_auto_update(auto_update_flags)
+            self.dataflow_history_manager.update_force_cached(force_cached_flags)
+            self.user_ns._add_links(output_tags)
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
+            if uuid in self.dataflow_history_manager.value_cache and uuid in self.dataflow_history_manager.dep_parents:
+                old_deps = self.dataflow_history_manager.all_upstream(uuid)
+                for i in list(self.dataflow_history_manager.dep_parents[uuid]):
+                    self.dataflow_history_manager.remove_dependencies(i,uuid)
+                self.dataflow_history_manager.dep_semantic_parents[uuid] = {}
             self.dataflow_history_manager.update_flags(
                 store_history=store_history,
                 silent=silent,
                 shell_futures=shell_futures,
                 update_downstream_deps=update_downstream_deps)
-        result = ExecutionResult()
+
+        info = ExecutionInfo(
+            raw_cell, store_history, silent, shell_futures)
+        result = ExecutionResult(info)
+
+        result.deleted_cells = self.dataflow_history_manager.deleted_cells
+        self.dataflow_history_manager.deleted_cells = []
+
 
         if (not raw_cell) or raw_cell.isspace():
             self.last_execution_succeeded = True
@@ -318,6 +538,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     #     self.execution_count += 1
                     return error_before_exec(e)
 
+                internalnodes = []
+                for node in ast.walk(code_ast):
+                    if(isinstance(node,ast.Name) and isinstance(node.ctx,ast.Store)):
+                        internalnodes.append(node.id)
+
                 # Give the displayhook a reference to our ExecutionResult so it
                 # can fill in the output value.
 
@@ -326,6 +551,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 self.displayhook.exec_result = result
                 old_uuid = self.uuid
                 self.uuid = uuid
+                self.user_ns._start_uuid(self.uuid)
+
+                # user_ns = copy.copy(self.user_ns)
 
                 # Execute the user code
                 interactivity = "none" if silent else self.ast_node_interactivity
@@ -338,7 +566,18 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # ExecutionResult
                 self.displayhook.exec_result = old_result
                 self.uuid = old_uuid
+                self.user_ns._revisit_uuid(self.uuid)
 
+                # self.user_ns = user_ns
+
+                if(not self.last_execution_succeeded):
+                    for j in self.dataflow_history_manager.storeditems:
+                        self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
+
+                if isinstance(result.result, LinkedResult):
+                    result.result.__sethist__(self.dataflow_history_manager)
+
+                self.dataflow_history_manager.storeditems = []
                 self.events.trigger('post_execute')
                 if not silent:
                     self.events.trigger('post_run_cell')
@@ -357,12 +596,190 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # self.execution_count += 1
 
             if store_history:
-                result.imm_upstream_deps = self.dataflow_history_manager.get_upstream(uuid)
+                cells = []
+                nodes = []
+                for uid in self.dataflow_history_manager.sorted_keys():
+                    cells.append(uid)
+                if uuid in self.dataflow_history_manager.value_cache:
+                    if(self.dataflow_history_manager.value_cache[uuid] is not None):
+                        nodes.append('Out_'+uuid+'')
+                    if isinstance(self.dataflow_history_manager.value_cache[uuid], LinkedResult):
+                        nodes = list(self.dataflow_history_manager.value_cache[uuid].keys())
+                result.nodes = nodes
+                result.cells = cells
+                result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
+                result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                self.dataflow_history_manager.deleted_cells = []
+                result.internal_nodes = internalnodes
+
+                result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
+                result.update_downstreams = []
+                for i in set(self.dataflow_history_manager.all_upstream(uuid)+old_deps):
+                    result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
                 result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)
                 result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
 
+            # run auto_updates
+            self.dataflow_history_manager.run_auto_updates(uuid)
+
+
         return result
+
+    def get_linked_vars(self, node):
+        create_node = True
+        append_node = True
+        vars = []
+        unnamed = []
+        if isinstance(node, _assign_nodes):
+            asg = node
+            if isinstance(asg, ast.Assign) and len(asg.targets) == 1:
+                target = asg.targets[0]
+            elif isinstance(asg, _single_targets_nodes):
+                target = asg.target
+            else:
+                target = None
+            if isinstance(target, ast.Name):
+                vars.append(target.id)
+            elif isinstance(target, ast.Tuple):
+                for elt in target.elts:
+                    if not isinstance(elt, ast.Name):
+                        vars = []
+                        create_node = False
+                        break
+                    vars.append(elt.id)
+            else:
+                create_node = False
+        elif isinstance(node, ast.Expr):
+            append_node = False
+            if isinstance(node.value, ast.Tuple):
+                asg = node.value
+                for outnum, elt in enumerate(asg.elts):
+                    if (not isinstance(elt, ast.Name)):
+                        unnamed.append((outnum,elt))
+                    elif self.user_ns._is_external_link(elt.id, self.uuid):
+                        vars = []
+                        create_node = False
+                        break
+                    else:
+                        vars.append(elt.id)
+            elif isinstance(node.value, ast.Name):
+                elt = node.value
+                if self.user_ns._is_external_link(elt.id, self.uuid):
+                    create_node = False
+                else:
+                    vars.append(elt.id)
+            #elif isinstance(node.value, ast.Expr) or isinstance(node.value,ast.Num):
+                #unnamed.append((0,node.value))
+            else:
+                unnamed.append((-1, node.value))
+                #create_node = False
+        else:
+            create_node = False
+        return vars, unnamed, create_node, append_node
+
+    def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
+                        compiler=compile, result=None):
+        no_link_vars = []
+        auto_add_libs = True # FIXME add a configuration option that sets this
+        # FIXME allow closure to be configurable?
+        # if so, need to also adjset tb_offset values (should be config option)
+        closure = True
+        future_elt = False # Flag for determining if there's a __future__ import
+        if interactivity == 'last_expr_or_assign':
+            keep_last_node = False
+            vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
+            no_link_vars.extend(vars)
+            libs = []
+
+            if auto_add_libs:
+                lnames = []
+                new_node_list = []
+                for elt in nodelist:
+                    if (isinstance(elt, ast.Import) or
+                            isinstance(elt,ast.ImportFrom)):
+                        if isinstance(elt, ast.ImportFrom) and elt.module == '__future__':
+                            import copy
+                            if isinstance(future_elt,list):
+                                future_elt.append(copy.deepcopy(elt))
+                            else:
+                                future_elt = [copy.deepcopy(elt)]
+                        else:
+                            new_node_list.append(elt)
+                            for name in elt.names:
+                                if name.asname:
+                                    lnames.append(name.asname)
+                                else:
+                                    if '.' in name.name:
+                                        lnames.append(name.name.split('.',1)[0])
+                                    else:
+                                        lnames.append(name.name)
+                    else:
+                        new_node_list.append(elt)
+                nodelist = new_node_list
+                if len(lnames) > 0:
+                    diff = set(lnames) - set(vars)
+                    if len(diff) > 0:
+                        if not create_node and isinstance(nodelist[-1], ast.Expr):
+                            keep_last_node = True
+                        create_node = True
+                        append_node = True
+                        libs = list(diff)
+            if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
+                create_node = False
+                # if(len(unnamed) < 1):
+                #     closure = False
+                if(closure and isinstance(nodelist[-1],ast.Expr)):
+                    nnode = ast.Return(nodelist[-1].value)
+                    ast.fix_missing_locations(nnode)
+                    nodelist[-1] = nnode
+
+            if create_node:
+                keywords = [ast.Tuple([ast.Str(var), ast.Name(var, ast.Load())],ast.Load()) for var in (libs+vars)]
+                none_flag = bool(len(vars))
+                for out in unnamed:
+                    #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
+                    #might be better to double check though to ensure that this is actually fine
+                    if(len(unnamed)+len(vars) == 1):
+                        keywords.append(ast.Tuple([ast.Str('Out[' + self.uuid + ']'), out[1]],ast.Load()))
+                    elif(out[0]>=0):
+                        keywords.insert(out[0]+len(libs), ast.Tuple([ast.Str(self.uuid + str(out[0])),out[1]],ast.Load()))
+                    else:
+                        keywords.append(ast.Tuple([ast.Str(self.uuid +  str(len(vars))),out[1]],ast.Load()))
+
+                if keep_last_node:
+                    nnode = ast.Expr(ast.Tuple(
+                        [ast.Call(ast.Name('_build_linked_result', ast.Load()),
+                                 [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())], [])],
+                    ast.Load()))
+                else:
+                    innercall = ast.Call(ast.Name('_build_linked_result', ast.Load()), [ast.Str(self.uuid),ast.Tuple([ast.Str(lib) for lib in libs],ast.Load()),ast.NameConstant(none_flag),ast.List(keywords,ast.Load())],[])
+                    if closure:
+                        nnode = ast.Return(innercall)
+                    else:
+                        nnode = ast.Expr(innercall)
+
+                ast.fix_missing_locations(nnode)
+                if isinstance(nodelist[-1],ast.Expr):
+                    nodelist[-1] = nnode
+                elif append_node:
+                    nodelist.append(nnode)
+                else:
+                    nodelist[-1] = nnode
+                # also need to pull off the values so they don't recurse on themselves
+            if closure:
+                nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                if future_elt:
+                    nodelist = future_elt + nodelist
+                for node in nodelist:
+                    ast.fix_missing_locations(node)
+            interactivity = 'last_expr'
+
+        # print("DO NOT LINK", no_link_vars)
+        self.user_ns.__do_not_link__.update(no_link_vars)
+        res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
+        self.user_ns.__do_not_link__.difference_update(no_link_vars)
+        return res
 
     def run_code(self, code_obj, result=None):
         """Execute a code object.
@@ -394,6 +811,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             try:
                 self.hooks.pre_run_code_hook()
                 # rprint('Running code', repr(code_obj)) # dbg
+                # user_global_ns = {}
                 exec(code_obj, self.user_global_ns, self.user_ns)
             finally:
                 # Reset our crash handler in place
@@ -407,11 +825,15 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             etype, value, tb = sys.exc_info()
             if result is not None:
                 result.error_in_exec = value
-            self.CustomTB(etype, value, tb)
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
+            self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
         except:
             if result is not None:
                 result.error_in_exec = sys.exc_info()[1]
-            self.showtraceback(running_compiled_code=True)
+            # IMPORTANT: tb_offset=2 depends on *every* cell
+            # being wrapped in a closure
+            self.showtraceback(running_compiled_code=True, tb_offset=2)
         else:
             outflag = False
         return outflag
@@ -460,6 +882,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # ns['Out'] = self.history_manager.output_hist
         ns['Out'] = self.dataflow_history_manager
         ns['Func'] = self.dataflow_function_manager
+        ns['_build_linked_result'] = build_linked_result
+        ns['_ns'] = self.user_ns
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython
@@ -478,6 +902,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # Finally, update the real user's namespace
         self.user_ns.update(ns)
 
+
     def init_history(self):
         """Sets up the command history, and starts regular autosaves."""
         self.history_manager = HistoryManager(shell=self, parent=self)
@@ -485,5 +910,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.dataflow_function_manager = \
             DataflowFunctionManager(self.dataflow_history_manager)
         self.configurables.append(self.history_manager)
+
+    # def prepare_user_module(self, user_module=None, user_ns=None):
+    #     print("USER_NS", user_ns, file=sys.__stdout__, flush=True)
+    #
+    #     return super().prepare_user_module(user_module, user_ns)
+
 
 InteractiveShellABC.register(ZMQInteractiveShell)

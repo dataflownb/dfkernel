@@ -29,7 +29,8 @@ define([
     'notebook/js/scrollmanager',
     'notebook/js/commandpalette',
     'notebook/js/shortcuteditor',
-    '/kernelspecs/dfpython3/df-notebook/utils.js'
+    './dfgraph.js',
+    './utils.js'
 ], function (
     $,
     notebook,
@@ -58,6 +59,7 @@ define([
     scrollmanager,
     commandpalette,
     shortcuteditor,
+    dfgraph,
     dfutils
 ) {
 
@@ -67,8 +69,10 @@ define([
 
     Notebook.prototype.reload_notebook = function(data) {
         var kernelspec = this.metadata.kernelspec;
+        this.init_dfnb();
         var res = this.load_notebook_success(data);
         this.metadata.kernelspec = kernelspec;
+        this.metadata.hl_list = [];
         if (this.ncells() === 1 && this.get_cell(0).get_text() == "") {
             // Hack that seems to work to get the first cell into edit mode
             this.mode = 'command';
@@ -79,6 +83,15 @@ define([
         return res;
     };
 
+    Notebook.prototype.init_dfnb = function() {
+        this.session.dfgraph = new dfgraph.DfGraph();
+
+        // FIXME remove this
+        IPython.dfgraph = this.session.dfgraph;
+
+        // FIXME add last_executed in here when that change is merged
+    };
+
     /**
      * Get all the code text from all CodeCells in the notebook
      *
@@ -87,12 +100,86 @@ define([
     Notebook.prototype.get_code_dict = function () {
         var code_dict = {};
         this.get_cells().forEach(function (d) {
-            if (d.cell_type == 'code' && d.was_changed) {
+            if (d.cell_type === 'code' && d.kernel_notified) {
                 code_dict[d.uuid] = d.get_text();
-                d.was_changed = false;
+                d.kernel_notified = false;
             }
         });
+        //if there are deleted cells, put it in the code_dict to update the dependencies' links
+        if (this.metadata.hl_list && Object.keys(this.metadata.hl_list).length !== 0) {
+            for(var cell_uuid in this.metadata.hl_list) {
+                if(this.metadata.hl_list.hasOwnProperty(cell_uuid)) {
+                    code_dict[cell_uuid] = "";
+                    var horizontal_line = this.metadata.hl_list[cell_uuid];
+                    delete this.metadata.hl_list[cell_uuid];
+                    if(horizontal_line !== null) {
+                        var index = this.find_cell_index(horizontal_line);
+                        var ce = this.get_cell_element(index);
+                        if (horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
+                            // make sure that there is a new cell at the bottom
+                            if (index === (this.ncells()-1)) {
+                                this.insert_cell_at_bottom();
+                                this.set_dirty(true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                var cell_data = this.undelete_backup_stack[i].cells[j];
+                if(cell_data.metadata.cell_status == 'success') {
+                    cell_data.metadata.cell_status = "saved-success-first-load";
+                } else if(cell_data.metadata.cell_status == 'error') {
+                    cell_data.metadata.cell_status = "saved-error-first-load";
+                } else if(cell_data.metadata.cell_status == 'edited-success') {
+                    cell_data.metadata.cell_status = 'edited-saved-success'
+                } else if(cell_data.metadata.cell_status == 'edited-error') {
+                    cell_data.metadata.cell_status = 'edited-saved-error';
+                }
+            }
+        }
         return code_dict;
+    };
+
+    Notebook.prototype.get_cell_output_tags = function(uid) {
+        var output_tags = [];
+        var cell = this.get_code_cell(uid);
+        if (cell) {
+            return cell.output_area.outputs.map(function (d) {
+                if (d.output_type === 'execute_result') {
+                    var metadata = d.metadata;
+                    if (metadata.output_tag) {
+                        return metadata.output_tag;
+                    }
+                }
+                return null;
+            }).filter(function (d) {
+                return d !== null
+            });
+        }
+        return [];
+    };
+
+    Notebook.prototype.get_output_tags = function(uids) {
+        var output_tags = {};
+        var that = this;
+        uids.forEach(function(uid) {
+            output_tags[uid] = that.get_cell_output_tags(uid);
+        });
+        return output_tags;
+    };
+
+    Notebook.prototype.get_auto_update_flags = function() {
+        return this.get_code_cells().map(
+            function(c) { return [c.uuid, c.metadata.auto_update]; });
+    };
+
+    Notebook.prototype.get_force_cached_flags = function() {
+        return this.get_code_cells().map(
+            function(c) { return [c.uuid, c.metadata.force_cached]; });
     };
 
     Notebook.prototype.has_id = function(id) {
@@ -120,7 +207,7 @@ define([
     Notebook.prototype.invalidate_cells = function() {
         this.get_cells().forEach(function (d) {
             if (d.cell_type == 'code') {
-                d.was_changed = true;
+                d.kernel_notified = true;
             }
         });
     };
@@ -130,6 +217,11 @@ define([
             return (d.cell_type == 'code' && d.uuid == uid);
         });
         return (retval.length > 0) ? retval[0] : null;
+    };
+
+    Notebook.prototype.get_code_cells = function() {
+        return this.get_cells().filter(
+            function(d) { return (d.cell_type === 'code'); });
     };
 
     Notebook.prototype.get_code_cell_index = function(uid) {
@@ -195,25 +287,45 @@ define([
     Notebook.prototype.remap_pasted_ids = function() {
         if (this.clipboard !== null && this.paste_enabled) {
             var remap = {};
+            var copy = $.extend(true, [], this.clipboard);
             var cell_data, i;
             // TODO make copy of the text on the clipboard?
             for (i = 0; i < this.clipboard.length; i++) {
                 cell_data = this.clipboard[i];
-                var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
-                    this.get_default_id_length());
-                if (this.has_id(uuid)) {
-                    // need new id
-                    var new_id = this.get_new_id();
-                    remap[uuid] = new_id;
-                    cell_data.execution_count = new_id;
-                    cell_data.outputs.forEach(function (out) {
-                        if (out.output_type === "execute_result") {
-                            out.execution_count = uuid;
+                if(cell_data.cell_type == 'code') {
+                    var uuid = dfutils.pad_str_left(cell_data.execution_count.toString(16),
+                        this.get_default_id_length());
+                    if (this.metadata.hl_list[uuid]) {
+                        var horizontal_line = this.metadata.hl_list[uuid];
+                        delete this.metadata.hl_list[uuid];
+                        var index = this.find_cell_index(horizontal_line);
+                        //remove the horizontal line
+                        var ce = this.get_cell_element(index);
+                        if (horizontal_line !== null && horizontal_line.element[0] === ce[0]) {
+                            ce.remove();
                         }
+                    }                    
+                    //FIXME: Will this cause issues with speed?
+                    this.undelete_backup_stack = this.undelete_backup_stack.map(
+                        function(stack){
+                        stack.cells = stack.cells.filter(
+                            function(cell){
+                                return cell.execution_count !== cell_data.execution_count;
+                            });
+                        return stack;
+                    }).filter(function(stack){
+                        return stack.cells.length > 0;
                     });
+                    if (this.get_cells().some(function (d) {return (d.uuid == uuid);}))
+                    {
+                        // need new id
+                        var new_id = this.get_new_id();
+                        remap[uuid] = new_id;
+                        cell_data.execution_count = new_id;
+                        cell_data.outputs = [];
+                    }
                 }
             }
-
             for (i = 0; i < this.clipboard.length; i++) {
                 cell_data = this.clipboard[i];
                 if (cell_data.source !== undefined) {
@@ -221,27 +333,147 @@ define([
                 }
             }
         }
+        if (this.undelete_backup_stack.length === 0) {
+                        $('#undelete_cell').addClass('disabled');
+        }
+        return copy;
     };
 
     (function(_super) {
         Notebook.prototype.paste_cell_above = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_above));
 
     (function(_super) {
         Notebook.prototype.paste_cell_below = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_below));
 
     (function(_super) {
         Notebook.prototype.paste_cell_replace = function () {
-            this.remap_pasted_ids();
+            var copy = this.remap_pasted_ids();
             _super.apply(this, arguments);
+            this.clipboard = copy;
         };
     }(Notebook.prototype.paste_cell_replace));
+
+    //undelete a cell if click on the horizontoal line
+    Notebook.prototype.undelete_selected_cell = function(uuid) {
+        var i ,j , cell_data, new_cell, insert;
+        insert = $.proxy(this.insert_cell_below, this);
+        for(i=0; i < this.undelete_backup_stack.length ; i++) {
+            for(j=0; j < this.undelete_backup_stack[i].cells.length ; j++) {
+                cell_data = this.undelete_backup_stack[i].cells[j];
+                if (cell_data.cell_type === 'code' && cell_data.execution_count.toString(16) == uuid) {
+                    //get the clicked horizontal_line
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    delete this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    //undelete the corresponding cell
+                    new_cell = insert(cell_data.cell_type, index);
+                    cell_data.metadata.cell_status = 'undelete-'+cell_data.metadata.cell_status;
+                    new_cell.fromJSON(cell_data);
+                    //remove the horizontal line
+                    var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
+                    if (horizontal_line.element[0] === ce[0]) {
+                        ce.remove();
+                    }
+                    this.undelete_backup_stack[i].cells.splice(j,1);
+                }
+            }
+        }
+        this.set_dirty(true);
+    };
+
+    (function(_super) {
+        Notebook.prototype.undelete_cell = function () {
+            var j = this.undelete_backup_stack.length - 1
+            var length = this.undelete_backup_stack[j].cells.length;
+            for(i=0; i<length ; i++) {
+                if (this.undelete_backup_stack[j].cells[i].cell_type === 'code') {var uuid = this.undelete_backup_stack[j].cells[i].execution_count.toString(16);
+                var cell_status = this.undelete_backup_stack[j].cells[i].metadata.cell_status;
+                    if(cell_status.indexOf('saved') === -1) {
+                        this.undelete_backup_stack[j].cells[i].metadata.cell_status = 'undelete-'+cell_status;
+                    }//remove the corresponding horizontal line if exist
+                if (this.metadata.hl_list[uuid]) {
+                    var horizontal_line = this.metadata.hl_list[uuid];
+                    var index = this.find_cell_index(horizontal_line);
+                    var ce = this.get_cell_element(index);
+                    this.session.dfgraph.depview.decorate_cell(uuid,'deleted-cell',false);
+                    if (horizontal_line.element[0] === ce[0]) {ce.remove();}
+                    delete this.metadata.hl_list[uuid];}
+                }
+            }
+            _super.apply(this, arguments);
+        };
+    }(Notebook.prototype.undelete_cell));
+
+    (function(_super) {
+        Notebook.prototype.merge_cells = function (indices,into_last) {
+            _super.apply(this,arguments);
+            // Check if trying to merge above on topmost cell or wrap around
+            // when merging above
+            if (indices.filter(function(item) {return item < 0;}).length > 0) {
+                return;
+            }
+            for (var i=0; i < indices.length; i++) {
+                var ce = this.get_cell_element(indices[i]);
+                if (ce[0].id && this.metadata.hl_list[ce[0].id]
+                    && ce[0] === this.metadata.hl_list[ce[0].id].element[0]) {
+                    ce.remove();
+                    this.metadata.hl_list[ce[0].id] = null;
+                }
+            }
+        };
+    }(Notebook.prototype.merge_cells));
+
+    /**
+     * Merge the selected cell into the cell below it.
+     */
+    Notebook.prototype.merge_cell_below = function () {
+        var index = this.get_selected_index();
+        this.merge_cells([index, index+1], true);
+    };
+
+    (function(_super) {
+        Notebook.prototype.to_markdown = function (index) {
+            var i = this.index_or_selected(index);
+            if (this.is_valid_cell_index(i)) {
+                var source_cell = this.get_cell(i);
+                if (!(source_cell instanceof textcell.MarkdownCell) && source_cell.is_editable()) {
+                    if (source_cell.cell_type === 'code') {
+                        this.metadata.hl_list[source_cell.uuid] = null;
+                        this.metadata.cell_status = 'new';
+                    }
+                }
+            }
+            _super.apply(this,arguments);
+        };
+    }(Notebook.prototype.to_markdown));
+
+    (function(_super) {
+        Notebook.prototype.to_raw = function (index) {
+            var i = this.index_or_selected(index);
+            if (this.is_valid_cell_index(i)) {
+                var source_cell = this.get_cell(i);
+                if (!(source_cell instanceof textcell.RawCell) && source_cell.is_editable()) {
+                    if (source_cell.cell_type === 'code') {
+                        this.metadata.hl_list[source_cell.uuid] = null;
+                        this.metadata.cell_status = 'new';
+                    }
+                }
+            }
+            _super.apply(this,arguments);
+        };
+    }(Notebook.prototype.to_raw));
+    
+    return {Notebook: Notebook};
 
 });

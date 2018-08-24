@@ -9,40 +9,76 @@ define([
     "use strict";
 
     var Completer = completer.Completer;
-    
+
+    var _existing_completion = function(item, completion_array){
+        for( var i=0; i < completion_array.length; i++) {
+            if (completion_array[i].trim().substr(-item.length) == item) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    Completer.prototype.add_underscores = function(cell_str, start, end) {
+        var piece = cell_str.slice(start, end);
+        var notebook = this.cell.notebook;
+        var retval = [];
+
+        if ('_'.repeat(notebook.session.last_executed_num).indexOf(piece) !== -1) {
+            return notebook.session.last_executed.slice(0,piece.length);
+        }
+        return retval;
+    };
+
+
     Completer.prototype.add_cell_ids = function(cell_str, start, end) {
         var piece = cell_str.slice(start, end);
-        console.log('SEARCHING FOR "' + piece + '"', this.cell.notebook);
         // take the notebook and lookup starts of uuids
         // add Out['[cell_id]'] to completions list
+        var notebook = this.cell.notebook;
+        var retval = [];
+
+        if (piece == '') {
+            return retval;
+        }
+
+        // be slow here
+        retval = notebook.get_cells()
+            .filter(function (d) {
+                return (d.cell_type == 'code' && d.uuid.startsWith(piece) && !notebook.get_code_cell(d.uuid).had_error); })
+            .map(function(d) { return d.uuid; });
+        return retval;
+    };
+
+    Completer.prototype.find_output_tags = function(cell_str, start, end) {
+        var piece = cell_str.slice(start, end);
+
         var notebook = this.cell.notebook;
 
         if (piece == '') {
             return [];
         }
 
-        if (piece.startsWith('_')) {
-            var retval = [];
-            if (((piece == '_') || (piece == '__') || (piece == '___')) && notebook.session.last_executed_iii) {
-                retval.push(notebook.session.last_executed_iii)
-            }
-            if (((piece == '_') || (piece == '__')) && notebook.session.last_executed_ii) {
-                retval.push(notebook.session.last_executed_ii)
-            }
-            if (((piece == '_')) && notebook.session.last_executed_i) {
-                retval.push(notebook.session.last_executed_i);
-            }
-
-            return retval;
-        }
-
-        // be slow here
         var retval = notebook.get_cells()
-            .filter(function (d) {
-                return (d.cell_type == 'code' && d.uuid.startsWith(piece)); })
-            .map(function(d) { return d.uuid; });
+            .reduce(function(a, b) {
+                if (b.cell_type == 'code') {
+                    return a.concat(b.output_area.outputs.filter(function(d) {
+                        // console.log("OUT:", d);
+                        return (d.output_type == 'execute_result' &&
+                        d.metadata.output_tag &&
+                        d.metadata.output_tag.startsWith(piece));
+                    }).map(function (d) {
+                        return {
+                            cell_id: b.uuid,
+                            output_tag: d.metadata.output_tag
+                        };
+                    }));
+                } else {
+                    return a;
+                }
+            }, []);
         return retval;
-    }
+    };
 
     Completer.prototype.finish_completing = function (msg) {
         /**
@@ -100,11 +136,40 @@ define([
             });
         }
 
+        // if we have no results, the experimental completer sends back start = end
+        if (start === end) {
+            var token = this.editor.getTokenAt(from);
+            start = token.start;
+            end = token.end;
+            from = this.editor.posFromIndex(token.start);
+            to = this.editor.posFromIndex(token.end);
+        }
+
+        var underscore_matches = this.add_underscores(this.editor.getValue(), start, end);
+        underscore_matches.forEach(function(obj) {
+           filtered_results.unshift({
+               str: obj,
+               type: "underscore",
+               from: from,
+               to: to
+           });
+        });
+
         var cell_matches = this.add_cell_ids(this.editor.getValue(), start, end);
         cell_matches.forEach(function(cid) {
             filtered_results.unshift({
                 str: "Out[" + cid + "]",
                 type: "cell_id",
+                from: from,
+                to: to
+            });
+        });
+
+        var tag_matches = this.find_output_tags(this.editor.getValue(), start, end);
+        tag_matches.forEach(function(obj) {
+            filtered_results.unshift({
+                str: obj.output_tag,
+                type: "output_tag",
                 from: from,
                 to: to
             });
@@ -191,4 +256,5 @@ define([
         return true;
     };
 
-})
+    return {Completer: Completer};
+});

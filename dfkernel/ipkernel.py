@@ -52,19 +52,18 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         stop_on_error = content.get('stop_on_error', True)
 
-        # grab and remove uuid from user_expressions
+        # grab and remove dfkernel_data from user_expressions
         # there just for convenience of not modifying the msg protocol
-        uuid = user_expressions.pop('__uuid__', None)
-        code_dict = user_expressions.pop('__code_dict__', dict())
+        dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
 
         self._outer_stream = stream
         self._outer_ident = ident
         self._outer_parent = parent
         self._outer_stop_on_error = stop_on_error
         self._outer_allow_stdin = allow_stdin
-        self._outer_code_dict = code_dict # stash since will be global
+        self._outer_dfkernel_data = dfkernel_data
 
-        self.inner_execute_request(code, uuid, silent,
+        self.inner_execute_request(code, dfkernel_data.get('uuid'), silent,
                                    store_history, user_expressions)
 
         self._outer_stream = None
@@ -72,7 +71,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_parent = None
         self._outer_stop_on_error = None
         self._outer_allow_stdin = None
-        self._outer_code_dict = None
+        self._outer_dfkernel_data = None
 
     def inner_execute_request(self, code, uuid, silent,
                               store_history=True, user_expressions=None):
@@ -82,7 +81,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         parent = self._outer_parent
         stop_on_error = self._outer_stop_on_error
         allow_stdin = self._outer_allow_stdin
-        code_dict = self._outer_code_dict
+        dfkernel_data = self._outer_dfkernel_data
 
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
@@ -90,7 +89,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if not silent:
             self._publish_execute_input(code, parent, uuid)
 
-        reply_content, res = self.do_execute(code, uuid, code_dict, silent, store_history,
+        reply_content, res = self.do_execute(code, uuid, dfkernel_data, silent, store_history,
                                         user_expressions, allow_stdin)
 
         # Flush output before sending the reply.
@@ -117,7 +116,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return res
 
-    def do_execute(self, code, uuid, code_dict, silent, store_history=True,
+    def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         shell = self.shell # we'll need this a lot here
 
@@ -127,7 +126,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         res = None
         try:
-            res = shell.run_cell(code, uuid=uuid, code_dict=code_dict,
+            res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
                                  store_history=store_history, silent=silent)
         finally:
             self._restore_input()
@@ -137,13 +136,21 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         else:
             err = res.error_in_exec
 
+        reply_content[u'deleted_cells'] = res.deleted_cells
+
         if res.success:
             print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
             reply_content[u'status'] = u'ok'
+            reply_content[u'nodes'] = res.nodes
+            reply_content[u'links'] = res.links
+            reply_content[u'cells'] = res.cells
+
             reply_content[u'upstream_deps'] = res.all_upstream_deps
             reply_content[u'downstream_deps'] = res.all_downstream_deps
             reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
             reply_content[u'imm_downstream_deps'] = res.imm_downstream_deps
+            reply_content[u'update_downstreams'] = res.update_downstreams
+            reply_content[u'internal_nodes'] = res.internal_nodes
         else:
             reply_content[u'status'] = u'error'
 
@@ -185,6 +192,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         shell.payload_manager.clear_payload()
 
         return reply_content, res
+
 
 # This exists only for backwards compatibility - use IPythonKernel instead
 class Kernel(IPythonKernel):
