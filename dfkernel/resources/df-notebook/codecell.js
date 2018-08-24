@@ -368,17 +368,7 @@ define([
                 }
             });
             //set correct cell_status for saved codecell
-            if (data.cell_type === 'code') {
-                if(data.metadata.cell_status == 'success') {
-                    data.metadata.cell_status = "saved-success-first-load";
-                } else if(data.metadata.cell_status == 'error') {
-                    data.metadata.cell_status = "saved-error-first-load";
-                } else if(data.metadata.cell_status == 'edited-success') {
-                    data.metadata.cell_status = 'edited-saved-success'
-                } else if(data.metadata.cell_status == 'edited-error') {
-                    data.metadata.cell_status = 'edited-saved-error';
-                }
-            }
+            data = Jupyter.notebook.to_saved_cell_status(data,false);
             return data;
         }
     }(CodeCell.prototype.toJSON));
