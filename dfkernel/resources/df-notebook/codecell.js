@@ -127,16 +127,20 @@ define([
             //add event to be notified when cell is deleted
             that.events.on('delete.Cell', function(event,data) {
                 if (data['cell'] === that) {
-                    var horizontal_line = nb.insert_cell_above("raw",data['index']);
-                    horizontal_line.inner_cell.height(1).css("backgroundColor","red");
-                    horizontal_line.inner_cell[0].childNodes[1].remove();
-                    horizontal_line.metadata.deletable = false;
-                    horizontal_line.celltoolbar.element.remove();
-                    //add the horizontal line into hl_list for undeletion
-                    nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
-                    //undeleted the cell once the corresponding red line is clicked
-                    $(horizontal_line.inner_cell).parent().attr('id',data['cell'].uuid).click(function(event) {
-                        Jupyter.notebook.undelete_selected_cell(data['cell'].uuid);
+                    that.dfgraph.get_cells().forEach(function (d) {
+                        if (d === data['cell'].uuid) {
+                            var horizontal_line = nb.insert_cell_above("raw",data['index']);
+                            horizontal_line.inner_cell.height(1).css("backgroundColor","red");
+                            horizontal_line.inner_cell[0].childNodes[1].remove();
+                            horizontal_line.metadata.deletable = false;
+                            horizontal_line.celltoolbar.element.remove();
+                            //add the horizontal line into hl_list for undeletion
+                            nb.metadata.hl_list[data['cell'].uuid] = horizontal_line;
+                            //undeleted the cell once the corresponding red line is clicked
+                            $(horizontal_line.inner_cell).parent().attr('id',data['cell'].uuid).click(function(event) {
+                                Jupyter.notebook.undelete_selected_cell(data['cell'].uuid);
+                            });
+                        }
                     });
                 }
             });
