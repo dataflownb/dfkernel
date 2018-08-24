@@ -1,0 +1,3 @@
+div.nbinput div.prompt, div.nboutput div.prompt{
+    min-width: 11ex !important;
+}

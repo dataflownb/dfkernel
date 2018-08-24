@@ -17,8 +17,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import requests
+import json
 # sys.path.insert(0, os.path.abspath('.'))
 
 
@@ -31,7 +32,38 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = [
+    'nbsphinx',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon'
+]
+
+def setup(app):
+    app.add_stylesheet('extra.css')
+
+#Credits to Parsl documentation for the idea to use requests to grab notebooks for the tutorial
+#https://github.com/Parsl/parsl/blob/master/docs/conf.py
+tutorials = ['dependency-cell-toolbar','dep-view-tutorial','dfkernel-statuses','dfkernel-tutorial','notebook-interactions']
+extension = '.ipynb'
+for tutorial in tutorials:
+    url = 'https://rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/'+tutorial+extension
+    r = requests.get(url)
+    reply = r.json()
+    for cell in reply['cells']:
+        if cell['cell_type'] == 'code':
+            cell['execution_count'] = hex(cell['execution_count'])[2:]
+            for out in cell['outputs']:
+                if 'metadata' in out and 'output_tag' in out['metadata']:
+                    out['execution_count'] = out['metadata']['output_tag']
+                elif 'execution_count' in out:
+                    out['execution_count'] = 'Out[' + (hex(out['execution_count']))[2:] +']'
+    with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'w') as f:
+        json.dump(reply,f)
+
+nbsphinx_execute = 'never'
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['ntemplates']
@@ -46,9 +78,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'dfpy_kernel'
-copyright = '2017, Colin Brown'
-author = 'Colin Brown'
+project = 'Dataflow Kernel'
+copyright = '2018, Dataflow Kernel Developers'
+author = 'Dataflow Kernel Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -83,7 +115,8 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+#html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -128,7 +161,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'dfpy_kernel.tex', 'dfpy\\_kernel Documentation',
-     'Colin Brown', 'manual'),
+     'Dataflow Kernel Developers', 'manual'),
 ]
 
 
