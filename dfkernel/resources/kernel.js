@@ -79,7 +79,7 @@ define(["jquery",
                                 // want to do downstream execution only
                                 Jupyter.notebook.session.dfgraph.get_downstreams(cell.uuid).forEach(function(cid) {
                                     // console.log("DOWNSTREAM", cid);
-                                    if (Jupyter.notebook.get_code_cell(cid).auto_update) {
+                                    if (Jupyter.notebook.get_code_cell(cid).metadata.auto_update) {
                                         Jupyter.notebook.get_code_cell(cid).execute();
                                     }
                                 });
