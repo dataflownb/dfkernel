@@ -4,9 +4,9 @@ dependencies:
   - python==3.5
   - sphinx>=1.4
   - pandoc
-  - nbconvert
-  - ipykernel
   - pip:
     - requests
     - git+https://github.com/colinjbrown/nbsphinx.git@master
     - git+https://github.com/colinjbrown/nbformat.git@master
+  - nbconvert
+  - ipykernel
