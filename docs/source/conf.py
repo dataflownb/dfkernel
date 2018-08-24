@@ -19,7 +19,7 @@
 #
 import os
 import requests
-#import json
+import json
 # sys.path.insert(0, os.path.abspath('.'))
 
 
@@ -50,21 +50,17 @@ extension = '.ipynb'
 for tutorial in tutorials:
     url = 'https://rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/'+tutorial+extension
     r = requests.get(url)
-    with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'wb') as f:
-        f.write(r.content)
-
-# for tutorial in tutorials:
-#     url = 'https://rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/'+tutorial+extension
-#     r = requests.get(url)
-#     reply = r.json()
-#     for cell in reply['cells']:
-#         if cell['cell_type'] == 'code':
-#             cell['execution_count'] = hex(cell['execution_count'])[2:]
-#             for out in cell['outputs']:
-#                 if 'metadata' in out and 'output_tag' in out['metadata']:
-#                     out['execution_count'] = out['metadata']['output_tag']
-#     with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'w') as f:
-#         json.dump(reply,f)
+    reply = r.json()
+    for cell in reply['cells']:
+        if cell['cell_type'] == 'code':
+            cell['execution_count'] = hex(cell['execution_count'])[2:]
+            for out in cell['outputs']:
+                if 'metadata' in out and 'output_tag' in out['metadata']:
+                    out['execution_count'] = out['metadata']['output_tag']
+                elif 'execution_count' in out:
+                    out['execution_count'] = 'Out[' + (hex(out['execution_count']))[2:] +']'
+    with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'w') as f:
+        json.dump(reply,f)
 
 nbsphinx_execute = 'never'
 
