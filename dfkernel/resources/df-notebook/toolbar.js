@@ -5,9 +5,8 @@ define([
     'jquery',
     'require',
     'notebook/js/celltoolbar',
-    'base/js/dialog',
-    'base/js/i18n'
-], function($, require, celltoolbar, dialog, i18n) {
+    'base/js/dialog'
+], function($, require, celltoolbar, dialog) {
     "use strict";
 
     var CellToolbar = celltoolbar.CellToolbar;
@@ -137,7 +136,7 @@ define([
 
     var register = function (notebook) {
         CellToolbar.register_callback('dfkernel.deps', setup_toolbar);
-        CellToolbar.register_preset(i18n.msg._('Dataflow'), ['dfkernel.deps'], notebook);
+        CellToolbar.register_preset('Dataflow', ['dfkernel.deps'], notebook);
     };
     return {'register': register};
 });
