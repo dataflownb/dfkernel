@@ -76,6 +76,9 @@ define([
                 var revert_status_for_unedited_cell = {};
                 Object.keys(change_status_for_edited_cell).forEach(
                     function(k) {
+                        if(k === 'saved-success-first-load' || k === 'saved-error-first-load') {
+                            return;
+                        }
                         var v = change_status_for_edited_cell[k];
                         revert_status_for_unedited_cell[v] = k;
                     });
