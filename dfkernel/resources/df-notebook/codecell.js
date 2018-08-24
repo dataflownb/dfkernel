@@ -191,8 +191,8 @@ define([
 
         var callbacks = this.get_callbacks();
 
-        var code_dict = this.notebook.get_code_dict()
-        this.code_cached = code_dict[this.uuid];
+        var code_dict = this.notebook.get_code_dict();
+        this.code_cached = this.get_text();
         var dfkernel_data = {"uuid": this.uuid,
             "code_dict": code_dict,
             "output_tags": this.notebook.get_output_tags(Object.keys(code_dict)),
