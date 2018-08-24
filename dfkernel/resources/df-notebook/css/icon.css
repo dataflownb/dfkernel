@@ -2,7 +2,7 @@ div.icon_status {
     display: inline-block;
     cursor: auto;
     color: #333;
-    padding-left: 1px;
+    padding-left: 4px;
     padding-right: 1px;
     padding-top: 0.4ex;
     width : 1em;
@@ -69,12 +69,12 @@ div.prompt_container {
 
 div.code_cell div.input_prompt {
     min-width: 17ex;
-    width: 8vw;
+    width: 9vw;
 }
 
 div.output_prompt {
     min-width : 17ex;
-    width: 8vw;
+    width: 9vw;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -86,5 +86,9 @@ div.out_prompt_overlay {
 
 div.output_area div.prompt {
     min-width: 17ex;
-    width: 8vw;
+    width: 9vw;
+}
+
+.run_this_cell {
+    display: none;
 }
