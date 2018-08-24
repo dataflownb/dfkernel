@@ -1,4 +1,4 @@
-# [Dataflow Python Kernel for the Jupyter Notebook](http://dfkernel.github.io/dfkernel/)
+# [Dataflow Python Kernel for the Jupyter Notebook](http://github.com/dataflownb/dfkernel/)
 
 [![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfkernel/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/dfkernel.svg)](https://badge.fury.io/py/dfkernel)
@@ -35,7 +35,7 @@ In [c1428f]: c = a+3
 
 We also provide a graph that is updated in real time to show these kind of relationships.
 
-![Dataflow Notebook Video](https://cdn.rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/img/stage2.svg)
+![Dataflow Kernel Graph](https://cdn.rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/img/stage2.svg)
 
 ## Requirements
 
