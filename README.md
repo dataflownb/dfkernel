@@ -77,7 +77,7 @@ A basic tutorial can be found [here](http://dfkernel.readthedocs.io/en/stable/df
 ## Video
 This is a video of the previous version of the [Dataflow Kernel](http://www.youtube.com/watch?v=lAfywCbp7qU)
 
-## Return to the Vanilla Notebook
+## Return to the Standard IPython Notebook
 
 This tool relies on RedBaron to topologically sort your Notebooks so that they are topologically sorted so you can easily switch back and forth from an Ipykernel Notebook to a Dfkernel Notebook.
 
