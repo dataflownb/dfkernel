@@ -387,7 +387,9 @@ define([
                 "edited-saved-success" : ["edited-saved-success df-unverified", "Edited saved success"],
                 "executing" : ["executing df-unverified", "Executing"],
                 "saved-error" : ["saved-error df-unverified", "Saved error"],
-                "edited-saved-error" : ["edited-saved-error df-unverified", "Edited saved error"]
+                "edited-saved-error" : ["edited-saved-error df-unverified", "Edited saved error"],
+                "saved-success-first-load" : ["saved-success df-unverified", "Saved success"],
+                "saved-error-first-load" : ["saved-error df-unverified", "Saved error"]
             };
 
         this.metadata.cell_status = cell_status;
