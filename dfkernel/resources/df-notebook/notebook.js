@@ -502,7 +502,7 @@ define([
             });
         //set correct cell_status for saved codecell
         if (cell_data.cell_type === 'code') {
-            if (reverse === false && cell_data.metadata.cell_status in status_to_saved_map) ) {
+            if (reverse === false && cell_data.metadata.cell_status in status_to_saved_map) {
                 cell_data.metadata.cell_status = status_to_saved_map[cell_data.metadata.cell_status];
             }
             else if (reverse === true && cell_data.metadata.cell_status in revert_status_to_saved_map) {
