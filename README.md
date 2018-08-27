@@ -35,7 +35,7 @@ In [c1428f]: c = a+3
 
 We also provide a graph that is updated in real time to show these kind of relationships.
 
-![Dataflow Kernel Graph](https://cdn.rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/img/stage2.svg)
+![Dataflow Kernel Graph](https://cdn.rawgit.com/dataflownb/dfkernel/documentation-update/docs/tutorial/img/stage2.svg)
 
 ## Requirements
 
@@ -61,18 +61,18 @@ Ipykernel >= 4.8.2
 Note that `--sys-prefix` works best for conda environments.
 
 ## Documentation
-The Dataflow kernel documentation is hosted [here](http://dfkernel.readthedocs.io/en/stable/).
+The Dataflow kernel documentation is hosted [here](http://dfkernel.readthedocs.io/en/latest/).
 
-A basic tutorial can be found [here](http://dfkernel.readthedocs.io/en/stable/dfkernel-tutorial.html)
+A basic tutorial can be found [here](http://dfkernel.readthedocs.io/en/latest/dfkernel-tutorial.html)
 
 #### More advanced tutorials
-[Dependency Viewer Tutorial](http://dfkernel.readthedocs.io/en/stable/dep-view-tutorial.html)
+[Dependency Viewer Tutorial](http://dfkernel.readthedocs.io/en/latest/dep-view-tutorial.html)
 
-[Dependency Workings and Cell Toolbar](http://dfkernel.readthedocs.io/en/stable/dependency-cell-toolbar.html)
+[Dependency Workings and Cell Toolbar](http://dfkernel.readthedocs.io/en/latest/dependency-cell-toolbar.html)
 
-[Notebook Interactions](http://dfkernel.readthedocs.io/en/stable/notebook-interactions.html)
+[Notebook Interactions](http://dfkernel.readthedocs.io/en/latest/notebook-interactions.html)
 
-[Cell Statuses](http://dfkernel.readthedocs.io/en/stable/dfkernel-statuses.html)
+[Cell Statuses](http://dfkernel.readthedocs.io/en/latest/dfkernel-statuses.html)
 
 ## Video
 This is a video of the previous version of the [Dataflow Kernel](http://www.youtube.com/watch?v=lAfywCbp7qU)
