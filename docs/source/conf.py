@@ -56,7 +56,10 @@ for tutorial in tutorials:
             cell['execution_count'] = hex(cell['execution_count'])[2:]
             for out in cell['outputs']:
                 if 'metadata' in out and 'output_tag' in out['metadata']:
-                    out['execution_count'] = out['metadata']['output_tag']
+                    if out['metadata']['output_tag'][:6] == cell['execution_count']:
+                        out['execution_count'] = 'Out['+cell['execution_count']+']['+out['metadata']['output_tag'][7:]+']'
+                    else:
+                        out['execution_count'] = out['metadata']['output_tag']
                 elif 'execution_count' in out:
                     out['execution_count'] = 'Out[' + (hex(out['execution_count']))[2:] +']'
     with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'w') as f:
