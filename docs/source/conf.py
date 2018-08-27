@@ -41,7 +41,7 @@ extensions = [
 ]
 
 def setup(app):
-    app.add_stylesheet('extra.css')
+    app.add_stylesheet('css/extra.css')
 
 #Credits to Parsl documentation for the idea to use requests to grab notebooks for the tutorial
 #https://github.com/Parsl/parsl/blob/master/docs/conf.py
@@ -56,7 +56,10 @@ for tutorial in tutorials:
             cell['execution_count'] = hex(cell['execution_count'])[2:]
             for out in cell['outputs']:
                 if 'metadata' in out and 'output_tag' in out['metadata']:
-                    out['execution_count'] = out['metadata']['output_tag']
+                    if out['metadata']['output_tag'][:6] == cell['execution_count']:
+                        out['execution_count'] = 'Out['+cell['execution_count']+']['+out['metadata']['output_tag'][6:]+']'
+                    else:
+                        out['execution_count'] = out['metadata']['output_tag']
                 elif 'execution_count' in out:
                     out['execution_count'] = 'Out[' + (hex(out['execution_count']))[2:] +']'
     with open(os.path.join(os.path.dirname(__file__), tutorial+extension), 'w') as f:
@@ -66,7 +69,7 @@ nbsphinx_execute = 'never'
 
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['ntemplates']
+templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -127,7 +130,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['nstatic']
+html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------
