@@ -6,7 +6,6 @@ dependencies:
   - pandoc
   - pip:
     - requests
-    - git+https://github.com/colinjbrown/nbsphinx.git@master
     - git+https://github.com/colinjbrown/nbformat.git@master
-    - nbconvert
+    - git+https://github.com/colinjbrown/nbsphinx.git@master
   - ipykernel
