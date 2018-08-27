@@ -57,7 +57,7 @@ for tutorial in tutorials:
             for out in cell['outputs']:
                 if 'metadata' in out and 'output_tag' in out['metadata']:
                     if out['metadata']['output_tag'][:6] == cell['execution_count']:
-                        out['execution_count'] = 'Out['+cell['execution_count']+']['+out['metadata']['output_tag'][7:]+']'
+                        out['execution_count'] = 'Out['+cell['execution_count']+']['+out['metadata']['output_tag'][6:]+']'
                     else:
                         out['execution_count'] = out['metadata']['output_tag']
                 elif 'execution_count' in out:
