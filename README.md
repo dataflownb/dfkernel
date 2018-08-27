@@ -35,7 +35,7 @@ In [c1428f]: c = a+3
 
 We also provide a graph that is updated in real time to show these kind of relationships.
 
-![Dataflow Kernel Graph](https://cdn.rawgit.com/dataflownb/dfkernel/documentation-update/docs/tutorial/img/stage2.svg)
+![Dataflow Kernel Graph](https://cdn.rawgit.com/dataflownb/dfkernel/33b804a9/docs/tutorial/img/stage2.svg)
 
 ## Requirements
 
