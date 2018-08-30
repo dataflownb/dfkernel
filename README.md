@@ -3,7 +3,8 @@
 [![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfkernel/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/dfkernel.svg)](https://badge.fury.io/py/dfkernel)
 [![Build Status](https://travis-ci.com/colinjbrown/dfkernel.svg?branch=master)](https://travis-ci.org/colinjbrown/dfkernel)
-[![Documentation Status](https://readthedocs.org/projects/dfkernel/badge/?version=stable)](http://dfkernel.readthedocs.io/en/stable/?badge=stable)
+[![Documentation Status](https://readthedocs.org/projects/dfkernel/badge)](http://dfkernel.readthedocs.io/)
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/dataflownb/dfexamples/master)
 
 This package provides the Dataflow Python kernel for Jupyter. 
 This kernel modifies underlying Ipykernel and Jupyter Notebook classes with these intentions in mind: 
@@ -36,6 +37,8 @@ In [c1428f]: c = a+3
 We also provide a graph that is updated in real time to show these kind of relationships.
 
 ![Dataflow Kernel Graph](https://cdn.rawgit.com/dataflownb/dfkernel/33b804a9/docs/tutorial/img/stage2.svg)
+
+
 
 ## Requirements
 
