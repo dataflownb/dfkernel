@@ -48,7 +48,7 @@ def setup(app):
 tutorials = ['dependency-cell-toolbar','dep-view-tutorial','dfkernel-statuses','dfkernel-tutorial','notebook-interactions']
 extension = '.ipynb'
 for tutorial in tutorials:
-    url = 'https://rawgit.com/colinjbrown/dfkernel/documentation-update/docs/tutorial/'+tutorial+extension
+    url = 'https://rawgit.com/dataflownb/dfexamples/master/tutorial/'+tutorial+extension
     r = requests.get(url)
     reply = r.json()
     for cell in reply['cells']:
