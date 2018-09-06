@@ -473,6 +473,30 @@ define([
             _super.apply(this,arguments);
         };
     }(Notebook.prototype.to_raw));
+
+    (function(_super) {
+        Notebook.prototype.toJSON = function () {
+            var data = _super.call(this);
+            for(var i=0; i<data.cells.length; i++) {
+                //if there are red bars, remove them
+                if (data.cells[i].cell_type === 'raw' && data.metadata.hl_list
+                    && Object.keys(data.metadata.hl_list).length !== 0) {
+                    for(var cell_uuid in data.metadata.hl_list) {
+                        if (data.metadata.hl_list.hasOwnProperty(cell_uuid))  {
+                            var horizontal_line = this.metadata.hl_list[cell_uuid];
+                            if(horizontal_line !== null) {
+                                var index = this.find_cell_index(horizontal_line);
+                                if ( i === index ) {
+                                    data.cells.splice(i,1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return data;
+        };
+    }(Notebook.prototype.toJSON));
     
     return {Notebook: Notebook};
 
