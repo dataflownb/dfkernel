@@ -68,7 +68,7 @@ setup_args = dict(
     platforms       = "Linux, Mac OS X, Windows",
     keywords        = ['Dataflow', 'Interactive', 'Interpreter', 'Shell', 'Web'],
     classifiers     = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
@@ -82,7 +82,7 @@ if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv):
 
 setuptools_args = {}
 install_requires = setuptools_args['install_requires'] = [
-    'ipython>=6.3.0',
+    'ipython>=6.3.0,<7.0.0',
     'traitlets>=4.1.0',
     'jupyter_client',
     'tornado>=4.0',
@@ -99,10 +99,18 @@ if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):
         shutil.rmtree(dest)
     write_kernel_spec(dest, overrides={'argv': argv})
 
-    setup_args['data_files'] = [
-        (pjoin('share', 'jupyter', 'kernels', KERNEL_NAME), [f for f in glob(pjoin(dest, '*')) if not os.path.isdir(f)]),
-        (pjoin('share', 'jupyter', 'kernels', KERNEL_NAME, 'df-notebook'), glob(pjoin(dest, 'df-notebook', '*'))),
-    ]
+    setup_args['data_files'] = []
+    for root, dir, files in os.walk(dest):
+        sub_files = []
+        subpath = ''
+        #Create path objects for each subdirectory
+        for subitem in root.replace(dest, '').split('/')[1:]:
+            subpath = pjoin(subpath,subitem)
+        main_path = pjoin('share','jupyter','kernels',KERNEL_NAME,subpath)
+        for file in files:
+            sub_files.append((pjoin(dest, subpath,file)))
+        if sub_files:
+            setup_args['data_files'].append((main_path,sub_files))
 
 extras_require = setuptools_args['extras_require'] = {
     'test': ['nose_warnings_filters', 'nose-timer'],
