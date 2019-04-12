@@ -65,6 +65,24 @@ define(["jquery",
                 Jupyter._dfkernel_loaded = true;
             });
 
+            nb.events.on('kernel_restarting.Kernel', function(event, data) {
+                nb.get_cells().forEach(function (d) {
+                    //FIXME: Rewrite this block in codecell too
+                    if (d.cell_type === 'code') {
+                        if (d.metadata.cell_status == 'success') {
+                            d.set_icon_status('saved-success');
+                        } else if (d.metadata.cell_status == 'error') {
+                            d.set_icon_status('saved-error');
+                        } else if (d.metadata.cell_status == 'edited-success') {
+                            d.set_icon_status('edited-saved-success');
+                        } else if (d.metadata.cell_status == 'edited-error') {
+                            d.set_icon_status('edited-saved-error');
+                        }
+                    }
+
+                });
+            });
+
             Jupyter.toolbar.add_buttons_group([
                   {
                        'label'   : 'Dependency Viewer',

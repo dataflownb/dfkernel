@@ -473,29 +473,7 @@ define([
             _super.apply(this,arguments);
         };
     }(Notebook.prototype.to_raw));
-   
-     (function(_super) {
-        Notebook.prototype._restart_kernel = function (options) {
-            promise = _super.call(this, options);
-            this.get_cells().forEach(function (d) {
-                //FIXME: Rewrite this block in codecell too
-                //Use code from codecell instead
-                if (d.cell_type === 'code') {
-                    if(d.metadata.cell_status == 'success') {
-                        d.metadata.cell_status = "saved-success-first-load";
-                    } else if(d.metadata.cell_status == 'error') {
-                        d.metadata.cell_status = "saved-error-first-load";
-                    } else if(d.metadata.cell_status == 'edited-success') {
-                        d.metadata.cell_status = 'edited-saved-success'
-                    } else if(d.metadata.cell_status == 'edited-error') {
-                        d.metadata.cell_status = 'edited-saved-error';
-                    }
-                }
-            });
-            return promise;
-        };
-    }(Notebook.prototype._restart_kernel));
-    
+
     return {Notebook: Notebook};
 
 });
