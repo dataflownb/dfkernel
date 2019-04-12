@@ -473,7 +473,7 @@ define([
             _super.apply(this,arguments);
         };
     }(Notebook.prototype.to_raw));
-    
+
     return {Notebook: Notebook};
 
 });
