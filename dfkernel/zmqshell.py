@@ -448,7 +448,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             store_history = False
 
         if store_history:
-            result.execution_count = uuid
+            # result.execution_count = uuid
+            result.execution_count = int(uuid, 16)
 
         def error_before_exec(value):
             result.error_before_exec = value

@@ -21,8 +21,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     def __init__(self, **kwargs):
         super(IPythonKernel, self).__init__(**kwargs)
-        self.shell.displayhook.get_execution_count = lambda: self.execution_count
-        self.shell.display_pub.get_execution_count = lambda: self.execution_count
+        self.shell.displayhook.get_execution_count = lambda: int(self.execution_count, 16)
+        self.shell.display_pub.get_execution_count = lambda: int(self.execution_count, 16)
 
     @property
     def execution_count(self):
@@ -87,7 +87,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         metadata = self.init_metadata(parent)
 
         if not silent:
-            self._publish_execute_input(code, parent, uuid)
+            self._publish_execute_input(code, parent, int(uuid, 16))
 
         reply_content, res = self.do_execute(code, uuid, dfkernel_data, silent, store_history,
                                         user_expressions, allow_stdin)
@@ -167,7 +167,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
 
         # Return the execution counter so clients can display prompts
-        reply_content['execution_count'] = uuid
+        reply_content['execution_count'] = int(uuid, 16)
         # reply_content['execution_count'] = shell.execution_count - 1
 
         if 'traceback' in reply_content:
