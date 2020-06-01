@@ -1,3 +1,3 @@
 if __name__ == '__main__':
-    from dfkernel import kernelapp as app
+    from . import kernelapp as app
     app.launch_new_instance()

@@ -1,6 +1,6 @@
 from collections import defaultdict, namedtuple
 from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
-from dfkernel.dflink import LinkedResult
+from .dflink import LinkedResult
 import itertools
 
 class DataflowCacheException(Exception):

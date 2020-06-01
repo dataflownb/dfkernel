@@ -55,6 +55,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # grab and remove dfkernel_data from user_expressions
         # there just for convenience of not modifying the msg protocol
         dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
+        print("DF KERNEL DATA:", dfkernel_data)
 
         self._outer_stream = stream
         self._outer_ident = ident
@@ -118,6 +119,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
+        print("DO EXECUTE:", uuid, dfkernel_data)
+        import sys
+        sys.stdout.flush()
+        sys.stderr.write("GOT HERE" + str(uuid) + str(dfkernel_data))
+        sys.stderr.flush()
         shell = self.shell # we'll need this a lot here
 
         self._forward_input(allow_stdin)

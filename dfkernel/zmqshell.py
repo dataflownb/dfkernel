@@ -8,7 +8,9 @@ import ipykernel.zmqshell
 
 import ast
 import collections
+from functools import partial
 import sys
+import types
 
 from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC, \
@@ -33,9 +35,9 @@ from typing import List as ListType
 from ast import AST
 import importlib
 
-from dfkernel.dataflow import DataflowHistoryManager, DataflowFunctionManager, \
+from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
     DataflowNamespace, DataflowCellException, DuplicateNameError
-from dfkernel.dflink import build_linked_result
+from .dflink import build_linked_result
 
 #-----------------------------------------------------------------------------
 # Functions and classes
@@ -180,7 +182,12 @@ class OutputMagics(Magics):
         else:
             mode = 'exec'
             source = '<display exec>'
+        import sys
+        sys.stdout.write("COMPILE CALLED\n")
+        sys.stdout.flush()
         code = self.shell.compile(expr_ast, source, mode)
+        sys.stdout.write("COMPILE DONE\n")
+        sys.stdout.flush()
 
         glob = self.shell.user_ns
         if mode=='eval':
@@ -305,7 +312,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     execution_count = Integer(0)
     # UUID passed from notebook interface
-    uuid = Unicode()
+    uuid = Unicode(allow_none=True)
     dataflow_history_manager = Instance(DataflowHistoryManager)
     dataflow_function_manager = Instance(DataflowFunctionManager)
 
@@ -313,6 +320,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         if 'user_ns' not in kwargs or kwargs['user_ns'] is None:
             kwargs['user_ns'] = DataflowNamespace()
         super().__init__(*args, **kwargs)
+
+        # stacks to deal with recursion
+        # may need to reset these at higher level...
+        self.uuid_stack = [None]
+        self.result_stack = [None]
+
         #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
@@ -376,32 +389,24 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             sys.stderr.flush()
         return proposal['value']
 
+    def push_uuid_stack(self, uuid):
+        self.uuid_stack.append(uuid)
+
+    def pop_uuid_stack(self):
+        self.uuid_stack.pop(-1)
+
     def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
-                     store_history=False, silent=False, shell_futures=True,
-                     update_downstream_deps=False):
-        """Run a complete IPython cell.
+                 store_history=False, silent=False, shell_futures=True):
+        # set partial on run_cell_async
+        print("GOT TO RUN CELL", uuid, dfkernel_data)
+        self.run_cell_async = partial(self.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
+        super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
 
-        Parameters
-        ----------
-        raw_cell : str
-          The code (including IPython code such as %magic functions) to run.
-        store_history : bool
-          If True, the raw and translated cell will be stored in IPython's
-          history. For user code calling back into IPython's machinery, this
-          should be set to False.
-        silent : bool
-          If True, avoid side-effects, such as implicit displayhooks and
-          and logging.  silent=True forces store_history=False.
-        shell_futures : bool
-          If True, the code will share future statements with the interactive
-          shell. It will both be affected by previous __future__ imports, and
-          any __future__ imports in the code will affect the shell. If False,
-          __future__ imports are not shared in either direction.
-
-        Returns
-        -------
-        result : :class:`ExecutionResult`
-        """
+    async def run_cell_async_override(self, raw_cell: str, store_history=False,
+                             silent=False, shell_futures=True, uuid=None,
+                             dfkernel_data={},
+                             update_downstream_deps=False) -> ExecutionResult:
+        print("GOT TO RUN CELL ASYNC", uuid, dfkernel_data)
 
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
@@ -432,162 +437,66 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 shell_futures=shell_futures,
                 update_downstream_deps=update_downstream_deps)
 
-        info = ExecutionInfo(
-            raw_cell, store_history, silent, shell_futures)
-        result = ExecutionResult(info)
-
-        result.deleted_cells = self.dataflow_history_manager.deleted_cells
+        result_deleted_cells = self.dataflow_history_manager.deleted_cells
         self.dataflow_history_manager.deleted_cells = []
 
+        # FIXME evaluate whether internalnodes is required for anything
+        # -- I don't think it is, only used in graph stuff -DK
+        #
+        # internalnodes = []
+        # for node in ast.walk(code_ast):
+        #     if (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)):
+        #         internalnodes.append(node.id)
 
-        if (not raw_cell) or raw_cell.isspace():
-            self.last_execution_succeeded = True
-            return result
+        # before run_ast_nodes runs, have some code to run, used to be in run_cell
+        # but should be able to live in run_ast_nodes...
+        # need to use a stack instead of the recursion...
 
-        if silent:
-            store_history = False
+        # BEFORE RUN_AST_NODES CODE
+        # # displayhook exec_result changed to reflect recursion
+        # old_result = self.displayhook.exec_result
+        # self.displayhook.exec_result = result
+        # old_uuid = self.uuid
+        # self.uuid = uuid
+        # self.user_ns._start_uuid(self.uuid)
+
+        self.push_uuid_stack(uuid)
+        self.uuid = uuid
+        self.user_ns._start_uuid(self.uuid)
+
+        result = await super().run_cell_async(raw_cell, store_history=store_history,
+                                        silent=silent, shell_futures=shell_futures)
+
+        self.uuid = self.pop_uuid_stack()
+        self.user_ns._revisit_uuid(self.uuid)
+
+        # AFTER RUN_AST_NODES CODE
+        # # Reset this so later displayed values do not modify the
+        # # ExecutionResult
+        # self.displayhook.exec_result = old_result
+        # self.uuid = old_uuid
+        # self.user_ns._revisit_uuid(self.uuid)
+
+        if not self.last_execution_succeeded:
+            for j in self.dataflow_history_manager.storeditems:
+                self.dataflow_history_manager.remove_dependencies(j['parent'],
+                                                                  j['child'])
+            result.deleted_cells = result_deleted_cells
+
+        if isinstance(result.result, LinkedResult):
+            result.result.__sethist__(self.dataflow_history_manager)
+
+        self.dataflow_history_manager.storeditems = []
 
         if store_history:
-            result.execution_count = uuid
+            result.execution_count = self.uuid
 
-        def error_before_exec(value):
-            result.error_before_exec = value
-            self.last_execution_succeeded = False
-            return result
-
-        self.events.trigger('pre_execute')
-        if not silent:
-            self.events.trigger('pre_run_cell')
-
-        # If any of our input transformation (input_transformer_manager or
-        # prefilter_manager) raises an exception, we store it in this variable
-        # so that we can display the error after logging the input and storing
-        # it in the history.
-        preprocessing_exc_tuple = None
-        try:
-            # Static input transformations
-            cell = self.input_transformer_manager.transform_cell(raw_cell)
-        except SyntaxError:
-            preprocessing_exc_tuple = sys.exc_info()
-            cell = raw_cell  # cell has to exist so it can be stored/logged
-        else:
-            if len(cell.splitlines()) == 1:
-                # Dynamic transformations - only applied for single line commands
-                with self.builtin_trap:
-                    try:
-                        # use prefilter_lines to handle trailing newlines
-                        # restore trailing newline for ast.parse
-                        cell = self.prefilter_manager.prefilter_lines(cell) + '\n'
-                    except Exception:
-                        # don't allow prefilter errors to crash IPython
-                        preprocessing_exc_tuple = sys.exc_info()
-
-        # Store raw and processed history
-        if store_history:
-            self.execution_count += 1
-            # store cur_execution_count because of recursion
-            cur_execution_count = self.execution_count
-            # print("STORING INPUTS:", self.execution_count)
-            self.history_manager.store_inputs(self.execution_count,
-                                              cell, raw_cell)
-        if not silent:
-            self.logger.log(cell, raw_cell)
-
-        # Display the exception if input processing failed.
-        if preprocessing_exc_tuple is not None:
-            self.showtraceback(preprocessing_exc_tuple)
-            # if store_history:
-            #     self.execution_count += 1
-            return error_before_exec(preprocessing_exc_tuple[2])
-
-        # Our own compiler remembers the __future__ environment. If we want to
-        # run code with a separate __future__ environment, use the default
-        # compiler
-        compiler = self.compile if shell_futures else CachingCompiler()
-
-        with self.builtin_trap:
-            # TODO seems that uuid is more appropriate than execution_count here
-            cell_name = self.compile.cache(cell, uuid)
-
-            with self.display_trap:
-                # Compile to bytecode
-                try:
-                    code_ast = compiler.ast_parse(cell, filename=cell_name)
-                except self.custom_exceptions as e:
-                    etype, value, tb = sys.exc_info()
-                    self.CustomTB(etype, value, tb)
-                    return error_before_exec(e)
-                except IndentationError as e:
-                    self.showindentationerror()
-                    # if store_history:
-                    #     self.execution_count += 1
-                    return error_before_exec(e)
-                except (OverflowError, SyntaxError, ValueError, TypeError,
-                        MemoryError) as e:
-                    self.showsyntaxerror()
-                    # if store_history:
-                    #     self.execution_count += 1
-                    return error_before_exec(e)
-
-                # Apply AST transformations
-                try:
-                    code_ast = self.transform_ast(code_ast)
-                except InputRejected as e:
-                    self.showtraceback()
-                    # if store_history:
-                    #     self.execution_count += 1
-                    return error_before_exec(e)
-
-                internalnodes = []
-                for node in ast.walk(code_ast):
-                    if(isinstance(node,ast.Name) and isinstance(node.ctx,ast.Store)):
-                        internalnodes.append(node.id)
-
-                # Give the displayhook a reference to our ExecutionResult so it
-                # can fill in the output value.
-
-                # displayhook exec_result changed to reflect recursion
-                old_result = self.displayhook.exec_result
-                self.displayhook.exec_result = result
-                old_uuid = self.uuid
-                self.uuid = uuid
-                self.user_ns._start_uuid(self.uuid)
-
-                # user_ns = copy.copy(self.user_ns)
-
-                # Execute the user code
-                interactivity = "none" if silent else self.ast_node_interactivity
-                has_raised = self.run_ast_nodes(code_ast.body, cell_name,
-                                                interactivity=interactivity, compiler=compiler, result=result)
-
-                self.last_execution_succeeded = not has_raised
-
-                # Reset this so later displayed values do not modify the
-                # ExecutionResult
-                self.displayhook.exec_result = old_result
-                self.uuid = old_uuid
-                self.user_ns._revisit_uuid(self.uuid)
-
-                # self.user_ns = user_ns
-
-                if(not self.last_execution_succeeded):
-                    for j in self.dataflow_history_manager.storeditems:
-                        self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
-
-                if isinstance(result.result, LinkedResult):
-                    result.result.__sethist__(self.dataflow_history_manager)
-
-                self.dataflow_history_manager.storeditems = []
-                self.events.trigger('post_execute')
-                if not silent:
-                    self.events.trigger('post_run_cell')
-
-        if not has_raised:
+        if self.last_execution_succeeded:
             if store_history:
                 # Write output to the database. Does nothing unless
                 # history output logging is enabled.
                 # print("STORING HISTORY", cur_execution_count)
-                self.history_manager.store_output(cur_execution_count)
+                self.history_manager.store_output(self.execution_count)
                 # print("STORING UPDATE VALUE:", uuid, result)
                 self.dataflow_history_manager.update_value(uuid, result.result)
                 self.dataflow_history_manager.set_not_stale(uuid)
@@ -610,7 +519,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
                 result.deleted_cells = self.dataflow_history_manager.deleted_cells
                 self.dataflow_history_manager.deleted_cells = []
-                result.internal_nodes = internalnodes
 
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
                 result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
@@ -622,9 +530,256 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
             # run auto_updates
             self.dataflow_history_manager.run_auto_updates(uuid)
-
-
         return result
+
+    # def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True,
+    #              uuid=None, dfkernel_data={}, update_downstream_deps=False):
+    #     """Run a complete IPython cell.
+    #
+    #     Parameters
+    #     ----------
+    #     raw_cell : str
+    #       The code (including IPython code such as %magic functions) to run.
+    #     store_history : bool
+    #       If True, the raw and translated cell will be stored in IPython's
+    #       history. For user code calling back into IPython's machinery, this
+    #       should be set to False.
+    #     silent : bool
+    #       If True, avoid side-effects, such as implicit displayhooks and
+    #       and logging.  silent=True forces store_history=False.
+    #     shell_futures : bool
+    #       If True, the code will share future statements with the interactive
+    #       shell. It will both be affected by previous __future__ imports, and
+    #       any __future__ imports in the code will affect the shell. If False,
+    #       __future__ imports are not shared in either direction.
+    #
+    #     Returns
+    #     -------
+    #     result : :class:`ExecutionResult`
+    #     """
+    #
+    #     code_dict = dfkernel_data.get("code_dict", {})
+    #     output_tags = dfkernel_data.get("output_tags", {})
+    #     auto_update_flags = dfkernel_data.get("auto_update_flags", [])
+    #     force_cached_flags = dfkernel_data.get("force_cached_flags", [])
+    #     # print("CODE_DICT:", code_dict)
+    #     #print("RUNNING CELL", uuid, raw_cell)
+    #     # print("RUN_CELL USER_NS:", self.user_ns)
+    #     self._last_traceback = None
+    #     old_deps = []
+    #
+    #     if store_history:
+    #         self.dataflow_history_manager.update_codes(code_dict)
+    #         self.dataflow_history_manager.update_auto_update(auto_update_flags)
+    #         self.dataflow_history_manager.update_force_cached(force_cached_flags)
+    #         self.user_ns._add_links(output_tags)
+    #         # also put the current cell into the cache and force recompute
+    #         if uuid not in code_dict:
+    #             self.dataflow_history_manager.update_code(uuid, raw_cell)
+    #         if uuid in self.dataflow_history_manager.value_cache and uuid in self.dataflow_history_manager.dep_parents:
+    #             old_deps = self.dataflow_history_manager.all_upstream(uuid)
+    #             for i in list(self.dataflow_history_manager.dep_parents[uuid]):
+    #                 self.dataflow_history_manager.remove_dependencies(i,uuid)
+    #             self.dataflow_history_manager.dep_semantic_parents[uuid] = {}
+    #         self.dataflow_history_manager.update_flags(
+    #             store_history=store_history,
+    #             silent=silent,
+    #             shell_futures=shell_futures,
+    #             update_downstream_deps=update_downstream_deps)
+    #
+    #     info = ExecutionInfo(
+    #         raw_cell, store_history, silent, shell_futures)
+    #     result = ExecutionResult(info)
+    #
+    #     result.deleted_cells = self.dataflow_history_manager.deleted_cells
+    #     self.dataflow_history_manager.deleted_cells = []
+    #
+    #
+    #     if (not raw_cell) or raw_cell.isspace():
+    #         self.last_execution_succeeded = True
+    #         return result
+    #
+    #     if silent:
+    #         store_history = False
+    #
+    #     if store_history:
+    #         result.execution_count = uuid
+    #
+    #     def error_before_exec(value):
+    #         result.error_before_exec = value
+    #         self.last_execution_succeeded = False
+    #         return result
+    #
+    #     self.events.trigger('pre_execute')
+    #     if not silent:
+    #         self.events.trigger('pre_run_cell')
+    #
+    #     # If any of our input transformation (input_transformer_manager or
+    #     # prefilter_manager) raises an exception, we store it in this variable
+    #     # so that we can display the error after logging the input and storing
+    #     # it in the history.
+    #     preprocessing_exc_tuple = None
+    #     try:
+    #         # Static input transformations
+    #         cell = self.input_transformer_manager.transform_cell(raw_cell)
+    #     except SyntaxError:
+    #         preprocessing_exc_tuple = sys.exc_info()
+    #         cell = raw_cell  # cell has to exist so it can be stored/logged
+    #     else:
+    #         if len(cell.splitlines()) == 1:
+    #             # Dynamic transformations - only applied for single line commands
+    #             with self.builtin_trap:
+    #                 try:
+    #                     # use prefilter_lines to handle trailing newlines
+    #                     # restore trailing newline for ast.parse
+    #                     cell = self.prefilter_manager.prefilter_lines(cell) + '\n'
+    #                 except Exception:
+    #                     # don't allow prefilter errors to crash IPython
+    #                     preprocessing_exc_tuple = sys.exc_info()
+    #
+    #     # Store raw and processed history
+    #     if store_history:
+    #         self.execution_count += 1
+    #         # store cur_execution_count because of recursion
+    #         cur_execution_count = self.execution_count
+    #         # print("STORING INPUTS:", self.execution_count)
+    #         self.history_manager.store_inputs(self.execution_count,
+    #                                           cell, raw_cell)
+    #     if not silent:
+    #         self.logger.log(cell, raw_cell)
+    #
+    #     # Display the exception if input processing failed.
+    #     if preprocessing_exc_tuple is not None:
+    #         self.showtraceback(preprocessing_exc_tuple)
+    #         # if store_history:
+    #         #     self.execution_count += 1
+    #         return error_before_exec(preprocessing_exc_tuple[2])
+    #
+    #     # Our own compiler remembers the __future__ environment. If we want to
+    #     # run code with a separate __future__ environment, use the default
+    #     # compiler
+    #     compiler = self.compile if shell_futures else CachingCompiler()
+    #
+    #     with self.builtin_trap:
+    #         # TODO seems that uuid is more appropriate than execution_count here
+    #         cell_name = self.compile.cache(cell, uuid)
+    #
+    #         with self.display_trap:
+    #             # Compile to bytecode
+    #             try:
+    #                 code_ast = compiler.ast_parse(cell, filename=cell_name)
+    #             except self.custom_exceptions as e:
+    #                 etype, value, tb = sys.exc_info()
+    #                 self.CustomTB(etype, value, tb)
+    #                 return error_before_exec(e)
+    #             except IndentationError as e:
+    #                 self.showindentationerror()
+    #                 # if store_history:
+    #                 #     self.execution_count += 1
+    #                 return error_before_exec(e)
+    #             except (OverflowError, SyntaxError, ValueError, TypeError,
+    #                     MemoryError) as e:
+    #                 self.showsyntaxerror()
+    #                 # if store_history:
+    #                 #     self.execution_count += 1
+    #                 return error_before_exec(e)
+    #
+    #             # Apply AST transformations
+    #             try:
+    #                 code_ast = self.transform_ast(code_ast)
+    #             except InputRejected as e:
+    #                 self.showtraceback()
+    #                 # if store_history:
+    #                 #     self.execution_count += 1
+    #                 return error_before_exec(e)
+    #
+    #             internalnodes = []
+    #             for node in ast.walk(code_ast):
+    #                 if(isinstance(node,ast.Name) and isinstance(node.ctx,ast.Store)):
+    #                     internalnodes.append(node.id)
+    #
+    #             # Give the displayhook a reference to our ExecutionResult so it
+    #             # can fill in the output value.
+    #
+    #             # displayhook exec_result changed to reflect recursion
+    #             old_result = self.displayhook.exec_result
+    #             self.displayhook.exec_result = result
+    #             old_uuid = self.uuid
+    #             self.uuid = uuid
+    #             self.user_ns._start_uuid(self.uuid)
+    #
+    #             # user_ns = copy.copy(self.user_ns)
+    #
+    #             # Execute the user code
+    #             interactivity = "none" if silent else self.ast_node_interactivity
+    #             has_raised = self.run_ast_nodes(code_ast.body, cell_name,
+    #                                             interactivity=interactivity, compiler=compiler, result=result)
+    #
+    #             self.last_execution_succeeded = not has_raised
+    #
+    #             # Reset this so later displayed values do not modify the
+    #             # ExecutionResult
+    #             self.displayhook.exec_result = old_result
+    #             self.uuid = old_uuid
+    #             self.user_ns._revisit_uuid(self.uuid)
+    #
+    #             # self.user_ns = user_ns
+    #
+    #             if(not self.last_execution_succeeded):
+    #                 for j in self.dataflow_history_manager.storeditems:
+    #                     self.dataflow_history_manager.remove_dependencies(j['parent'],j['child'])
+    #
+    #             if isinstance(result.result, LinkedResult):
+    #                 result.result.__sethist__(self.dataflow_history_manager)
+    #
+    #             self.dataflow_history_manager.storeditems = []
+    #             self.events.trigger('post_execute')
+    #             if not silent:
+    #                 self.events.trigger('post_run_cell')
+    #
+    #     if not has_raised:
+    #         if store_history:
+    #             # Write output to the database. Does nothing unless
+    #             # history output logging is enabled.
+    #             # print("STORING HISTORY", cur_execution_count)
+    #             self.history_manager.store_output(cur_execution_count)
+    #             # print("STORING UPDATE VALUE:", uuid, result)
+    #             self.dataflow_history_manager.update_value(uuid, result.result)
+    #             self.dataflow_history_manager.set_not_stale(uuid)
+    #
+    #             # Each cell is a *single* input, regardless of how many lines it has
+    #             # self.execution_count += 1
+    #
+    #         if store_history:
+    #             cells = []
+    #             nodes = []
+    #             for uid in self.dataflow_history_manager.sorted_keys():
+    #                 cells.append(uid)
+    #             if uuid in self.dataflow_history_manager.value_cache:
+    #                 if(self.dataflow_history_manager.value_cache[uuid] is not None):
+    #                     nodes.append('Out_'+uuid+'')
+    #                 if isinstance(self.dataflow_history_manager.value_cache[uuid], LinkedResult):
+    #                     nodes = list(self.dataflow_history_manager.value_cache[uuid].keys())
+    #             result.nodes = nodes
+    #             result.cells = cells
+    #             result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
+    #             result.deleted_cells = self.dataflow_history_manager.deleted_cells
+    #             self.dataflow_history_manager.deleted_cells = []
+    #             result.internal_nodes = internalnodes
+    #
+    #             result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
+    #             result.all_upstream_deps = self.dataflow_history_manager.all_upstream(uuid)
+    #             result.update_downstreams = []
+    #             for i in set(self.dataflow_history_manager.all_upstream(uuid)+old_deps):
+    #                 result.update_downstreams.append({'key':i, 'data':self.dataflow_history_manager.get_downstream(i)})
+    #             result.imm_downstream_deps = self.dataflow_history_manager.get_downstream(uuid)
+    #             result.all_downstream_deps = self.dataflow_history_manager.all_downstream(uuid)
+    #
+    #         # run auto_updates
+    #         self.dataflow_history_manager.run_auto_updates(uuid)
+    #
+    #
+    #     return result
 
     def get_linked_vars(self, node):
         create_node = True
@@ -678,8 +833,23 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             create_node = False
         return vars, unnamed, create_node, append_node
 
-    def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
+    def push_result_stack(self, result):
+        self.result_stack.append(self.displayhook.exec_result)
+        self.displayhook.exec_result = result
+        self.execution_count = result.execution_count
+
+    def pop_result_stack(self):
+        # Reset this so later displayed values do not modify the
+        # ExecutionResult
+        self.displayhook.exec_result = self.result_stack.pop(-1)
+
+    async def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
+        # FIXME remove these lines!
+        # import copy
+        # orig_nodelist = copy.copy(nodelist)
+        self.push_result_stack(result)
+
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
         # FIXME allow closure to be configurable?
@@ -768,7 +938,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     nodelist[-1] = nnode
                 # also need to pull off the values so they don't recurse on themselves
             if closure:
-                nodelist = [ast.FunctionDef("__closure__",ast.arguments(args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                # arguments = (arg * posonlyargs, arg * args, arg
+                #              ? vararg, arg * kwonlyargs,
+                #              expr * kw_defaults, arg? kwarg, expr * defaults)
+                nodelist = [ast.FunctionDef("__closure__",ast.arguments(posonlyargs=[],args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
                 if future_elt:
                     nodelist = future_elt + nodelist
                 for node in nodelist:
@@ -777,66 +950,92 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         # print("DO NOT LINK", no_link_vars)
         self.user_ns.__do_not_link__.update(no_link_vars)
-        res = super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
+
+        # import astor
+        # import inspect
+        # if sys.version_info > (3, 8):
+        #     from ast import Module
+        #     def compare(code):
+        #         is_async = (
+        #                     inspect.CO_COROUTINE & code.co_flags == inspect.CO_COROUTINE)
+        #         return is_async
+
+        print("CALLING RUN AST NODES") # , compiler, astor.to_source(nodelist[0]))
+        # for node in orig_nodelist:
+        #     # if mode == 'exec':
+        #     mod = Module([node], [])
+        #     mode = 'exec'
+        #     # elif mode == 'single':
+        #     # mod = ast.Interactive([node])
+        #     with compiler.extra_flags(getattr(ast, 'PyCF_ALLOW_TOP_LEVEL_AWAIT',
+        #                                       0x0) if self.autoawait else 0x0):
+        #         code = compiler(mod, cell_name, mode)
+        #         asy = compare(code)
+        #     if (await self.run_code(code, result, async_=asy)):
+        #         return True
+        res = await super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
+        print("DONE WITH AST NODES")
         self.user_ns.__do_not_link__.difference_update(no_link_vars)
+        self.pop_result_stack()
+        self.execution_count = result.execution_count
         return res
 
-    def run_code(self, code_obj, result=None):
-        """Execute a code object.
-
-        When an exception occurs, self.showtraceback() is called to display a
-        traceback.
-
-        Parameters
-        ----------
-        code_obj : code object
-          A compiled code object, to be executed
-        result : ExecutionResult, optional
-          An object to store exceptions that occur during execution.
-
-        Returns
-        -------
-        False : successful execution.
-        True : an error occurred.
-        """
-        # Set our own excepthook in case the user code tries to call it
-        # directly, so that the IPython crash handler doesn't get triggered
-        old_excepthook, sys.excepthook = sys.excepthook, self.excepthook
-
-        # we save the original sys.excepthook in the instance, in case config
-        # code (such as magics) needs access to it.
-        self.sys_excepthook = old_excepthook
-        outflag = True  # happens in more places, so it's easier as default
-        try:
-            try:
-                self.hooks.pre_run_code_hook()
-                # rprint('Running code', repr(code_obj)) # dbg
-                # user_global_ns = {}
-                exec(code_obj, self.user_global_ns, self.user_ns)
-            finally:
-                # Reset our crash handler in place
-                sys.excepthook = old_excepthook
-        except SystemExit as e:
-            if result is not None:
-                result.error_in_exec = e
-            self.showtraceback(exception_only=True)
-            warn("To exit: use 'exit', 'quit', or Ctrl-D.", stacklevel=1)
-        except self.custom_exceptions:
-            etype, value, tb = sys.exc_info()
-            if result is not None:
-                result.error_in_exec = value
-            # IMPORTANT: tb_offset=2 depends on *every* cell
-            # being wrapped in a closure
-            self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
-        except:
-            if result is not None:
-                result.error_in_exec = sys.exc_info()[1]
-            # IMPORTANT: tb_offset=2 depends on *every* cell
-            # being wrapped in a closure
-            self.showtraceback(running_compiled_code=True, tb_offset=2)
-        else:
-            outflag = False
-        return outflag
+    # def run_code(self, code_obj, result=None):
+    #     """Execute a code object.
+    #
+    #     When an exception occurs, self.showtraceback() is called to display a
+    #     traceback.
+    #
+    #     Parameters
+    #     ----------
+    #     code_obj : code object
+    #       A compiled code object, to be executed
+    #     result : ExecutionResult, optional
+    #       An object to store exceptions that occur during execution.
+    #
+    #     Returns
+    #     -------
+    #     False : successful execution.
+    #     True : an error occurred.
+    #     """
+    #     # Set our own excepthook in case the user code tries to call it
+    #     # directly, so that the IPython crash handler doesn't get triggered
+    #     old_excepthook, sys.excepthook = sys.excepthook, self.excepthook
+    #
+    #     # we save the original sys.excepthook in the instance, in case config
+    #     # code (such as magics) needs access to it.
+    #     self.sys_excepthook = old_excepthook
+    #     outflag = True  # happens in more places, so it's easier as default
+    #     try:
+    #         try:
+    #             self.hooks.pre_run_code_hook()
+    #             # rprint('Running code', repr(code_obj)) # dbg
+    #             # user_global_ns = {}
+    #             exec(code_obj, self.user_global_ns, self.user_ns)
+    #         finally:
+    #             # Reset our crash handler in place
+    #             sys.excepthook = old_excepthook
+    #     except SystemExit as e:
+    #         if result is not None:
+    #             result.error_in_exec = e
+    #         self.showtraceback(exception_only=True)
+    #         warn("To exit: use 'exit', 'quit', or Ctrl-D.", stacklevel=1)
+    #     except self.custom_exceptions:
+    #         etype, value, tb = sys.exc_info()
+    #         if result is not None:
+    #             result.error_in_exec = value
+    #         # IMPORTANT: tb_offset=2 depends on *every* cell
+    #         # being wrapped in a closure
+    #         self._showtraceback(etype, value, self.CustomTB(etype, value, tb, tb_offset=2))
+    #     except:
+    #         if result is not None:
+    #             result.error_in_exec = sys.exc_info()[1]
+    #         # IMPORTANT: tb_offset=2 depends on *every* cell
+    #         # being wrapped in a closure
+    #         self.showtraceback(running_compiled_code=True, tb_offset=2)
+    #     else:
+    #         outflag = False
+    #     return outflag
 
     def init_user_ns(self):
         """Initialize all user-visible namespaces to their minimum defaults.
