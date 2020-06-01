@@ -489,7 +489,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.dataflow_history_manager.storeditems = []
 
         if store_history:
-            result.execution_count = self.uuid
+            result.execution_count = int(self.uuid, 16)
 
         if self.last_execution_succeeded:
             if store_history:
