@@ -212,8 +212,10 @@ class DataflowHistoryManager(object):
             if cid in self.dep_children[k]:
                 raise CyclicalCallError(k)
         child_uuid = self.shell.uuid
+        # print('running cell as execute request', k)
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                         **local_flags)
+        # print('retval:', retval)
         if not retval.success:
             raise DataflowCellException(k)
         # FIXME can we just rely on run_cell?
@@ -244,16 +246,21 @@ class DataflowHistoryManager(object):
     def get_item(self, k):
         self.stale_check(k)
         self.update_dependencies(k, self.shell.uuid)
+        # if k in self.value_cache:
+        #     print(k, "in cache", self.value_cache[k])
 
         # force recompute
         if self.force_cached_flags[k]:
             if k not in self.value_cache:
                 raise DataflowCacheException(k)
+            # print("returning cache", k)
             return self.value_cache[k]
 
         # check if we need to recompute
         if not self.is_stale(k):
+            # print("returning not stale cache", k)
             return self.value_cache[k]
+        # print('executing cell', k)
         return self.execute_cell(k)
 
     def __setitem__(self, key, value):
@@ -402,7 +409,7 @@ class DataflowNamespace(dict):
                 res = df_history.get_item(cell_id)
             except CyclicalCallError:
                 raise
-            # print("Got result", res)
+            # print("Got result", cell_id, res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
         return super().__getitem__(k)
@@ -465,11 +472,13 @@ class DataflowNamespace(dict):
             del self[k]
 
     def _stash_local_vars(self):
+        # print("STASHING LOCAL VARS:", self.__cur_uuid__, self.__local_vars__[self.__cur_uuid__].keys())
         if self.__cur_uuid__ is not None:
             for key in self.__local_vars__[self.__cur_uuid__].keys():
                 del self[key]
 
     def _unstash_local_vars(self):
+        # print("UNSTASHING LOCAL VARS:", self.__cur_uuid__, self.__local_vars__[self.__cur_uuid__].keys())
         if self.__cur_uuid__ is not None:
             for key, val in self.__local_vars__[self.__cur_uuid__].items():
                 # have to watch for variables that have been added by other cells

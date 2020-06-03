@@ -1,8 +1,9 @@
 """Replacements for ipykernel.displayhook."""
 
+import sys
 
 from ipykernel.displayhook import ZMQShellDisplayHook as ipyZMQShellDisplayHook
-from ipykernel.displayhook import sys, ZMQDisplayHook
+from ipykernel.displayhook import ZMQDisplayHook
 from ipykernel.jsonutil import encode_images, json_clean
 
 from .dflink import LinkedResult
@@ -15,7 +16,7 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
         self.msg['content']['execution_count'] = self.get_execution_count()
 
     def write_format_data(self, format_dict, md_dict=None):
-        # print("WRITING FORMAT DATA:", format_dict)
+        # print("WRITING FORMAT DATA:", format_dict, file=sys.__stdout__)
         if 0 in format_dict:
             # have multiple outputs
             new_format_dict = {}
@@ -40,6 +41,7 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
         if result is not None and not self.quiet():
             self.start_displayhook()
             self.write_output_prompt()
+            # print("GOT CALL:", result, file=sys.__stdout__)
             if isinstance(result, tuple) and (len(result) == 2) \
                     and isinstance(result[0], LinkedResult):
                 # FIXME unify this so that the LinkedResult code isn't repeated in the elif
@@ -93,6 +95,7 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
                 format_dict, md_dict = self.compute_format_data(result)
             self.update_user_ns(result)
             self.fill_exec_result(result)
+            # print("FILLING EXEC RESULT", self.exec_result, file=sys.__stdout__)
             if format_dict:
                 self.write_format_data(format_dict, md_dict)
                 self.log_output(format_dict)
@@ -114,8 +117,10 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
                 for i in format_data:
                     self.msg['content']['data'] = format_data[i]
                     self.msg['content']['metadata'] = md_data[i]
+                    # print("SENDING", self.msg, file=sys.__stdout__)
                     self.session.send(self.pub_socket, self.msg, ident=self.topic)
             else:
+                # print("SENDING2", self.msg, file=sys.__stdout__)
                 self.session.send(self.pub_socket, self.msg, ident=self.topic)
         self.msg = None
 

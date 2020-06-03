@@ -323,8 +323,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         # stacks to deal with recursion
         # may need to reset these at higher level...
-        self.uuid_stack = [None]
-        self.result_stack = [None]
+        self.uuid_stack = [] # [None]
+        self.result_stack = [] # [None]
+        self.execution_count_stack = []
+        self.max_execution_count = 0
 
         #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
         self.ast_node_interactivity = 'last_expr_or_assign'
@@ -389,24 +391,64 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             sys.stderr.flush()
         return proposal['value']
 
-    def push_uuid_stack(self, uuid):
-        self.uuid_stack.append(uuid)
+    def push_uuid(self):
+        # want self.uuid to be the current uuid at any time (stashing uuid there)
+        self.uuid_stack.append(self.uuid)
 
-    def pop_uuid_stack(self):
-        self.uuid_stack.pop(-1)
+    def pop_uuid(self):
+        self.uuid = self.uuid_stack.pop(-1)
+
+    def parent_uuid(self):
+        if len(self.uuid_stack) > 0:
+            return self.uuid_stack[-1]
+        return None
+
+    def push_execution_count(self):
+        # want self.execution_count to be the current execution count at any time (stashing execution_count there)
+        self.execution_count_stack.append(self.execution_count)
+        # print("PUSH EXECUTION COUNT:", self.execution_count)
+        self.execution_count += 1
+        self.max_execution_count = max(self.max_execution_count, self.execution_count)
+
+    def pop_execution_count(self):
+        self.execution_count = self.execution_count_stack.pop(-1)
+        # print("POP EXECUTION COUNT:", self.execution_count)
+
+    def push_result(self):
+        # want self.display_hook.exec_result to be current result, but popped to previous...
+        # print("PUSHING EXEC RESULT", self.displayhook.exec_result, len(self.result_stack))
+        self.result_stack.append(self.displayhook.exec_result)
+        # this step is done by run_cell_async
+        # self.displayhook.exec_result = result
+
+    def pop_result(self):
+        # Reset this so later displayed values do not modify the
+        # ExecutionResult
+        self.displayhook.exec_result = self.result_stack.pop(-1)
+        # print("POPPING DISPLAYHOOK EXEC_RESULT:", self.displayhook.exec_result, len(self.result_stack))
+
+    # execution_count is something
+    # run cell, execution_count is incremented in most cases
+    # inside, we might call run_cell recursively
+    # after recursive call, need to increment execution_count so don't step
+    # need to reset self.execution_count to store history correctly
 
     def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
                  store_history=False, silent=False, shell_futures=True):
         # set partial on run_cell_async
-        print("GOT TO RUN CELL", uuid, dfkernel_data)
+        # print("RUN CELL:", uuid, self.max_execution_count, self.execution_count)
         self.run_cell_async = partial(self.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
-        super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
+        self.execution_count = self.max_execution_count
+        # self.execution_count = int(uuid, 16)
+        res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
+        # self.max_execution_count = max(self.max_execution_count, self.execution_count)
+        # print("DONE:", self.uuid, self.execution_count)
+        return res
 
     async def run_cell_async_override(self, raw_cell: str, store_history=False,
                              silent=False, shell_futures=True, uuid=None,
                              dfkernel_data={},
                              update_downstream_deps=False) -> ExecutionResult:
-        print("GOT TO RUN CELL ASYNC", uuid, dfkernel_data)
 
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
@@ -460,15 +502,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.uuid = uuid
         # self.user_ns._start_uuid(self.uuid)
 
-        self.push_uuid_stack(uuid)
         self.uuid = uuid
         self.user_ns._start_uuid(self.uuid)
+        self.push_result()
 
         result = await super().run_cell_async(raw_cell, store_history=store_history,
                                         silent=silent, shell_futures=shell_futures)
 
-        self.uuid = self.pop_uuid_stack()
-        self.user_ns._revisit_uuid(self.uuid)
+        self.pop_result()
+        uuid = self.uuid
+        # this is actually referencing the parent uuid...
+        self.user_ns._revisit_uuid(self.parent_uuid())
 
         # AFTER RUN_AST_NODES CODE
         # # Reset this so later displayed values do not modify the
@@ -476,6 +520,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.displayhook.exec_result = old_result
         # self.uuid = old_uuid
         # self.user_ns._revisit_uuid(self.uuid)
+
+        # print("LAST EXECUTE SUCCEEDED?", self.last_execution_succeeded, self.uuid, uuid, file=sys.__stdout__)
 
         if not self.last_execution_succeeded:
             for j in self.dataflow_history_manager.storeditems:
@@ -489,20 +535,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.dataflow_history_manager.storeditems = []
 
         if store_history:
-            result.execution_count = int(self.uuid, 16)
+            result.execution_count = int(uuid, 16)
 
+        import sys
+        # print("LAST EXECUTE SUCCEEDED?", self.last_execution_succeeded, file=sys.__stdout__)
+        # sys.stdout.flush()
         if self.last_execution_succeeded:
             if store_history:
-                # Write output to the database. Does nothing unless
-                # history output logging is enabled.
                 # print("STORING HISTORY", cur_execution_count)
-                self.history_manager.store_output(self.execution_count)
                 # print("STORING UPDATE VALUE:", uuid, result)
                 self.dataflow_history_manager.update_value(uuid, result.result)
                 self.dataflow_history_manager.set_not_stale(uuid)
-
-                # Each cell is a *single* input, regardless of how many lines it has
-                # self.execution_count += 1
 
             if store_history:
                 cells = []
@@ -518,6 +561,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.cells = cells
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
                 result.deleted_cells = self.dataflow_history_manager.deleted_cells
+                # FIXME decide if this is worth keeping
+                result.internal_nodes = []
+                # print("GOT DELETED CELLS:", result.deleted_cells, file=sys.__stdout__)
                 self.dataflow_history_manager.deleted_cells = []
 
                 result.imm_upstream_deps = self.dataflow_history_manager.get_semantic_upstream(uuid)
@@ -833,22 +879,14 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             create_node = False
         return vars, unnamed, create_node, append_node
 
-    def push_result_stack(self, result):
-        self.result_stack.append(self.displayhook.exec_result)
-        self.displayhook.exec_result = result
-        self.execution_count = result.execution_count
-
-    def pop_result_stack(self):
-        # Reset this so later displayed values do not modify the
-        # ExecutionResult
-        self.displayhook.exec_result = self.result_stack.pop(-1)
-
     async def run_ast_nodes(self, nodelist:ListType[AST], cell_name:str, interactivity='last_expr',
                         compiler=compile, result=None):
         # FIXME remove these lines!
         # import copy
         # orig_nodelist = copy.copy(nodelist)
-        self.push_result_stack(result)
+        # self.push_result(result)
+        self.push_execution_count()
+        self.push_uuid()
 
         no_link_vars = []
         auto_add_libs = True # FIXME add a configuration option that sets this
@@ -960,7 +998,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #                     inspect.CO_COROUTINE & code.co_flags == inspect.CO_COROUTINE)
         #         return is_async
 
-        print("CALLING RUN AST NODES") # , compiler, astor.to_source(nodelist[0]))
+        # print("CALLING RUN AST NODES") # , compiler, astor.to_source(nodelist[0]))
         # for node in orig_nodelist:
         #     # if mode == 'exec':
         #     mod = Module([node], [])
@@ -974,10 +1012,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #     if (await self.run_code(code, result, async_=asy)):
         #         return True
         res = await super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
-        print("DONE WITH AST NODES")
+        # print("DONE WITH AST NODES")
         self.user_ns.__do_not_link__.difference_update(no_link_vars)
-        self.pop_result_stack()
-        self.execution_count = result.execution_count
+        self.pop_uuid()
+        self.pop_execution_count()
+
         return res
 
     # def run_code(self, code_obj, result=None):

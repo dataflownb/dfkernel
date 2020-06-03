@@ -55,7 +55,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # grab and remove dfkernel_data from user_expressions
         # there just for convenience of not modifying the msg protocol
         dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
-        print("DF KERNEL DATA:", dfkernel_data)
 
         self._outer_stream = stream
         self._outer_ident = ident
@@ -119,11 +118,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
-        print("DO EXECUTE:", uuid, dfkernel_data)
-        import sys
-        sys.stdout.flush()
-        sys.stderr.write("GOT HERE" + str(uuid) + str(dfkernel_data))
-        sys.stderr.flush()
         shell = self.shell # we'll need this a lot here
 
         self._forward_input(allow_stdin)
@@ -132,6 +126,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         res = None
         try:
+            print("RUNNING CELL:", uuid, file=sys.__stdout__)
             res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
                                  store_history=store_history, silent=silent)
         finally:
@@ -142,10 +137,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         else:
             err = res.error_in_exec
 
+        # print("DELETED CELLS:", res, file=sys.__stdout__)
         reply_content[u'deleted_cells'] = res.deleted_cells
 
         if res.success:
-            print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
+            # print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
             reply_content[u'status'] = u'ok'
             reply_content[u'nodes'] = res.nodes
             reply_content[u'links'] = res.links
