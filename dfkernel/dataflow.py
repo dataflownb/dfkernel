@@ -54,7 +54,8 @@ class DataflowHistoryManager(object):
             # clear out the old __links__ and __rev_links__ (if exist)
             if self.shell.user_ns.__rev_links__[key]:
                 for tag in self.shell.user_ns.__rev_links__[key]:
-                    del self.shell.user_ns.__links__[tag]
+                    if tag in self.shell.user_ns.__links__:
+                        del self.shell.user_ns.__links__[tag]
                 del self.shell.user_ns.__rev_links__[key]
             self.func_cached[key] = False
             self.code_cache[key] = code
@@ -379,7 +380,7 @@ class DataflowNamespace(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__links__ = {}
-        self.__rev_links__ = defaultdict(list)
+        self.__rev_links__ = defaultdict(set)
         self.__do_not_link__ = set()
         self.__local_vars__ = defaultdict(dict)
         self.__cur_uuid__ = None
@@ -395,7 +396,6 @@ class DataflowNamespace(dict):
     #     self.__cur_uuid__ = uuid
 
     def __getitem__(self, k):
-        # print("__getitem__", k)
         if k not in self.__do_not_link__ and k in self.__links__:
             # print("getting link", k)
             cell_id = self.get_parent(k)
@@ -454,16 +454,18 @@ class DataflowNamespace(dict):
                 self._add_link(tag, cell_id)
 
     def _add_link(self, name, cell_id):
-        if name in self.__links__:
-            if self.__links__[name] != cell_id:
-                raise DuplicateNameError(name, self.__links__[name])
-        else:
-            self.__links__[name] = cell_id
-            self.__rev_links__[cell_id].append(name)
+        # allow overwrite...
+        # if name in self.__links__:
+        #     if self.__links__[name] != cell_id:
+        #         raise DuplicateNameError(name, self.__links__[name])
+        # else:
+        self.__links__[name] = cell_id
+        self.__rev_links__[cell_id].add(name)
 
     def _reset_cell(self, cell_id):
         for name in self.__rev_links__[cell_id]:
-            del self.__links__[name]
+            if self.__links__[name] == cell_id:
+                del self.__links__[name]
         del self.__rev_links__[cell_id]
 
     def _purge_local_vars(self):

@@ -333,18 +333,21 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.ast_transformers.append(CellIdTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
 
-        def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
-            retval = shell.InteractiveTB.structured_traceback(
-                etype, value, tb, tb_offset=tb_offset)
-            return retval[:-4] + retval[-1:]
-
-        self.set_custom_exc((DataflowCellException,), cell_exception_handler)
-
-        def duplicate_name_handler(shell, etype, value, tb, tb_offset=None):
-            retval = shell.InteractiveTB.structured_traceback(
-                etype, value, tb, tb_offset=tb_offset)
-            return retval[:-4] + retval[-1:]
-        self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
+        # def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
+        #     retval = shell.InteractiveTB.structured_traceback(
+        #         etype, value, tb, tb_offset=tb_offset)
+        #     return retval[:-4] + retval[-1:]
+        #
+        # self.set_custom_exc((DataflowCellException,), cell_exception_handler)
+        #
+        # def duplicate_name_handler(shell, etype, value, tb, tb_offset=None):
+        #     retval = shell.InteractiveTB.structured_traceback(
+        #         etype, value, tb, tb_offset=tb_offset)
+        #     print("DUP NAME:", retval)
+        #     new_retval = retval[:-4] + retval[-1:]
+        #     print("NEW RETVAL:", new_retval)
+        #     return new_retval
+        # self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
@@ -858,18 +861,26 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 for outnum, elt in enumerate(asg.elts):
                     if (not isinstance(elt, ast.Name)):
                         unnamed.append((outnum,elt))
-                    elif self.user_ns._is_external_link(elt.id, self.uuid):
-                        vars = []
-                        create_node = False
-                        break
+                    # FIXME does this always work?
+                    # are there cases where we want to just display a variable
+                    # that means we are not redefining it? Can we detect that?
+                    # probably safer to just print it...
+                    # shouldn't do this so much
+                    #
+                    # elif self.user_ns._is_external_link(elt.id, self.uuid):
+                    #     vars = []
+                    #     create_node = False
+                    #     break
                     else:
                         vars.append(elt.id)
             elif isinstance(node.value, ast.Name):
                 elt = node.value
-                if self.user_ns._is_external_link(elt.id, self.uuid):
-                    create_node = False
-                else:
-                    vars.append(elt.id)
+                vars.append(elt.id)
+                # FIXME make sure this works
+                # if self.user_ns._is_external_link(elt.id, self.uuid):
+                #     create_node = False
+                # else:
+                #     vars.append(elt.id)
             #elif isinstance(node.value, ast.Expr) or isinstance(node.value,ast.Num):
                 #unnamed.append((0,node.value))
             else:
@@ -1011,6 +1022,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         #         asy = compare(code)
         #     if (await self.run_code(code, result, async_=asy)):
         #         return True
+        #
+        # import astor
+        # print("CODE")
+        # mod = ast.Module(body=nodelist)
+        # print(astor.to_source(mod))
+        # print("END CODE")
         res = await super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         # print("DONE WITH AST NODES")
         self.user_ns.__do_not_link__.difference_update(no_link_vars)

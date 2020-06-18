@@ -3,6 +3,7 @@ from ipykernel.ipkernel import *
 
 """The IPython kernel implementation"""
 
+import ast
 import sys
 import time
 
@@ -13,6 +14,7 @@ from ipython_genutils.py3compat import unicode_type
 from ipykernel.jsonutil import json_clean
 
 from .zmqshell import ZMQInteractiveShell
+from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer
 
 class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     shell_class = Type(ZMQInteractiveShell)
@@ -34,6 +36,64 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # Ignore the incrememnting done by KernelBase, in favour of our shell's
         # execution counter.
         pass
+
+    def ground_code(self, code, execution_count):
+        code = convert_dollar(code, identifier_replacer)
+
+
+        class DataflowLinker(ast.NodeVisitor):
+            def __init__(self, user_ns):
+                self.user_ns = user_ns
+                self.stored = set()
+                self.updates = []
+                super().__init__()
+
+            # need to make sure we visit right side before left!
+            # seems to happen by default?
+            def visit_Assign(self, node):
+                self.visit(node.value)
+                for target in node.targets:
+                    self.visit(target)
+
+            def visit_Name(self, name):
+                import sys
+                # FIXME what to do with del?
+                if isinstance(name.ctx, ast.Store):
+                    # print("STORE", name.id, file=sys.__stdout__)
+                    self.stored.add(name.id)
+                elif (isinstance(name.ctx, ast.Load) and
+                        name.id not in self.stored and
+                        self.user_ns._is_external_link(name.id, execution_count)):
+                    # figure out where we are and keep track of change
+                    # FIXME get_parent needs to get most recently used verison of id
+                    cell_id = self.user_ns.get_parent(name.id)
+                    self.updates.append((name.end_lineno, name.end_col_offset, name.lineno, name.col_offset, name.id, cell_id))
+                    # print("LOAD", name.id, cell_id, file=sys.__stdout__)
+                self.generic_visit(name)
+
+        tree = ast.parse(code)
+        linker = DataflowLinker(self.shell.user_ns)
+        linker.visit(tree)
+        code_arr = code.splitlines()
+        for end_lineno, end_col_offset, lineno, col_offset, name, cell_id in sorted(linker.updates, reverse=True):
+            if lineno != end_lineno:
+                raise Exception("Names cannot be split over multiple lines")
+            s = code_arr[lineno-1]
+            code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(cell_id, name), s[end_col_offset:]])
+        code = '\n'.join(code_arr)
+        # print("STEP 2:", code)
+
+        code = convert_dfvar(code, dollar_replacer)
+        # print("STEP 3:", code)
+
+        return code
+
+    # def _publish_execute_input(self, code, parent, execution_count):
+    #     # go through nodes and for each node that exists in self.shell's history
+    #     # as a load, change it to a var$ce1 reference
+    #     # FIXME deal with scoping
+    #
+    #     super()._publish_execute_input(code, parent, execution_count)
 
     def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
@@ -86,8 +146,26 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
 
+        execution_count = int(uuid, 16)
+        try:
+            code = self.ground_code(code, uuid)
+        except SyntaxError:
+            # ignore this for now, catch it in do_execute
+            pass
+
         if not silent:
-            self._publish_execute_input(code, parent, int(uuid, 16))
+            self._publish_execute_input(code, parent, execution_count)
+
+        # convert all tilded code
+        try:
+            code = convert_dollar(code)
+        except SyntaxError:
+            # ignore this for now, catch it in do_execute
+            pass
+
+        # print("STEP 4:", code)
+        # if '36f9b2ee' in self.shell.user_ns['_oh']:
+        #     print("HERE IT IS:", self.shell.user_ns['_oh'].get_item('36f9b2ee'))
 
         reply_content, res = self.do_execute(code, uuid, dfkernel_data, silent, store_history,
                                         user_expressions, allow_stdin)

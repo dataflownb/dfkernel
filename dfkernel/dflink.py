@@ -43,10 +43,12 @@ class LinkedResult(OrderedDict):
         for key, val in self.items():
             if key not in self.__libs__:
                 vals.append(val)
-        if len(vals) > 1:
+        # if len(vals) > 1:
+        #     return DFTuple(self, vals)
+        # elif len(vals) == 1:
+        #     return vals[0]
+        if len(vals) > 0:
             return DFTuple(self, vals)
-        elif len(vals) == 1:
-            return vals[0]
         return None
 
     def __sethist__(self, hist):
