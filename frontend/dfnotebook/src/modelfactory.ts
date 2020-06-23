@@ -1,7 +1,7 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { CodeCellModel } from '@jupyterlab/cells';
+import { CodeCellModel } from 'dfcells';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 

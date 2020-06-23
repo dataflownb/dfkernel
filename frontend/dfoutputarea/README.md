@@ -1,4 +1,4 @@
-# @jupyterlab/outputarea
+# dfoutputarea
 
 A JupyterLab package which provides an implementation of the Jupyter notebook output area.
 Execution results from both the [notebook](../notebook) and the [code console](../console)

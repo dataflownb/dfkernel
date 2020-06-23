@@ -24,7 +24,7 @@ import {
   OutputPrompt,
   IStdin,
   Stdin
-} from '@jupyterlab/outputarea';
+} from 'dfoutputarea';
 
 import {
   IRenderMime,

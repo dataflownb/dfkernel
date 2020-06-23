@@ -4,7 +4,7 @@ import { VDomRenderer, VDomModel } from '@jupyterlab/apputils';
 
 import { INotebookModel, Notebook } from '.';
 
-import { Cell } from '@jupyterlab/cells';
+import { Cell } from 'dfcells';
 
 import { notTrustedIcon, trustedIcon } from '@jupyterlab/ui-components';
 

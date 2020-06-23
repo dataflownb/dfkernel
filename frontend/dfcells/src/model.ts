@@ -25,7 +25,7 @@ import {
   IObservableMap
 } from '@jupyterlab/observables';
 
-import { IOutputAreaModel, OutputAreaModel } from '@jupyterlab/outputarea';
+import { IOutputAreaModel, OutputAreaModel } from 'dfoutputarea';
 
 /**
  * The definition of a model object for a cell.

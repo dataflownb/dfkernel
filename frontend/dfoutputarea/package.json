@@ -1,17 +1,17 @@
 {
-  "name": "@jupyterlab/outputarea",
-  "version": "2.1.1",
-  "description": "JupyterLab - Notebook Output Area",
-  "homepage": "https://github.com/jupyterlab/jupyterlab",
+  "name": "dfoutputarea",
+  "version": "0.1.0",
+  "description": "Dataflow Notebook Output Area",
+  "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
-    "url": "https://github.com/jupyterlab/jupyterlab/issues"
+    "url": "https://github.com/dataflownb/dfnotebook-extension/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jupyterlab/jupyterlab.git"
+    "url": "https://github.com/dataflownb/dfnotebook-extension.git"
   },
   "license": "BSD-3-Clause",
-  "author": "Project Jupyter",
+  "author": "David Koop",
   "files": [
     "lib/*.d.ts",
     "lib/*.js.map",

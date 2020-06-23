@@ -2,7 +2,7 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { WidgetTracker } from '@jupyterlab/apputils';
-import { Cell } from '@jupyterlab/cells';
+import { Cell } from 'dfcells';
 
 import { ISignal, Signal } from '@lumino/signaling';
 

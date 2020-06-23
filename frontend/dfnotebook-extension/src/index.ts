@@ -17,7 +17,7 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { CodeCell } from '@jupyterlab/cells';
+import { CodeCell } from 'dfcells';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -53,8 +53,8 @@ import {
   NotebookWidgetFactory,
   StaticNotebook,
   CommandEditStatus,
-  NotebookTrustStatus
-} from '@jupyterlab/notebook';
+  NotebookTrustStatus,
+} from 'dfnotebook';
 
 import { IPropertyInspectorProvider } from '@jupyterlab/property-inspector';
 
@@ -266,7 +266,7 @@ const FORMAT_LABEL: { [k: string]: string } = {
  * The notebook widget tracker provider.
  */
 const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
-  id: '@jupyterlab/notebook-extension:tracker',
+  id: 'dfnotebook-extension:tracker',
   provides: INotebookTracker,
   requires: [INotebookWidgetFactory, IDocumentManager],
   optional: [
@@ -286,7 +286,7 @@ const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
  * The notebook cell factory provider.
  */
 const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
-  id: '@jupyterlab/notebook-extension:factory',
+  id: 'dfnotebook-extension:factory',
   provides: NotebookPanel.IContentFactory,
   requires: [IEditorServices],
   autoStart: true,
@@ -302,7 +302,7 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
 const tools: JupyterFrontEndPlugin<INotebookTools> = {
   activate: activateNotebookTools,
   provides: INotebookTools,
-  id: '@jupyterlab/notebook-extension:tools',
+  id: 'dfnotebook-extension:tools',
   autoStart: true,
   requires: [INotebookTracker, IEditorServices, IStateDB],
   optional: [IPropertyInspectorProvider]
@@ -312,7 +312,7 @@ const tools: JupyterFrontEndPlugin<INotebookTools> = {
  * A plugin providing a CommandEdit status item.
  */
 export const commandEditItem: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extension:mode-status',
+  id: 'dfnotebook-extension:mode-status',
   autoStart: true,
   requires: [INotebookTracker],
   optional: [IStatusBar],
@@ -334,7 +334,7 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
       item.model.notebook = current && current.content;
     });
 
-    statusBar.registerStatusItem('@jupyterlab/notebook-extension:mode-status', {
+    statusBar.registerStatusItem('dfnotebook-extension:mode-status', {
       item,
       align: 'right',
       rank: 4,
@@ -350,7 +350,7 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
  * A plugin that adds a notebook trust status item to the status bar.
  */
 export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extension:trust-status',
+  id: 'dfnotebook-extension:trust-status',
   autoStart: true,
   requires: [INotebookTracker],
   optional: [IStatusBar],
@@ -373,7 +373,7 @@ export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
     });
 
     statusBar.registerStatusItem(
-      '@jupyterlab/notebook-extension:trust-status',
+      'dfnotebook-extension:trust-status',
       {
         item,
         align: 'right',
@@ -391,7 +391,7 @@ export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
  * The notebook widget factory provider.
  */
 const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
-  id: '@jupyterlab/notebook-extension:widget-factory',
+  id: 'dfnotebook-extension:widget-factory',
   provides: INotebookWidgetFactory,
   requires: [
     NotebookPanel.IContentFactory,
@@ -544,6 +544,7 @@ function activateNotebookHandler(
   settingRegistry: ISettingRegistry | null,
   sessionDialogs: ISessionContextDialogs | null
 ): INotebookTracker {
+  console.log("STARTING NOTEBOOK HANDLER!");
   const services = app.serviceManager;
 
   const { commands } = app;

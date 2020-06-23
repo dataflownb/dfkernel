@@ -16,7 +16,7 @@ import { PanelLayout, Widget } from '@lumino/widgets';
 
 import { Collapse, Styling } from '@jupyterlab/apputils';
 
-import { Cell, ICellModel } from '@jupyterlab/cells';
+import { Cell, ICellModel } from 'dfcells';
 
 import {
   CodeEditor,

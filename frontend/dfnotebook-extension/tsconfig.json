@@ -1,64 +1,37 @@
 {
-  "extends": "../../tsconfigbase",
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "composite": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "jsx": "react",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "preserveWatchOutput": true,
+    "resolveJsonModule": true,
     "outDir": "lib",
-    "rootDir": "src"
+    "rootDir": "src",
+    "strictNullChecks": true,
+    "target": "es2017",
+    "types": []
   },
   "include": ["src/*"],
   "references": [
     {
-      "path": "../application"
+      "path": "../dfnotebook",
+      "composite": true
     },
     {
-      "path": "../apputils"
+      "path": "../dfcells",
+      "composite": true
     },
     {
-      "path": "../cells"
-    },
-    {
-      "path": "../codeeditor"
-    },
-    {
-      "path": "../coreutils"
-    },
-    {
-      "path": "../docmanager"
-    },
-    {
-      "path": "../filebrowser"
-    },
-    {
-      "path": "../launcher"
-    },
-    {
-      "path": "../mainmenu"
-    },
-    {
-      "path": "../nbformat"
-    },
-    {
-      "path": "../notebook"
-    },
-    {
-      "path": "../property-inspector"
-    },
-    {
-      "path": "../rendermime"
-    },
-    {
-      "path": "../services"
-    },
-    {
-      "path": "../settingregistry"
-    },
-    {
-      "path": "../statedb"
-    },
-    {
-      "path": "../statusbar"
-    },
-    {
-      "path": "../ui-components"
+      "path": "../dfoutputarea",
+      "composite": true
     }
   ]
 }
