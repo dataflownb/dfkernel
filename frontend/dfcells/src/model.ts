@@ -3,7 +3,7 @@
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
 
-import { JSONExt, JSONObject, JSONValue } from '@lumino/coreutils';
+import { JSONExt, JSONObject, JSONValue, PartialJSONObject } from '@lumino/coreutils';
 
 import { ISignal, Signal } from '@lumino/signaling';
 
@@ -261,6 +261,8 @@ export class CellModel extends CodeEditor.Model implements ICellModel {
     if (this.trusted) {
       metadata['trusted'] = true;
     }
+    metadata['dfnotebook'] = {};
+    metadata['dfnotebook']['id'] = this.id;
     return {
       cell_type: this.type,
       source: this.value.text,
@@ -460,6 +462,12 @@ export class CodeCellModel extends CellModel implements ICodeCellModel {
    * Construct a new code cell with optional original cell content.
    */
   constructor(options: CodeCellModel.IOptions) {
+    // FIXME find better way to do this, probably define the interface?
+    if (options.cell !== undefined &&
+        options.cell.metadata.dfnotebook &&
+        (options.cell.metadata.dfnotebook as PartialJSONObject).id !== undefined) {
+      options.id = (options.cell.metadata.dfnotebook as PartialJSONObject).id as string;
+    }
     super(options);
     let factory = options.contentFactory || CodeCellModel.defaultContentFactory;
     let trusted = this.trusted;

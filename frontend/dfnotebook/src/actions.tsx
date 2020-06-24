@@ -1563,10 +1563,45 @@ namespace Private {
       case 'code':
         if (sessionContext) {
           const deletedCells = notebook.model?.deletedCells ?? [];
+          const codeDict: { [key: string]: string } = {};
+          const cellIdWidgetMap: { [key: string]: any } = {};
+          const outputTags: { [key: string]: string[] } = {};
+          if (notebook.model) {
+            each(notebook.model.cells, (c: ICodeCellModel, index) => {
+              const child = notebook.widgets[index] as CodeCell;
+              if (c.type === 'code') {
+                const cId = c.id.replace(/-/g, '').substr(0, 8);
+                codeDict[cId] = c.value.text;
+                cellIdWidgetMap[cId] = child;
+                let cellOutputTags: string[] = [];
+                for (let i = 0; i < child.outputArea.model.length; ++i) {
+                  const out = child.outputArea.model.get(i);
+                  if (out.metadata['output_tag']) {
+                    cellOutputTags.push(out.metadata['output_tag'] as string);
+                  }
+                }
+                outputTags[cId] = cellOutputTags;
+              }
+            });
+          }
+          console.log('codeDict:', codeDict);
+          console.log('cellIdWidgetMap:', cellIdWidgetMap);
+          console.log('outputTags:', outputTags);
+
+          const dfData = {
+            uuid: cell.model.id.replace(/-/g, '').substr(0, 8),
+            code_dict: codeDict,
+            output_tags: outputTags, // this.notebook.get_output_tags(Object.keys(code_dict)),
+            auto_update_flags: {}, // this.notebook.get_auto_update_flags(),
+            force_cached_flags: {} // this.notebook.get_force_cached_flags()})
+          };
           return CodeCell.execute(cell as CodeCell, sessionContext, {
             deletedCells,
-            recordTiming: notebook.notebookConfig.recordTiming
-          })
+            recordTiming: notebook.notebookConfig.recordTiming,
+          },
+              dfData,
+              cellIdWidgetMap,
+              )
             .then(reply => {
               deletedCells.splice(0, deletedCells.length);
               if (cell.isDisposed) {

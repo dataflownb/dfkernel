@@ -129,6 +129,16 @@ export class OutputArea extends Widget {
   readonly rendermime: IRenderMimeRegistry;
 
   /**
+   * The cellIdWidgetMap is a hack to map outputs to other cells
+   */
+  static cellIdWidgetMap: { [key:string]: Widget } | undefined;
+
+  /**
+   * The cell's id
+   */
+  cellId: string;
+
+  /**
    * A read-only sequence of the chidren widgets in the output area.
    */
   get widgets(): ReadonlyArray<Widget> {
@@ -438,6 +448,9 @@ export class OutputArea extends Widget {
 
     let prompt = this.contentFactory.createOutputPrompt();
     prompt.executionCount = model.executionCount;
+    if (model.metadata['output_tag']) {
+      prompt.outputTag = model.metadata['output_tag'] as string;
+    }
     prompt.addClass(OUTPUT_AREA_PROMPT_CLASS);
     panel.addWidget(prompt);
 
@@ -497,6 +510,18 @@ export class OutputArea extends Widget {
       case 'stream':
       case 'error':
         output = { ...msg.content, output_type: msgType };
+        if (output.execution_count) {
+          const cellId = output.execution_count.toString(16).padStart(8, '0');
+          if (cellId !== this.cellId) {
+            if (OutputArea.cellIdWidgetMap) {
+              const cellWidget = OutputArea.cellIdWidgetMap[cellId];
+              // @ts-ignore
+              const outputArea = cellWidget._output;
+              outputArea._onIOPub(msg);
+            }
+            break;
+          }
+        }
         model.add(output);
         break;
       case 'clear_output':
@@ -613,7 +638,9 @@ export namespace OutputArea {
     code: string,
     output: OutputArea,
     sessionContext: ISessionContext,
-    metadata?: JSONObject
+    metadata?: JSONObject,
+    dfData?: JSONObject,
+    cellIdWidgetMap?: {[key:string]: Widget}
   ): Promise<KernelMessage.IExecuteReplyMsg | undefined> {
     // Override the default for `stop_on_error`.
     let stopOnError = true;
@@ -624,9 +651,14 @@ export namespace OutputArea {
     ) {
       stopOnError = false;
     }
+    if (dfData === undefined) {
+      // FIXME not sure if this works or not...
+      dfData = {} as JSONObject;
+    }
     let content: KernelMessage.IExecuteRequestMsg['content'] = {
       code,
-      stop_on_error: stopOnError
+      stop_on_error: stopOnError,
+      user_expressions: { __dfkernel_data__: dfData } as JSONObject
     };
 
     const kernel = sessionContext.session?.kernel;
@@ -635,6 +667,9 @@ export namespace OutputArea {
     }
     let future = kernel.requestExecute(content, false, metadata);
     output.future = future;
+
+    OutputArea.cellIdWidgetMap = cellIdWidgetMap;
+
     return future.done;
   }
 
@@ -707,6 +742,7 @@ export interface IOutputPrompt extends Widget {
    * The execution count for the prompt.
    */
   executionCount: nbformat.ExecutionCount;
+  outputTag: string
 }
 
 /**
@@ -721,6 +757,20 @@ export class OutputPrompt extends Widget implements IOutputPrompt {
     this.addClass(OUTPUT_PROMPT_CLASS);
   }
 
+  updatePrompt() {
+    if (this._outputTag) {
+      this.node.textContent = `${this._outputTag}:`;
+    } else if (this._executionCount === null) {
+      this.node.textContent = '';
+    } else {
+      const cellId = this._executionCount
+          .toString(16)
+          .padStart(8, '0')
+          .substr(0, 3);
+      this.node.textContent = `[${cellId}]:`;
+    }
+  }
+
   /**
    * The execution count for the prompt.
    */
@@ -729,14 +779,25 @@ export class OutputPrompt extends Widget implements IOutputPrompt {
   }
   set executionCount(value: nbformat.ExecutionCount) {
     this._executionCount = value;
-    if (value === null) {
-      this.node.textContent = '';
-    } else {
-      this.node.textContent = `[${value}]:`;
-    }
+    // if (value === null) {
+    //   this.node.textContent = '';
+    // } else {
+    //   this.node.textContent = `[${value}]:`;
+    // }
+    this.updatePrompt();
+  }
+
+  get outputTag(): string {
+    return this._outputTag;
+  }
+
+  set outputTag(value: string) {
+    this._outputTag = value;
+    this.updatePrompt();
   }
 
   private _executionCount: nbformat.ExecutionCount = null;
+  private _outputTag: string = '';
 }
 
 /******************************************************************************

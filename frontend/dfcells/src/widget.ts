@@ -71,6 +71,7 @@ import {
 } from './model';
 
 import { InputPlaceholder, OutputPlaceholder } from './placeholder';
+import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
 /**
  * The CSS class added to cell widgets.
@@ -703,6 +704,9 @@ export class CodeCell extends Cell {
       rendermime,
       contentFactory: contentFactory
     }));
+    // FIXME embed this in OutputArea
+    output.cellId = model.id.replace(/-/g, '').substr(0, 8);
+
     output.addClass(CELL_OUTPUT_AREA_CLASS);
     // Set a CSS if there are no outputs, and connect a signal for future
     // changes to the number of outputs. This is for conditional styling
@@ -737,7 +741,8 @@ export class CodeCell extends Cell {
     super.initializeState();
     this.loadScrolledState();
 
-    this.setPrompt(`${this.model.executionCount || ''}`);
+    // this.setPrompt(`${this.model.executionCount || ''}`);
+    this.setPrompt(`${this.model.id.substr(0, 3) || ''}`);
     return this;
   }
 
@@ -952,7 +957,9 @@ export class CodeCell extends Cell {
   protected onStateChanged(model: ICellModel, args: IChangedArgs<any>): void {
     switch (args.name) {
       case 'executionCount':
-        this.setPrompt(`${(model as ICodeCellModel).executionCount || ''}`);
+        //this.setPrompt(`${(model as ICodeCellModel).executionCount || ''}`);
+        // FIXME should this be a no-op?
+        this.setPrompt(`${model.id.substr(0, 3) || ''}`);
         break;
       default:
         break;
@@ -1030,7 +1037,9 @@ export namespace CodeCell {
   export async function execute(
     cell: CodeCell,
     sessionContext: ISessionContext,
-    metadata?: JSONObject
+    metadata?: JSONObject,
+    dfData?: JSONObject,
+    cellIdWidgetMap?: {[key:string]: Widget}
   ): Promise<KernelMessage.IExecuteReplyMsg | void> {
     let model = cell.model;
     let code = model.value.text;
@@ -1057,10 +1066,12 @@ export namespace CodeCell {
       | undefined;
     try {
       const msgPromise = OutputArea.execute(
-        code,
-        cell.outputArea,
-        sessionContext,
-        metadata
+          code,
+          cell.outputArea,
+          sessionContext,
+          metadata,
+          dfData,
+          cellIdWidgetMap
       );
       // cell.outputArea.future assigned synchronously in `execute`
       if (recordTiming) {
@@ -1094,6 +1105,40 @@ export namespace CodeCell {
       } else {
         model.metadata.delete('execution');
       }
+
+      const clearOutput = (msg: KernelMessage.IIOPubMessage) => {
+        switch (msg.header.msg_type) {
+          case 'execute_input':
+            const executionCount = (msg as IExecuteInputMsg).content
+                .execution_count;
+            if (executionCount !== null) {
+              const cellId = executionCount.toString(16).padStart(8, '0');
+              console.log('EXECUTE INPUT:', cellId);
+              if (cellIdWidgetMap) {
+                const cellWidget = cellIdWidgetMap[cellId];
+                // @ts-ignore
+                cellWidget.model.value.text = (msg as IExecuteInputMsg).content.code;
+                // @ts-ignore
+                const outputArea = cellWidget._output;
+                outputArea.model.clear();
+
+                // Make sure there were no input widgets.
+                if (outputArea.widgets.length) {
+                  outputArea._clear();
+                  outputArea.outputLengthChanged.emit(outputArea.model.length);
+                }
+              }
+            }
+            break;
+          default:
+            return true;
+        }
+        return true;
+      };
+      cell.outputArea.future.registerMessageHook(clearOutput);
+
+
+
       // Save this execution's future so we can compare in the catch below.
       future = cell.outputArea.future;
       const msg = (await msgPromise)!;
@@ -1118,7 +1163,9 @@ export namespace CodeCell {
       // If we started executing, and the cell is still indicating this
       // execution, clear the prompt.
       if (future && !cell.isDisposed && cell.outputArea.future === future) {
-        cell.setPrompt('');
+        // cell.setPrompt('');
+        // FIXME is this necessary?
+        cell.setPrompt(`${cell.model.id.substr(0, 3) || ''}`);
       }
       throw e;
     }
