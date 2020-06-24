@@ -1039,7 +1039,7 @@ export namespace CodeCell {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdWidgetMap?: {[key:string]: Widget}
+    cellIdWidgetMap?: {[key:string]: CodeCell}
   ): Promise<KernelMessage.IExecuteReplyMsg | void> {
     let model = cell.model;
     let code = model.value.text;
@@ -1116,17 +1116,9 @@ export namespace CodeCell {
               console.log('EXECUTE INPUT:', cellId);
               if (cellIdWidgetMap) {
                 const cellWidget = cellIdWidgetMap[cellId];
-                // @ts-ignore
                 cellWidget.model.value.text = (msg as IExecuteInputMsg).content.code;
-                // @ts-ignore
-                const outputArea = cellWidget._output;
+                const outputArea = cellWidget.outputArea;
                 outputArea.model.clear();
-
-                // Make sure there were no input widgets.
-                if (outputArea.widgets.length) {
-                  outputArea._clear();
-                  outputArea.outputLengthChanged.emit(outputArea.model.length);
-                }
               }
             }
             break;
