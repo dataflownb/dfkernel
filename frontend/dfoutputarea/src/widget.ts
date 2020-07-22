@@ -512,6 +512,9 @@ export class OutputArea extends Widget {
         output = { ...msg.content, output_type: msgType };
         if (output.execution_count) {
           const cellId = output.execution_count.toString(16).padStart(8, '0');
+          if(msgType === 'stream') {
+            delete output.execution_count;
+          }
           if (cellId !== this.cellId) {
             if (OutputArea.cellIdWidgetMap) {
               const cellWidget = OutputArea.cellIdWidgetMap[cellId];
