@@ -13,6 +13,6 @@
 @import url('~@jupyterlab/rendermime/style/index.css');
 @import url('~@jupyterlab/attachments/style/index.css');
 @import url('~@jupyterlab/filebrowser/style/index.css');
-@import url('~@jupyterlab/outputarea/style/index.css');
+@import url('~dfoutputarea/style/index.css');
 
 @import url('./base.css');
