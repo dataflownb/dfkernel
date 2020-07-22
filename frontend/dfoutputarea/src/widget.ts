@@ -765,8 +765,8 @@ export class OutputPrompt extends Widget implements IOutputPrompt {
     } else {
       const cellId = this._executionCount
           .toString(16)
-          .padStart(8, '0')
-          .substr(0, 3);
+          .padStart(8, '0');
+          // .substr(0, 3);
       this.node.textContent = `[${cellId}]:`;
     }
   }

@@ -742,7 +742,7 @@ export class CodeCell extends Cell {
     this.loadScrolledState();
 
     // this.setPrompt(`${this.model.executionCount || ''}`);
-    this.setPrompt(`${this.model.id.substr(0, 3) || ''}`);
+    this.setPrompt(`${this.model.id.substr(0, 8) || ''}`);
     return this;
   }
 
@@ -959,7 +959,7 @@ export class CodeCell extends Cell {
       case 'executionCount':
         //this.setPrompt(`${(model as ICodeCellModel).executionCount || ''}`);
         // FIXME should this be a no-op?
-        this.setPrompt(`${model.id.substr(0, 3) || ''}`);
+        this.setPrompt(`${model.id.substr(0, 8) || ''}`);
         break;
       default:
         break;
@@ -1157,7 +1157,7 @@ export namespace CodeCell {
       if (future && !cell.isDisposed && cell.outputArea.future === future) {
         // cell.setPrompt('');
         // FIXME is this necessary?
-        cell.setPrompt(`${cell.model.id.substr(0, 3) || ''}`);
+        cell.setPrompt(`${cell.model.id.substr(0, 8) || ''}`);
       }
       throw e;
     }
