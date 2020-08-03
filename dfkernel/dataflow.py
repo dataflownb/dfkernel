@@ -379,6 +379,7 @@ class DataflowNamespace(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__links__ = {}
+        self.__all_links__ = defaultdict(set)
         self.__rev_links__ = defaultdict(set)
         self.__do_not_link__ = set()
         self.__local_vars__ = defaultdict(dict)
@@ -403,12 +404,10 @@ class DataflowNamespace(dict):
             # FIXME do we need to compute difference first?
             self.__do_not_link__.update(rev_links)
             df_history = super().__getitem__('_oh')
-            # print("Executing cell", cell_id)
             try:
                 res = df_history.get_item(cell_id)
             except CyclicalCallError:
                 raise
-            # print("Got result", cell_id, res)
             self.__do_not_link__.difference_update(rev_links)
             return res[k]
         return super().__getitem__(k)
@@ -425,6 +424,30 @@ class DataflowNamespace(dict):
         if k in self.__links__:
             return self.__links__[k]
         return None
+
+    def complete(self, text, input_tags={}):
+        results = []
+        id_start = text
+        cell_start = None
+        if '$' in text:
+            id_start, cell_start = text.split('$',maxsplit=1)
+        import sys
+        # print(f"COMPLETER INTERNAL: '{id_start}' '{cell_start}'", file=sys.__stdout__)
+        for link, cell_ids in self.__all_links__.items():
+            if link.startswith(id_start):
+                if cell_start:
+                    results.extend(link + '$' + input_tag
+                                   for input_tag in input_tags
+                                   if input_tag.startswith(cell_start))
+                    results.extend(link + '$' + cell_id
+                                   for cell_id in cell_ids
+                                   if cell_id.startswith(cell_start))
+                else:
+                    if cell_start is None:
+                        results.append(link)
+                    results.extend(link + '$' + input_tag for input_tag in input_tags)
+                    results.extend(link + '$' + cell_id for cell_id in cell_ids)
+        return results
 
     def __setitem__(self, k, v):
         # FIXME question is whether to do this or allow local vars
@@ -448,8 +471,23 @@ class DataflowNamespace(dict):
 
     def _add_links(self, tag_dict):
         """Used for adding links of pre-existing links currently only used for cold starts"""
+
+        # FIXME really need to store this information in the notebook metadata
+        # in order to keep track of this...
+        new_tags = {}
+        not_unique = set()
         for (cell_id, tag_list) in tag_dict.items():
             for tag in tag_list:
+                self.__all_links__[tag].add(cell_id)
+                if tag not in not_unique:
+                    if tag in new_tags:
+                        del new_tags[tag]
+                        not_unique.add(tag)
+                    else:
+                        new_tags[tag] = cell_id
+        for tag, cell_id in new_tags.items():
+            # do not overwrite existing value
+            if tag not in self.__links__:
                 self._add_link(tag, cell_id)
 
     def _add_link(self, name, cell_id):
@@ -458,6 +496,7 @@ class DataflowNamespace(dict):
         #     if self.__links__[name] != cell_id:
         #         raise DuplicateNameError(name, self.__links__[name])
         # else:
+        self.__all_links__[name].add(cell_id)
         self.__links__[name] = cell_id
         self.__rev_links__[cell_id].add(name)
 

@@ -37,7 +37,9 @@ from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )
 from warnings import warn
-from typing import List as ListType
+from typing import List as ListType, Tuple, Iterable
+from IPython.core.completer import _FakeJediCompletion
+
 from ast import AST
 import importlib
 
@@ -332,12 +334,65 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.uuid_stack = [] # [None]
         self.result_stack = [] # [None]
         self.execution_count_stack = []
+        self.input_tags = {}
         self.max_execution_count = 0
 
         #FIXME: This is really just a simple fix to turn it on with Kernel boot, but this seems like a bandaid fix
         self.ast_node_interactivity = 'last_expr_or_assign'
         self.ast_transformers.append(CellIdTransformer())
         self.display_formatter.formatters["text/plain"].for_type(tuple, tuple_formatter)
+
+        self.Completer.splitter.delims = self.Completer.splitter.delims.replace('$','')
+
+        self.Completer._old_complete = self.Completer._complete
+        def new_complete(self, *, cursor_line, cursor_pos, line_buffer=None,
+                      text=None,
+                      full_text=None) -> Tuple[
+            str, ListType[str], ListType[str], Iterable[_FakeJediCompletion]]:
+            print("RUNNING NEW COMPLETE", file=sys.__stdout__)
+            if cursor_pos is None:
+                cursor_pos = len(line_buffer) if text is None else len(text)
+
+            # if self.use_main_ns:
+            #     self.namespace = __main__.__dict__
+
+            # if text is either None or an empty string, rely on the line buffer
+            if (not line_buffer) and full_text:
+                line_buffer = full_text.split('\n')[cursor_line]
+            if not text:
+                text = self.splitter.split_line(line_buffer, cursor_pos)
+
+            use_jedi = self.use_jedi
+            if '$' in text:
+                # only deal with our matchers
+                print("ONLY OUR MATCHERS!", file=sys.__stdout__)
+                def get_matchers(self):
+                    return [*self.custom_matchers]
+                self.__class__._old_matchers = self.__class__.matchers
+                self.__class__.matchers = property(get_matchers)
+                self.use_jedi = False
+            else:
+                print("NO STAR", file=sys.__stdout__)
+            try:
+                return self._old_complete(cursor_line=cursor_line, cursor_pos=cursor_pos,
+                                                    line_buffer=line_buffer, text=text,
+                                                     full_text=full_text)
+            finally:
+                if '$' in text:
+                    self.__class__.matchers = self.__class__._old_matchers
+                    self.use_jedi = use_jedi
+
+        self.Completer.__class__._complete = new_complete
+
+        # print("DELIMS:", self.Completer.splitter.delims, file=sys.__stdout__)
+        #
+        def cell_scope_completer(completer, text):
+            print("GOT COMPLETION REQUEST:", completer, text,
+                  file=sys.__stdout__)
+            results = self.user_ns.complete(text, self.input_tags)
+            return results
+        self.set_custom_completer(cell_scope_completer)
+
 
         # def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
         #     retval = shell.InteractiveTB.structured_traceback(

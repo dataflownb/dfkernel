@@ -54,8 +54,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # execution counter.
         pass
 
-    def ground_code(self, code, execution_count):
-        code = convert_dollar(code, identifier_replacer)
+    def ground_code(self, code, execution_count, input_tags):
+        code = convert_dollar(code, identifier_replacer, input_tags)
 
 
         class DataflowLinker(ast.NodeVisitor):
@@ -134,6 +134,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # there just for convenience of not modifying the msg protocol
         dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
 
+        input_tags = dfkernel_data.get('input_tags', {})
+        print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
+        self.shell.input_tags = input_tags
+
         self._outer_stream = stream
         self._outer_ident = ident
         self._outer_parent = parent
@@ -164,12 +168,14 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         allow_stdin = self._outer_allow_stdin
         dfkernel_data = self._outer_dfkernel_data
 
+        input_tags = dfkernel_data.get('input_tags', {})
+
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
 
         execution_count = int(uuid, 16)
         try:
-            code = self.ground_code(code, uuid)
+            code = self.ground_code(code, uuid, input_tags)
         except SyntaxError:
             # ignore this for now, catch it in do_execute
             pass

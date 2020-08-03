@@ -10,7 +10,7 @@ def identifier_replacer(cell_id, var):
 def dollar_replacer(cell_id, var):
     return f"{var}${cell_id}"
 
-def convert_dollar(s, replace_f=default_replacer):
+def convert_dollar(s, replace_f=default_replacer, input_tags={}):
     while True:
         try:
             nodes = ast.parse(s)
@@ -24,7 +24,8 @@ def convert_dollar(s, replace_f=default_replacer):
                         before = line[e.offset-2::-1]
                         after = line[e.offset:]
                         m1 = re.match(r'\w*[^\d\W]', before)
-                        m2 = re.match(r'[0-9a-f]+', after)
+                        # FIXME just allow digits, letters, and _ for now
+                        m2 = re.match(r'[0-9a-zA-Z]+', after)
                         if m1 and m2:
                             before_g = m1.group(0)
                             after_g = m2.group(0)
@@ -33,6 +34,9 @@ def convert_dollar(s, replace_f=default_replacer):
                             new_s += line[:e.offset-1-before_len]
                             cell_id = after_g
                             var = before_g[::-1]
+                            # convert input_tags to cell_ids
+                            if cell_id in input_tags:
+                                cell_id = input_tags[cell_id]
                             new_s += replace_f(cell_id, var)
                             new_s += line[e.offset+after_len:]
                         else:
