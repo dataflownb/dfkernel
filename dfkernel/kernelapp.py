@@ -47,8 +47,8 @@ class IPKernelApp(ipykernel.kernelapp.IPKernelApp):
         super(IPKernelApp, self).init_kernel()
 
         # self.display_pub.get_execution_count = lambda: kernel.execution_count
-        sys.stdout.get_execution_count = lambda: self.kernel.execution_count
-        sys.stderr.get_execution_count = lambda: self.kernel.execution_count
+        sys.stdout.get_execution_count = lambda: int(self.kernel.execution_count, 16) if self.kernel.execution_count else None
+        sys.stderr.get_execution_count = lambda: int(self.kernel.execution_count, 16) if self.kernel.execution_count else None
 
 launch_new_instance = IPKernelApp.launch_instance
 

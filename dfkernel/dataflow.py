@@ -213,9 +213,8 @@ class DataflowHistoryManager(object):
             if cid in self.dep_children[k]:
                 raise CyclicalCallError(k)
         child_uuid = self.shell.uuid
-        # print('running cell as execute request', k)
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
-                                                        **local_flags)
+                                                   **self.flags)
         # print('retval:', retval)
         if not retval.success:
             raise DataflowCellException(k)

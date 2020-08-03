@@ -7,14 +7,20 @@ from ipykernel.zmqshell import *
 import ipykernel.zmqshell
 
 import ast
+import asyncio
 import collections
 from functools import partial
+import inspect
 import sys
 import types
-
+from tornado import gen
 from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC, \
     _assign_nodes, _single_targets_nodes
+try:
+    from IPython.core.interactiveshell import _asyncio_runner
+except ImportError:
+    _asyncio_runner = None
 from IPython.core.interactiveshell import ExecutionResult, ExecutionInfo
 from IPython.core.compilerop import CachingCompiler
 from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
@@ -351,7 +357,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
                                     shell_futures=True, update_downstream_deps=False):
-        return self.kernel.inner_execute_request(code, uuid, silent, store_history)
+        if (
+            _asyncio_runner
+            and self.loop_runner is _asyncio_runner
+            and asyncio.get_event_loop().is_running()
+        ):
+            future = gen.maybe_future(self.kernel.inner_execute_request(code, uuid, silent, store_history))
+            asyncio.get_event_loop().run_until_complete(future)
+            res = future.result()
+            return res
+        else:
+            raise Exception("FIXME asyncio not enabled")
 
     def _showtraceback(self, etype, evalue, stb):
         # try to preserve ordering of tracebacks and print statements
@@ -441,7 +457,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # set partial on run_cell_async
         # print("RUN CELL:", uuid, self.max_execution_count, self.execution_count)
         self.run_cell_async = partial(self.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
-        self.execution_count = self.max_execution_count
         # self.execution_count = int(uuid, 16)
         res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
         # self.max_execution_count = max(self.max_execution_count, self.execution_count)
@@ -458,9 +473,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         auto_update_flags = dfkernel_data.get("auto_update_flags", [])
         force_cached_flags = dfkernel_data.get("force_cached_flags", [])
         # print("CODE_DICT:", code_dict)
-        #print("RUNNING CELL", uuid, raw_cell)
+        # print("ASYNC RUNNING CELL", uuid, raw_cell)
         # print("RUN_CELL USER_NS:", self.user_ns)
         self._last_traceback = None
+        self.execution_count = self.max_execution_count
         old_deps = []
 
         if store_history:
@@ -911,6 +927,26 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             no_link_vars.extend(vars)
             libs = []
 
+            # FIXME async requires 3.8
+            # FIXME do we have to execute each line async autowait, too?? ugh
+            # FIXME for now, just do last line
+            has_await = False
+            if sys.version_info > (3, 8):
+                def compare(code):
+                    is_async = (
+                                inspect.CO_COROUTINE & code.co_flags == inspect.CO_COROUTINE)
+                    return is_async
+
+                mode = 'exec'
+                node = nodelist[-1]
+                # for node in nodelist:
+                mod = ast.Module([node], [])
+                with compiler.extra_flags(
+                        getattr(ast, 'PyCF_ALLOW_TOP_LEVEL_AWAIT',
+                                0x0) if self.autoawait else 0x0):
+                    code = compiler(mod, cell_name, mode)
+                    has_await = compare(code)
+
             if auto_add_libs:
                 lnames = []
                 new_node_list = []
@@ -944,6 +980,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                         create_node = True
                         append_node = True
                         libs = list(diff)
+
             if(len(unnamed) <= 1 and len(vars)+len(libs) < 1):
                 create_node = False
                 # if(len(unnamed) < 1):
@@ -990,7 +1027,12 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 # arguments = (arg * posonlyargs, arg * args, arg
                 #              ? vararg, arg * kwonlyargs,
                 #              expr * kw_defaults, arg? kwarg, expr * defaults)
-                nodelist = [ast.FunctionDef("__closure__",ast.arguments(posonlyargs=[],args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))]
+                if has_await:
+                    # print("HAS AWAIT")
+                    closure_expr = ast.Expr(ast.Await(ast.Call(ast.Name("__closure__", ast.Load()), [], [])))
+                else:
+                    closure_expr = ast.Expr(ast.Call(ast.Name("__closure__", ast.Load()), [], []))
+                nodelist = [ast.FunctionDef("__closure__",ast.arguments(posonlyargs=[],args=[],vararg=None,kwonlyargs=[],kw_defaults=[],kwarg=None,defaults=[]),nodelist,[],None),closure_expr]
                 if future_elt:
                     nodelist = future_elt + nodelist
                 for node in nodelist:

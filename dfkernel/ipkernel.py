@@ -6,12 +6,19 @@ from ipykernel.ipkernel import *
 import ast
 import sys
 import time
+from tornado import gen
+import nest_asyncio
 
 from ipython_genutils.py3compat import safe_unicode
 from traitlets import Type
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import unicode_type
 from ipykernel.jsonutil import json_clean
+
+try:
+    from IPython.core.interactiveshell import _asyncio_runner
+except ImportError:
+    _asyncio_runner = None
 
 from .zmqshell import ZMQInteractiveShell
 from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer
@@ -25,6 +32,16 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         super(IPythonKernel, self).__init__(**kwargs)
         self.shell.displayhook.get_execution_count = lambda: int(self.execution_count, 16)
         self.shell.display_pub.get_execution_count = lambda: int(self.execution_count, 16)
+        # first use nest_ayncio for nested async, then add asyncio.Future to tornado
+        nest_asyncio.apply()
+        # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
+        # If tornado is imported, add the patched asyncio.Future to its tuple of acceptable Futures"""
+        # original from vaex/asyncio.py
+        if 'tornado' in sys.modules:
+            import tornado.concurrent
+            if asyncio.Future not in tornado.concurrent.FUTURES:
+                tornado.concurrent.FUTURES = tornado.concurrent.FUTURES + (
+                asyncio.Future,)
 
     @property
     def execution_count(self):
@@ -95,6 +112,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #
     #     super()._publish_execute_input(code, parent, execution_count)
 
+    # @gen.coroutine
     def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
 
@@ -123,16 +141,19 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
 
-        self.inner_execute_request(code, dfkernel_data.get('uuid'), silent,
-                                   store_history, user_expressions)
+        res = self.inner_execute_request(
+            code, dfkernel_data.get('uuid'), silent, store_history,
+            user_expressions,
+        )
 
-        self._outer_stream = None
-        self._outer_ident = None
-        self._outer_parent = None
-        self._outer_stop_on_error = None
-        self._outer_allow_stdin = None
-        self._outer_dfkernel_data = None
+        # self._outer_stream = None
+        # self._outer_ident = None
+        # self._outer_parent = None
+        # self._outer_stop_on_error = None
+        # self._outer_allow_stdin = None
+        # self._outer_dfkernel_data = None
 
+    @gen.coroutine
     def inner_execute_request(self, code, uuid, silent,
                               store_history=True, user_expressions=None):
 
@@ -163,12 +184,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             # ignore this for now, catch it in do_execute
             pass
 
-        # print("STEP 4:", code)
-        # if '36f9b2ee' in self.shell.user_ns['_oh']:
-        #     print("HERE IT IS:", self.shell.user_ns['_oh'].get_item('36f9b2ee'))
-
-        reply_content, res = self.do_execute(code, uuid, dfkernel_data, silent, store_history,
+        reply_content, res = yield gen.maybe_future(
+            self.do_execute(code, uuid, dfkernel_data, silent, store_history,
                                         user_expressions, allow_stdin)
+        )
 
         # Flush output before sending the reply.
         sys.stdout.flush()
@@ -190,26 +209,66 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self.log.debug("%s", reply_msg)
 
         if not silent and reply_msg['content']['status'] == u'error' and stop_on_error:
-            self._abort_queues()
+            # FIXME here's the problem if I don't do coroutine here...
+            yield self._abort_queues()
 
         return res
 
+    @gen.coroutine
     def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         shell = self.shell # we'll need this a lot here
 
         self._forward_input(allow_stdin)
 
+        print("DO EXECUTE:", uuid, file=sys.__stdout__)
         reply_content = {}
+        if hasattr(shell, 'run_cell_async') and hasattr(shell, 'should_run_async'):
+            run_cell = partial(shell.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
+            should_run_async = shell.should_run_async
+        else:
+            should_run_async = lambda cell: False
+            # older IPython,
+            # use blocking run_cell and wrap it in coroutine
+            @gen.coroutine
+            def run_cell(*args, **kwargs):
+                kwargs['uuid'] = uuid
+                kwargs['dfkernel_data'] = dfkernel_data
+                return shell.run_cell(*args, **kwargs)
 
         res = None
         try:
-            print("RUNNING CELL:", uuid, file=sys.__stdout__)
-            res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
-                                 store_history=store_history, silent=silent)
+            # default case: runner is asyncio and asyncio is already running
+            # TODO: this should check every case for "are we inside the runner",
+            # not just asyncio
+            if (
+                _asyncio_runner
+                and should_run_async(code)
+                and shell.loop_runner is _asyncio_runner
+                and asyncio.get_event_loop().is_running()
+            ):
+                print("RUNNING CELL ASYNC:", uuid, file=sys.__stdout__)
+                coro = run_cell(code, store_history=store_history, silent=silent)
+                coro_future = asyncio.ensure_future(coro)
+
+                with self._cancel_on_sigint(coro_future):
+                    try:
+                        # print("TRYING TO YIELD CORO_FUTURE")
+                        res = yield coro_future
+                    finally:
+                        shell.events.trigger('post_execute')
+                        if not silent:
+                            shell.events.trigger('post_run_cell', res)
+            else:
+                # runner isn't already running,
+                # make synchronous call,
+                # letting shell dispatch to loop runners
+                res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
+                                     store_history=store_history, silent=silent)
         finally:
             self._restore_input()
 
+        # print("GOT RES:", res)
         if res.error_before_exec is not None:
             err = res.error_before_exec
         else:
