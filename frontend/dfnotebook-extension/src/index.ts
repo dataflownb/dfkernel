@@ -42,10 +42,13 @@ import {
 import * as nbformat from '@jupyterlab/nbformat';
 
 import {
-  NotebookTools,
   INotebookTools,
   INotebookTracker,
-  INotebookWidgetFactory,
+  INotebookWidgetFactory
+} from '@jupyterlab/notebook'
+
+import {
+  NotebookTools,
   NotebookActions,
   NotebookModelFactory,
   NotebookPanel,
@@ -330,7 +333,8 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
 
     // Keep the status item up-to-date with the current notebook.
     tracker.currentChanged.connect(() => {
-      const current = tracker.currentWidget;
+      // FIXME as unknown
+      const current = tracker.currentWidget as unknown as NotebookPanel;
       item.model.notebook = current && current.content;
     });
 
@@ -368,7 +372,7 @@ export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
 
     // Keep the status item up-to-date with the current notebook.
     tracker.currentChanged.connect(() => {
-      const current = tracker.currentWidget;
+      const current = tracker.currentWidget as unknown as NotebookPanel;
       item.model.notebook = current && current.content;
     });
 
@@ -426,7 +430,8 @@ function activateNotebookTools(
   inspectorProvider: IPropertyInspectorProvider | null
 ): INotebookTools {
   const id = 'notebook-tools';
-  const notebookTools = new NotebookTools({ tracker });
+  // FIXME as unknown
+  const notebookTools = new NotebookTools({ tracker: tracker as unknown as NotebookTracker });
   const activeCellTool = new NotebookTools.ActiveCellTool();
   const slideShow = NotebookTools.createSlideShowSelector();
   const editorFactory = editorServices.factoryService.newInlineEditor;
@@ -500,7 +505,8 @@ function activateNotebookTools(
     });
   }
 
-  return notebookTools;
+  // FIXME as unknown
+  return notebookTools as unknown as INotebookTools;
 }
 
 /**
@@ -677,7 +683,8 @@ function activateNotebookHandler(
 
   // Add main menu notebook menu.
   if (mainMenu) {
-    populateMenus(app, mainMenu, tracker, services, palette, sessionDialogs);
+    // FIXME as unknown
+    populateMenus(app, mainMenu, tracker as unknown as INotebookTracker, services, palette, sessionDialogs);
   }
 
   // Utility function to create a new notebook.
@@ -885,7 +892,8 @@ function activateNotebookHandler(
     rank: 9
   });
 
-  return tracker;
+  // FIXME as unknown
+  return tracker as unknown as INotebookTracker;
 }
 
 /**
@@ -2066,7 +2074,8 @@ function populateMenus(
 
   // Add undo/redo hooks to the edit menu.
   mainMenu.editMenu.undoers.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     undo: widget => {
       widget.content.activeCell?.editor.undo();
     },
@@ -2077,7 +2086,8 @@ function populateMenus(
 
   // Add a clearer to the edit menu
   mainMenu.editMenu.clearers.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     noun: 'Outputs',
     pluralNoun: 'Outputs',
     clearCurrent: (current: NotebookPanel) => {
@@ -2093,7 +2103,8 @@ function populateMenus(
 
   // Add a close and shutdown command to the file menu.
   mainMenu.fileMenu.closeAndCleaners.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     action: 'Shutdown',
     name: 'Notebook',
     closeAndCleanup: (current: NotebookPanel) => {
@@ -2151,7 +2162,8 @@ function populateMenus(
 
   // Add a kernel user to the Kernel menu
   mainMenu.kernelMenu.kernelUsers.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     interruptKernel: current => {
       let kernel = current.sessionContext.session?.kernel;
       if (kernel) {
@@ -2176,7 +2188,8 @@ function populateMenus(
 
   // Add a console creator the the Kernel menu
   mainMenu.fileMenu.consoleCreators.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     name: 'Notebook',
     createConsole: current => Private.createConsole(commands, current, true)
   } as IFileMenu.IConsoleCreator<NotebookPanel>);
@@ -2204,7 +2217,8 @@ function populateMenus(
 
   // Add an IEditorViewer to the application view menu
   mainMenu.viewMenu.editorViewers.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     toggleLineNumbers: widget => {
       NotebookActions.toggleAllLineNumbers(widget.content);
     },
@@ -2220,7 +2234,8 @@ function populateMenus(
 
   // Add an ICodeRunner to the application run menu
   mainMenu.runMenu.codeRunners.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     noun: 'Cells',
     run: current => {
       const { context, content } = current;
@@ -2313,7 +2328,8 @@ function populateMenus(
 
   // Add kernel information to the application help menu.
   mainMenu.helpMenu.kernelUsers.add({
-    tracker,
+    // FIXME as unknown
+    tracker: tracker as unknown as NotebookTracker,
     getKernel: current => current.sessionContext.session?.kernel
   } as IHelpMenu.IKernelUser<NotebookPanel>);
 }
