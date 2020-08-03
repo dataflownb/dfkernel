@@ -52,7 +52,7 @@ export class InputArea extends Widget {
       options.contentFactory || InputArea.defaultContentFactory);
 
     // Prompt
-    let prompt = (this._prompt = contentFactory.createInputPrompt());
+    let prompt = (this._prompt = contentFactory.createInputPrompt(model));
     prompt.addClass(INPUT_AREA_PROMPT_CLASS);
 
     // Editor
@@ -193,7 +193,7 @@ export namespace InputArea {
     /**
      * Create an input prompt.
      */
-    createInputPrompt(): IInputPrompt;
+    createInputPrompt(model: ICellModel): IInputPrompt;
   }
 
   /**
@@ -219,8 +219,8 @@ export namespace InputArea {
     /**
      * Create an input prompt.
      */
-    createInputPrompt(): IInputPrompt {
-      return new InputPrompt();
+    createInputPrompt(model: ICellModel): IInputPrompt {
+      return new InputPrompt(model);
     }
 
     private _editor: CodeEditor.Factory;
@@ -282,11 +282,18 @@ export interface IInputPrompt extends Widget {
  */
 export class InputPrompt extends Widget implements IInputPrompt {
   /*
-   * Create an output prompt widget.
+   * Create an input prompt widget.
    */
-  constructor() {
+  constructor(model: ICellModel) {
     super();
     this.addClass(INPUT_PROMPT_CLASS);
+    this._model = model;
+    this.node.addEventListener('mouseup', event => {
+      event.stopPropagation();
+      const value = prompt("Tag this cell:", "");
+      this._model.metadata.set('tag', value);
+      this.node.textContent = `[${value || ' '}]:`;
+    })
   }
 
   /**
@@ -297,7 +304,9 @@ export class InputPrompt extends Widget implements IInputPrompt {
   }
   set executionCount(value: string | null) {
     this._executionCount = value;
-    if (value === null) {
+    if (this._model.metadata.get('tag')) {
+      this.node.textContent = `[${this._model.metadata.get('tag')}]`;
+    } else if (value === null) {
       this.node.textContent = ' ';
     } else {
       this.node.textContent = `[${value || ' '}]:`;
@@ -305,4 +314,5 @@ export class InputPrompt extends Widget implements IInputPrompt {
   }
 
   private _executionCount: string | null = null;
+  private _model: ICellModel;
 }

@@ -629,8 +629,8 @@ export namespace Cell {
     /**
      * Create an input prompt.
      */
-    createInputPrompt(): IInputPrompt {
-      return new InputPrompt();
+    createInputPrompt(model: ICellModel): IInputPrompt {
+      return new InputPrompt(model);
     }
 
     /**

@@ -1566,11 +1566,17 @@ namespace Private {
           const codeDict: { [key: string]: string } = {};
           const cellIdWidgetMap: { [key: string]: any } = {};
           const outputTags: { [key: string]: string[] } = {};
+          const inputTags: { [key: string]: string } = {};
           if (notebook.model) {
             each(notebook.model.cells, (c: ICodeCellModel, index) => {
               const child = notebook.widgets[index] as CodeCell;
               if (c.type === 'code') {
                 const cId = c.id.replace(/-/g, '').substr(0, 8);
+                const inputTag = c.metadata.get('tag');
+                if (inputTag) {
+                  // FIXME need to check for duplicates!
+                  inputTags[inputTag as string] = cId;
+                }
                 codeDict[cId] = c.value.text;
                 cellIdWidgetMap[cId] = child;
                 let cellOutputTags: string[] = [];
@@ -1587,11 +1593,13 @@ namespace Private {
           console.log('codeDict:', codeDict);
           console.log('cellIdWidgetMap:', cellIdWidgetMap);
           console.log('outputTags:', outputTags);
+          console.log('inputTags:', inputTags);
 
           const dfData = {
             uuid: cell.model.id.replace(/-/g, '').substr(0, 8),
             code_dict: codeDict,
             output_tags: outputTags, // this.notebook.get_output_tags(Object.keys(code_dict)),
+            input_tags: inputTags,
             auto_update_flags: {}, // this.notebook.get_auto_update_flags(),
             force_cached_flags: {} // this.notebook.get_force_cached_flags()})
           };
