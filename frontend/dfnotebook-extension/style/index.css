@@ -4,3 +4,14 @@
 |----------------------------------------------------------------------------*/
 
 @import url('~dfnotebook/style/index.css');
+
+/* FIXME not sure why this would have to be here */
+.CodeMirror {
+    line-height: var(--jp-code-line-height);
+    font-size: var(--jp-code-font-size);
+    font-family: var(--jp-code-font-family);
+    border: 0;
+    border-radius: 0;
+    height: auto;
+    /* Changed to auto to autogrow */
+}
