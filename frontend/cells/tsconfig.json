@@ -1,0 +1,46 @@
+{
+  "extends": "../../tsconfigbase",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src"
+  },
+  "include": ["src/*"],
+  "references": [
+    {
+      "path": "../apputils"
+    },
+    {
+      "path": "../attachments"
+    },
+    {
+      "path": "../codeeditor"
+    },
+    {
+      "path": "../codemirror"
+    },
+    {
+      "path": "../coreutils"
+    },
+    {
+      "path": "../filebrowser"
+    },
+    {
+      "path": "../nbformat"
+    },
+    {
+      "path": "../observables"
+    },
+    {
+      "path": "../outputarea"
+    },
+    {
+      "path": "../rendermime"
+    },
+    {
+      "path": "../services"
+    },
+    {
+      "path": "../ui-components"
+    }
+  ]
+}
