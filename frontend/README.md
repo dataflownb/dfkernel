@@ -1,6 +1,6 @@
 # dfnotebook-extension
 
-A JupyterLab extension that facilitates dataflow notebooks using [dfkernel](https://github.com/dataflownb/dfkernel).
+A JupyterLab extension that facilitates [dataflow notebooks](https://dataflownb.github.io) using [dfkernel](https://github.com/dataflownb/dfkernel).
 
 This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel) 
 for the backend and a NPM package named `dfnotebook-extension`
