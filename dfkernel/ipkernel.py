@@ -135,7 +135,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         dfkernel_data = user_expressions.pop('__dfkernel_data__', {})
 
         input_tags = dfkernel_data.get('input_tags', {})
-        print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
+        # print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
         self.shell.input_tags = input_tags
 
         self._outer_stream = stream
@@ -227,7 +227,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         self._forward_input(allow_stdin)
 
-        print("DO EXECUTE:", uuid, file=sys.__stdout__)
+        # print("DO EXECUTE:", uuid, file=sys.__stdout__)
         reply_content = {}
         if hasattr(shell, 'run_cell_async') and hasattr(shell, 'should_run_async'):
             run_cell = partial(shell.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
@@ -253,7 +253,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 and shell.loop_runner is _asyncio_runner
                 and asyncio.get_event_loop().is_running()
             ):
-                print("RUNNING CELL ASYNC:", uuid, file=sys.__stdout__)
+                # print("RUNNING CELL ASYNC:", uuid, file=sys.__stdout__)
                 coro = run_cell(code, store_history=store_history, silent=silent)
                 coro_future = asyncio.ensure_future(coro)
 
