@@ -1,4 +1,4 @@
-# [Dataflow Kernel for Jupyter/Python](http://github.com/dataflownb/dfkernel/)
+# Dataflow Kernel for Jupyter/Python
 
 [![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfkernel/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/dfkernel.svg)](https://badge.fury.io/py/dfkernel)
@@ -26,7 +26,7 @@ This kernel seeks to elevate *outputs* as memorable waypoints during exploratory
 
 ## Example Notebook
 
-![Dataflow Notebook Example](https://dataflownb.github.io/assets/images/dfnotebook.svg)
+<img src="https://dataflownb.github.io/assets/images/dfnotebook.svg" width="640" alt="Dataflow Notebook Example">
 
 ## Installation
 
