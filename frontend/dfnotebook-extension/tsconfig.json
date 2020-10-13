@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
+    "baseUrl": "..",
     "composite": true,
     "declaration": true,
     "esModuleInterop": true,
@@ -19,19 +20,5 @@
     "target": "es2017",
     "types": []
   },
-  "include": ["src/*"],
-  "references": [
-    {
-      "path": "../dfnotebook",
-      "composite": true
-    },
-    {
-      "path": "../dfcells",
-      "composite": true
-    },
-    {
-      "path": "../dfoutputarea",
-      "composite": true
-    }
-  ]
+  "include": ["src/*"]
 }
