@@ -25,15 +25,14 @@ This kernel seeks to elevate *outputs* as memorable waypoints during exploratory
 - Output references implicitly define a dataflow in a directed acyclic graph, and the kernel automatically executes dependencies.
 
 ## Example Notebook
+
 ![Dataflow Notebook Example](https://dataflownb.github.io/assets/images/dfnotebook.svg)
 
-<!--
-We also provide a graph that is updated in real time to show these kind of relationships.
-
-![Dataflow Kernel Graph](https://cdn.rawgit.com/dataflownb/dfkernel/33b804a9/docs/tutorial/img/stage2.svg)
--->
-
 ## Installation
+
+These instructions **only install the kernel**. Please see the 
+[dfnotebook-extension](https://github.com/dataflownb/dfnotebook-extension)
+instructions for full instructions.
 
 ### PyPI
 
@@ -54,8 +53,6 @@ Note that `--sys-prefix` works best for conda environments.
 * JupyterLab >= 2.0
 * ipykernel >= 4.8.2
 
-
-
 ## Previous Versions
 
 dfkernel 1.0 worked with Jupyter Notebook, but we have decided to support JupyterLab in the future. Documentation and tutorials for v1.0 are below, but still need to be updated for v2.0.
@@ -71,14 +68,3 @@ dfkernel 1.0 worked with Jupyter Notebook, but we have decided to support Jupyte
 - [Dependency Workings and Cell Toolbar](http://dfkernel.readthedocs.io/en/latest/dependency-cell-toolbar.html)
 - [Notebook Interactions](http://dfkernel.readthedocs.io/en/latest/notebook-interactions.html)
 - [Cell Statuses](http://dfkernel.readthedocs.io/en/latest/dfkernel-statuses.html)
-
-<!--
-## Video
-This is a video of the previous version of the [Dataflow Kernel](http://www.youtube.com/watch?v=lAfywCbp7qU)
-
-## Return to the Standard IPython Notebook
-
-This tool relies on RedBaron to topologically sort your Notebooks so that they are topologically sorted so you can easily switch back and forth from an Ipykernel Notebook to a Dfkernel Notebook.
-
-This is provided as a [separate bundler extension](https://github.com/dataflownb/dfconvert).
--->
