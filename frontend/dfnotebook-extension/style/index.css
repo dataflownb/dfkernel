@@ -3,7 +3,7 @@
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
 
-@import url('~dfnotebook/style/index.css');
+@import url('~@dfnotebook/dfnotebook/style/index.css');
 
 /* FIXME not sure why this would have to be here */
 .CodeMirror {

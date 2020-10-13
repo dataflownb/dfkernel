@@ -17,7 +17,7 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { CodeCell } from 'dfcells';
+import { CodeCell } from '@dfnotebook/dfcells';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -57,7 +57,7 @@ import {
   StaticNotebook,
   CommandEditStatus,
   NotebookTrustStatus,
-} from 'dfnotebook';
+} from '@dfnotebook/dfnotebook';
 
 import { IPropertyInspectorProvider } from '@jupyterlab/property-inspector';
 

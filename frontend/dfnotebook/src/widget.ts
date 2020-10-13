@@ -28,7 +28,7 @@ import {
   ICodeCellModel,
   RawCell,
   IRawCellModel
-} from 'dfcells';
+} from '@dfnotebook/dfcells';
 
 import { IEditorMimeTypeService, CodeEditor } from '@jupyterlab/codeeditor';
 

@@ -12,7 +12,7 @@ import {
   RawCellModel,
   MarkdownCellModel,
   CellModel
-} from 'dfcells';
+} from '@dfnotebook/dfcells';
 
 import * as nbformat from '@jupyterlab/nbformat';
 

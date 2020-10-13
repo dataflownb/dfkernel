@@ -16,7 +16,7 @@ import {
   CodeCell,
   Cell,
   MarkdownCell
-} from 'dfcells';
+} from '@dfnotebook/dfcells';
 
 import * as nbformat from '@jupyterlab/nbformat';
 

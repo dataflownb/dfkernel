@@ -1,6 +1,6 @@
 {
-  "name": "dfoutputarea",
-  "version": "0.1.0",
+  "name": "@dfnotebook/dfoutputarea",
+  "version": "0.1.0-beta.0",
   "description": "Dataflow Notebook Output Area",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {

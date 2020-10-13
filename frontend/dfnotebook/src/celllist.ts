@@ -12,7 +12,7 @@ import {
 
 import { ISignal, Signal } from '@lumino/signaling';
 
-import { ICellModel } from 'dfcells';
+import { ICellModel } from '@dfnotebook/dfcells';
 
 import {
   IObservableMap,

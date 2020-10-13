@@ -24,7 +24,7 @@ import {
   OutputPrompt,
   IStdin,
   Stdin
-} from 'dfoutputarea';
+} from '@dfnotebook/dfoutputarea';
 
 import {
   IRenderMime,

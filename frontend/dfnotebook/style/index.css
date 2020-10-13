@@ -12,6 +12,6 @@
 @import url('~@jupyterlab/statusbar/style/index.css');
 @import url('~@jupyterlab/rendermime/style/index.css');
 @import url('~@jupyterlab/docregistry/style/index.css');
-@import url('~dfcells/style/index.css');
+@import url('~@dfnotebook/dfcells/style/index.css');
 
 @import url('./base.css');

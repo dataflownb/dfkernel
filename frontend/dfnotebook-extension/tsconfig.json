@@ -20,5 +20,19 @@
     "target": "es2017",
     "types": []
   },
-  "include": ["src/*"]
+  "include": ["src/*"],
+  "references": [
+    {
+      "path": "../dfnotebook",
+      "composite": true
+    },
+    {
+      "path": "../dfcells",
+      "composite": true
+    },
+    {
+      "path": "../dfoutputarea",
+      "composite": true
+    }
+  ]
 }

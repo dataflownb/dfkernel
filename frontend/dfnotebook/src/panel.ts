@@ -1,7 +1,7 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { isMarkdownCellModel } from 'dfcells';
+import { isMarkdownCellModel } from '@dfnotebook/dfcells';
 
 import { Kernel, KernelMessage, Session } from '@jupyterlab/services';
 
