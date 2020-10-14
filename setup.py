@@ -65,6 +65,7 @@ setup_args = dict(
     author          = 'Dataflow Notebook Development Team',
     author_email    = 'dataflownb@users.noreply.github.com',
     url             = 'http://dataflownb.github.io/',
+    download_url    = 'https://github.com/dataflownb/dfkernel/archive/2.0b1.tar.gz',
     license         = 'BSD',
     platforms       = "Linux, Mac OS X, Windows",
     keywords        = ['Dataflow', 'Interactive', 'Interpreter', 'Shell', 'Web'],
@@ -83,7 +84,7 @@ if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv):
 
 setuptools_args = {}
 install_requires = setuptools_args['install_requires'] = [
-    'ipython>=7.0.0',
+    'ipython>=7.17.0',
     'traitlets>=4.1.0',
     'jupyter_client',
     'tornado>=4.0',

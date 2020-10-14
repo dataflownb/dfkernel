@@ -37,7 +37,7 @@ from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )
 from warnings import warn
-from typing import List as ListType, Tuple, Iterable
+from typing import List as ListType, Tuple, Iterable, Optional
 from IPython.core.completer import _FakeJediCompletion
 
 from ast import AST
@@ -521,7 +521,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     async def run_cell_async_override(self, raw_cell: str, store_history=False,
                              silent=False, shell_futures=True, uuid=None,
                              dfkernel_data={},
-                             update_downstream_deps=False) -> ExecutionResult:
+                             update_downstream_deps=False,
+                             *,
+                             transformed_cell: Optional[str] = None,
+                             preprocessing_exc_tuple: Optional[Any] = None
+                                      ) -> ExecutionResult:
 
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
@@ -580,8 +584,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.user_ns._start_uuid(self.uuid)
         self.push_result()
 
-        result = await super().run_cell_async(raw_cell, store_history=store_history,
-                                        silent=silent, shell_futures=shell_futures)
+        result = await super().run_cell_async(raw_cell,
+                                              store_history=store_history,
+                                              silent=silent,
+                                              shell_futures=shell_futures,
+                                              transformed_cell=transformed_cell,
+                                              preprocessing_exc_tuple=preprocessing_exc_tuple,
+                                              )
 
         self.pop_result()
         uuid = self.uuid
