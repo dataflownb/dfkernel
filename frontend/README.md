@@ -1,16 +1,35 @@
-# dfnotebook-extension
+# Dataflow Notebook Extension for Jupyter/Python
 
-A JupyterLab extension that facilitates [dataflow notebooks](https://dataflownb.github.io) using [dfkernel](https://github.com/dataflownb/dfkernel).
+[![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfnotebook-extension/blob/master/LICENSE)
 
-This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel) 
-for the backend and a NPM package named `dfnotebook-extension`
-for the frontend extension.
+This package is part of the [Dataflow Notebooks](https://dataflownb.github.io) project and provides the Dataflow Notebook interface for JupyterLab, and is intended to be used with the [dfkernel](https://github.com/dataflownb/dfkernel) kernel.
+Dataflow notebooks seek to elevate *outputs* as memorable waypoints during exploratory computation. To that end,
+
+- Cell identifiers are **persistent** across sessions and are random UUIDs to signal they do not depend on top-down order.
+- As with standard IPython, outputs are designated by being written as expressions or assignments on the **last line** of a cell.
+- Each output is identified by its variable name if one is specified (e.g. `a`, `c,d = 4,5`), and the cell identifier if not (e.g. `4 + c`)
+- Variable names **can be reused** across cells.
+- Cells are executed as closures so only the outputs are accessible from other cells.
+- An output can then be referenced in three ways:
+    1. unscoped: `foo` refers to the most recent execution output named `foo`
+    2. persistent: `foo$ba012345` refers to output `foo` from cell `ba012345`
+    3. tagged: `foo$bar` refers to output `foo` from the cell tagged as `bar`
+- All output references are transformed to **persistent** names upon execution.
+- Output references implicitly define a dataflow in a directed acyclic graph, and the kernel automatically executes dependencies.
+
+## Example Notebook
+
+<img src="https://dataflownb.github.io/assets/images/dfnotebook.svg" width="640" alt="Dataflow Notebook Example">
 
 ## Requirements
 
 * JupyterLab >= 2.0
 
 ## Install
+
+This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel) 
+for the backend and a NPM package named `dfnotebook-extension`
+for the frontend extension.
 
 Note: You will need NodeJS to install the extension. (If using conda, this can be done via `conda install nodejs`.)
 
