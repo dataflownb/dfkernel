@@ -33,6 +33,7 @@ define([
 
     Jupyter._code_cell_loaded = true;
     var CodeCell = codecell.CodeCell;
+    var top_level_failure = null;
 
     CodeCell.prototype.init_dfnb = function () {
         if (!("uuid" in this)) {
@@ -303,9 +304,16 @@ define([
                 //set input field icon to error if cell returns error
                 cell.set_icon_status('error');
                 var that = cell;
+                if(!top_level_failure){
+                    top_level_failure = that.uuid;
+                }
                 this.dfgraph.remove_cell(that.uuid);
             }
             if(cell === cc){
+                if(top_level_failure) {
+                    Jupyter.notebook.scroll_to_cell_id(top_level_failure);
+                    top_level_failure = null;
+                }
                 this.dfgraph.update_dep_view();
             }
             _super.apply(cell, arguments);
