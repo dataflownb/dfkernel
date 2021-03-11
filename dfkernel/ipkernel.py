@@ -84,7 +84,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     # figure out where we are and keep track of change
                     # FIXME get_parent needs to get most recently used verison of id
                     cell_id = self.user_ns.get_parent(name.id)
-                    self.updates.append((name.end_lineno, name.end_col_offset, name.lineno, name.col_offset, name.id, cell_id))
+                    if sys.version_info[1] > 7:
+                        self.updates.append((name.end_lineno, name.end_col_offset, name.lineno, name.col_offset, name.id, cell_id))
+                    else:
+                        self.updates.append((name.lineno, name.col_offset, name.id, cell_id))
                     # print("LOAD", name.id, cell_id, file=sys.__stdout__)
                 self.generic_visit(name)
 
@@ -92,11 +95,18 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         linker = DataflowLinker(self.shell.user_ns)
         linker.visit(tree)
         code_arr = code.splitlines()
-        for end_lineno, end_col_offset, lineno, col_offset, name, cell_id in sorted(linker.updates, reverse=True):
-            if lineno != end_lineno:
-                raise Exception("Names cannot be split over multiple lines")
-            s = code_arr[lineno-1]
-            code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(cell_id, name), s[end_col_offset:]])
+        if sys.version_info[1] > 7:
+            for end_lineno, end_col_offset, lineno, col_offset, name, cell_id in sorted(linker.updates, reverse=True):
+                if lineno != end_lineno:
+                    raise Exception("Names cannot be split over multiple lines")
+                s = code_arr[lineno-1]
+                code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(cell_id, name), s[end_col_offset:]])
+        else:
+            for lineno, col_offset, name, cell_id in sorted(linker.updates, reverse=True):
+                #if lineno != end_lineno:
+                #    raise Exception("Names cannot be split over multiple lines")
+                s = code_arr[lineno-1]
+                code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(cell_id, name)])#, s[end_col_offset:]])
         code = '\n'.join(code_arr)
         # print("STEP 2:", code)
 
