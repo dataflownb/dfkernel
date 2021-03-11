@@ -1,5 +1,6 @@
 import ast
 import re
+import sys
 
 def default_replacer(cell_id, var):
     return f"_oh['{cell_id}']['{var}']"
@@ -59,19 +60,29 @@ def convert_dfvar(s, replacer_f=default_replacer):
             if m:
                 cell_id = m.group(1)
                 var_name = m.group(2)
-                updates.append((name.end_lineno, name.end_col_offset,
+                if sys.version_info[1] > 7:
+                    updates.append((name.end_lineno, name.end_col_offset,
                                 name.lineno, name.col_offset, cell_id, var_name))
+                else:
+                    updates.append((name.lineno, name.col_offset, cell_id, var_name))
             self.generic_visit(name)
 
     tree = ast.parse(s)
     linker = DataflowReplacer()
     linker.visit(tree)
     code_arr = s.splitlines()
-    for end_lineno, end_col_offset, lineno, col_offset, cell_id, var_name in sorted(
-            updates, reverse=True):
-        if lineno != end_lineno:
-            raise Exception("Names cannot be split over multiple lines")
-        s = code_arr[lineno - 1]
-        code_arr[lineno - 1] = ''.join(
-            [s[:col_offset], replacer_f(cell_id, var_name), s[end_col_offset:]])
+    if sys.version_info[1] > 7:
+        for end_lineno, end_col_offset, lineno, col_offset, cell_id, var_name in sorted(
+                updates, reverse=True):
+            if lineno != end_lineno:
+                raise Exception("Names cannot be split over multiple lines")
+            s = code_arr[lineno - 1]
+            code_arr[lineno - 1] = ''.join(
+                [s[:col_offset], replacer_f(cell_id, var_name), s[end_col_offset:]])
+    else:
+        for lineno, col_offset, cell_id, var_name in sorted(
+                updates, reverse=True):
+            s = code_arr[lineno - 1]
+            code_arr[lineno - 1] = ''.join(
+                [s[:col_offset], replacer_f(cell_id, var_name)])
     return '\n'.join(code_arr)
