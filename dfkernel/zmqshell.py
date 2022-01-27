@@ -47,6 +47,9 @@ from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
     DataflowNamespace, DataflowCellException, DuplicateNameError
 from .dflink import build_linked_result
 
+# Python 3.10 removed the alias from collections
+from collections.abc import Mapping
+
 #-----------------------------------------------------------------------------
 # Functions and classes
 #-----------------------------------------------------------------------------
@@ -124,7 +127,7 @@ class FunctionMagics(Magics):
         self.shell.dataflow_function_manager.set_function_body(self.shell.uuid,
                                                                cell)
 
-class nameddict(collections.Mapping):
+class nameddict(Mapping):
     def __init__(self, *args, **kwargs):
         self.__raw_mapping__ = {}
         self._fields = []
