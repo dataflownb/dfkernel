@@ -43,10 +43,16 @@ for d, _, _ in os.walk(pjoin(here, name)):
     if os.path.exists(pjoin(d, '__init__.py')):
         packages.append(d[len(here)+1:].replace(os.path.sep, '.'))
 
+#Package files correspond to what's included in any distribution
+#Data files correspond to what is placed by the kernelspec operation
+package_files = []
+directories = glob(pjoin(here,'dfkernel/resources/**/'),recursive=True)
+for directory in directories:
+    package_files.append(directory[len(here)+1:]+'*.*')
+
+
 package_data = {
-    'dfkernel': ['resources/*.js',
-                 'resources/*.png',
-                 'resources/df-notebook/*.js'],
+    'dfkernel': package_files
 }
 
 version_ns = {}
@@ -92,6 +98,8 @@ install_requires = setuptools_args['install_requires'] = [
     'notebook>=5.0',
     'nest_asyncio>=1.4'
 ]
+
+
 
 if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):
     from dfkernel.kernelspec import write_kernel_spec, make_ipkernel_cmd, KERNEL_NAME
