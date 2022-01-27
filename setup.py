@@ -43,19 +43,16 @@ for d, _, _ in os.walk(pjoin(here, name)):
     if os.path.exists(pjoin(d, '__init__.py')):
         packages.append(d[len(here)+1:].replace(os.path.sep, '.'))
 
+#Package files correspond to what's included in any distribution
+#Data files correspond to what is placed by the kernelspec operation
+package_files = []
+directories = glob(pjoin(here,'dfkernel/resources/**/'),recursive=True)
+for directory in directories:
+    package_files.append(directory[len(here)+1:]+'*.*')
+
+
 package_data = {
-    'dfkernel': ['resources/*.js',
-                 'resources/*.png',
-                 'resources/df-notebook/*.js',
-                 'resources/df-notebook/css/*.css',
-                 'resources/df-notebook/img/fa/*.*',
-                 'resources/df-notebook/lib/d3/*.js',
-                 'resources/df-notebook/lib/d3-graphviz/*.js',
-                 'resources/df-notebook/lib/graphlib/*.js',
-                 'resources/df-notebook/lib/graphlib-dot/*.js',
-                 'resources/df-notebook/lib/lodash/*.js',
-                 'resources/df-notebook/lib/viz/*.js'
-                 ],
+    'dfkernel': package_files
 }
 
 version_ns = {}
