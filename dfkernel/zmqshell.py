@@ -47,12 +47,8 @@ from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
     DataflowNamespace, DataflowCellException, DuplicateNameError
 from .dflink import build_linked_result
 
-#Python 3.10 switches to collections.abc instead of collections
-#Try except seems to be the standard approach
-try:
-    from collections.abc import Mapping
-except ImportError:
-    from collections import Mapping
+#Python 3.10 switches to collections.abc and discontinues the alias
+from collections.abc import Mapping
 
 #-----------------------------------------------------------------------------
 # Functions and classes
