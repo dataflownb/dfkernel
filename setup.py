@@ -104,7 +104,7 @@ install_requires = setuptools_args['install_requires'] = [
 
 
 
-if any(a.startswith(('bdist', 'build', 'install','sdist')) for a in sys.argv):
+if any(a.startswith(('bdist', 'build', 'install')) for a in sys.argv):
     from dfkernel.kernelspec import write_kernel_spec, make_ipkernel_cmd, KERNEL_NAME
 
     argv = make_ipkernel_cmd(executable='python')
