@@ -47,7 +47,7 @@ from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
     DataflowNamespace, DataflowCellException, DuplicateNameError
 from .dflink import build_linked_result
 
-#Python 3.10 switches to collections.abc and discontinues the alias
+# Python 3.10 removed the alias from collections
 from collections.abc import Mapping
 
 #-----------------------------------------------------------------------------
