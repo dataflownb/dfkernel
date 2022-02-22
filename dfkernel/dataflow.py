@@ -233,6 +233,8 @@ class DataflowHistoryManager(object):
     def __getitem__(self, k):
         res = self.get_item(k)
         if isinstance(res, LinkedResult):
+            if res.__tuple__() is None:
+                return res
             return res.__tuple__()
         return res
 
