@@ -18,7 +18,7 @@
     "rootDir": "src",
     "strictNullChecks": true,
     "target": "es2017",
-    "types": []
+    "types": ["node","graphlib"]
   },
   "include": ["src/*"],
   "references": [
