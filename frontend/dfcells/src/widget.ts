@@ -73,6 +73,10 @@ import {
 import { InputPlaceholder, OutputPlaceholder } from './placeholder';
 import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
+//import { Graph } from '@dfnotebook/dfgraph';
+//import { Graph } from '../../dfgraph'
+import { Graph } from './dfgraph';
+
 /**
  * The CSS class added to cell widgets.
  */
@@ -176,6 +180,8 @@ export class Cell extends Widget {
   /**
    * Construct a new base cell widget.
    */
+  dfgraph: any;
+  
   constructor(options: Cell.IOptions) {
     super();
     this.addClass(CELL_CLASS);
@@ -184,6 +190,7 @@ export class Cell extends Widget {
       options.contentFactory || Cell.defaultContentFactory);
     this.layout = new PanelLayout();
 
+    this.dfgraph = new Graph();
     // Header
     let header = contentFactory.createCellHeader();
     header.addClass(CELL_HEADER_CLASS);
@@ -1135,6 +1142,17 @@ export namespace CodeCell {
       future = cell.outputArea.future;
       const msg = (await msgPromise)!;
       model.executionCount = msg.content.execution_count;
+      console.log(msg);
+      console.log(cell.dfgraph);
+      let content = (msg.content as any)
+      var nodes = content.nodes;
+      var uplinks = content.links;
+      var cells = content.cells;
+      var downlinks = content.imm_downstream_deps;
+      var all_ups = content.upstream_deps;
+      var internal_nodes = content.internal_nodes;
+      cell.dfgraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+
       const started = msg.metadata.started as string;
       if (recordTiming && started) {
         const timingInfo = Object.assign(
