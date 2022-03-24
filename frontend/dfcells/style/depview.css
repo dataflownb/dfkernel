@@ -1,0 +1,226 @@
+.dep-div {
+    height: 100%;
+    display:none;
+    z-index: -999;
+    background-color: rgba(255,255,255,.5);
+    overflow-x: hidden;
+    transition: 0.5s;
+}
+
+.dep-div .closebutton {
+    position: absolute;
+    top: 0px;
+    right: 45px;
+    font-size: 60px;
+}
+
+#svg-div {
+    width: 76%;
+    height: 100%;
+   text-align: center;
+    overflow: hidden;
+}
+
+#table {
+   text-align: center;
+    background-color: rgba(255,255,255,1);
+    height: 53%;
+    margin-bottom: 5%;
+    overflow:hidden;
+}
+
+#newlist, #changedlist {
+    list-style-type:none;
+    overflow-y: scroll;
+    max-height: 83%;
+}
+
+#cell-detail {
+    text-align: center;
+    height: 42%;
+}
+
+.pre-scrollable{
+    width:inherit;
+    height:20vh;
+    max-height: 20vh;
+    margin: auto;
+    overflow-y:scroll;
+}
+
+g text {
+  font-weight: 300;
+  font-family: monospace;
+  font-size: .85em;
+}
+
+.node rect {
+  stroke: #999;
+  fill: #fff;
+  stroke-width: 1.5px;
+}
+
+.edgePath path {
+  stroke: #333;
+  stroke-width: 1.5px;
+}
+
+.cellid {
+  font-size: 1.0em;
+  font-family: monospace;
+  color: #303F9F;
+  margin: 0;
+}
+
+.internal rect{
+    fill-opacity: 0;
+    rx: 10px;
+    ry: 10px;
+    stroke: white;
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+}
+
+.internal rect tspan{
+    stroke: none;
+    fill:white;
+}
+
+.cluster rect{
+    stroke: #999;
+    fill-opacity: 1;
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+    rx: 10px;
+    ry: 10px;
+}
+
+tspan {
+    pointer-events: none;
+}
+
+polygon.selected{
+    stroke: #42A5F5;
+}
+
+#select-identifier{
+    stroke: #42A5F5;
+    stroke-width: 1px;
+    fill: #42A5F5;
+}
+
+.control-div{
+    width:50%;
+    text-align: center;
+    padding: 20px;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    background-color: #fff;
+    align: center;
+}
+
+.cell-list-header{
+    margin-top:8px;
+    margin-bottom:0px;
+}
+
+#overview-header{
+    margin-top:0px;
+}
+
+#dot-dl, #out-toggle, #graphsum, #exec-button, #close-scroll{
+    font-size:1rem;
+    padding: 0.6rem .8rem
+}
+
+#nodes-panel{
+    height:68%;
+}
+
+.was-changed {
+    stroke-dasharray: 10,10;
+    stroke-width: 4px;
+}
+
+path.downstream {
+    stroke-width: 4px;
+    stroke:red;
+}
+
+path.upstream {
+    stroke-width: 4px;
+    stroke:blue;
+}
+
+.upcell{
+    stroke:blue;
+}
+
+.downcell{
+    stroke:red;
+}
+
+#cell-id-box{
+    width:49%;
+    display:inline-block;
+}
+
+span.cellid{
+    font-size:1.4em;
+}
+
+.table-div{
+    height: 70%;
+    width:48%;
+    display:inline-table;
+}
+
+.table-div h3{
+    font-size:1.3em;
+}
+
+#hidden-dot{
+    display: none;
+}
+
+#side-panel{
+    display:inline-block;
+    width:22%;
+    margin-right:10px;
+    height:100%;
+    float:right;
+}
+
+.card-body::-webkit-scrollbar {
+  width: 6px;
+  background-color: #F5F5F5; }
+
+.card-body ul{
+    margin-bottom: 0px;
+    margin-top: 5px;
+}
+
+.cluster text{
+    font-size:1.2em;
+    fill:#303f9f;
+}
+
+.child-node text{
+    fill: #d84315;
+}
+
+.child-node polygon{
+    fill: white;
+}
+
+polygon.deleted-cell, polygon.deleted-cell.changed-cell{
+    fill:rgba(255, 0, 0, 0.5) !important;
+}
+
+polygon.changed-cell{
+    fill:rgba(255, 255, 0, 0.5) !important;
+}
+
+.cluster polygon{
+    fill:rgba(0, 255, 0, 0.5);
+}
