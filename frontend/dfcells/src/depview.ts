@@ -1,11 +1,10 @@
 import * as d3 from "d3";
 import $ from "jquery";
-//import * as d3Graphviz from 'd3-graphviz';
+import '@hpcc-js/wasm';
 import Writer from "graphlib-dot";
-//import { graphviz, GraphvizOptions } from "d3-graphviz";
-import { graphviz } from "d3-graphviz";
+import { graphviz, GraphvizOptions } from "d3-graphviz";
 import * as GraphLib from "graphlib";
-//import { GraphLib } from '@dagrejs/graphlib';
+
 
 export class DepView {
 
