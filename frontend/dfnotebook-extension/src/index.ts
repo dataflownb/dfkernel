@@ -17,7 +17,7 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { CodeCell } from '@dfnotebook/dfcells';
+import { CodeCell, DepViewer } from '@dfnotebook/dfcells';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -411,6 +411,7 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
  */
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
+  DepViewer,
   trackerPlugin,
   tools,
   commandEditItem,

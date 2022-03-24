@@ -1153,6 +1153,10 @@ export namespace CodeCell {
       var internal_nodes = content.internal_nodes;
       cell.dfgraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
 
+       if (content.update_downstreams) {
+                    cell.dfgraph.update_down_links(content.update_downstreams);
+      }
+
       const started = msg.metadata.started as string;
       if (recordTiming && started) {
         const timingInfo = Object.assign(

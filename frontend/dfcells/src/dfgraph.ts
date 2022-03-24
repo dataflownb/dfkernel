@@ -21,6 +21,10 @@
 // } from '@jupyterlab/observables';
 //
 // import { IOutputAreaModel, OutputAreaModel } from '@dfnotebook/dfoutputarea';
+
+//UUID length has been changed need to compensate for that
+const uuid_length = 8;
+
 import { DepView } from './depview'
 
 // @ts-ignore
@@ -197,7 +201,7 @@ export class Graph {
     update_down_links(downupdates: any[]) {
         var that = this;
         downupdates.forEach(function (t) {
-            var uuid = t['key'].substr(0, 6);
+            var uuid = t['key'].substr(0, uuid_length);
             //FIXME: FIND Jupyter.notebook.has_id equivalent
             that.downlinks[uuid] = t['data'];
             // if(Jupyter.notebook.has_id(uuid) && t.data){
@@ -292,8 +296,10 @@ export class Graph {
     /** @method returns all nodes for a cell*/
     get_nodes(uuid: string){
         var that = this;
+        console.log(uuid);
         if (uuid in that.nodes) {
             if ((that.nodes[uuid] || []).length > 0) {
+                console.log(that.nodes[uuid]);
                 return that.nodes[uuid];
             }
         }

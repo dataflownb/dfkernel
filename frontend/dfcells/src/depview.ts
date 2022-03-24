@@ -6,6 +6,98 @@ import { graphviz, GraphvizOptions } from "d3-graphviz";
 import * as GraphLib from "graphlib";
 
 
+import {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
+
+import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
+
+import { Widget } from '@lumino/widgets';
+
+//UUID length has been changed need to compensate for that
+const uuid_length = 8;
+
+
+const defaultOptions: GraphvizOptions = {
+  height: 500,
+  width: 500,
+  scale: 1,
+  tweenPrecision: 1,
+  engine: "dot",
+  keyMode: "title",
+  convertEqualSidedPolygons: false,
+  fade: false,
+  growEnteringEdges: false,
+  fit: true,
+  tweenPaths: false,
+  tweenShapes: false,
+  useWorker: false,
+  zoom: false
+};
+
+const workeroptions: GraphvizOptions = {
+  height: 500,
+  width: 500,
+  scale: 1,
+  tweenPrecision: 1,
+  engine: "dot",
+  keyMode: "title",
+  convertEqualSidedPolygons: false,
+  fade: false,
+  growEnteringEdges: false,
+  fit: true,
+  tweenPaths: false,
+  tweenShapes: false,
+  useWorker: true,
+  zoom: false
+};
+
+/**
+ * Initialization data for the Dfnb Depviewer extension.
+ */
+export const DepViewer: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-depview',
+  autoStart: true,
+  requires: [ICommandPalette],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette) => {
+  console.log('JupyterLab extension jupyterlab_apod is activated!');
+
+  // Create a blank content widget inside of a MainAreaWidget
+  const content = new Widget();
+  const widget = new MainAreaWidget({ content });
+  // Add a div to the panel
+    let panel = document.createElement('div');
+    panel.setAttribute('id','depview');
+    content.node.appendChild(panel);
+
+
+
+
+      widget.id = 'dfnb-depview';
+      widget.title.label = 'Dependency Viewer';
+      widget.title.closable = true;
+
+      // Add an application command
+      const command: string = 'depview:open';
+      app.commands.addCommand(command, {
+        label: 'Open Dependency Viewer',
+        execute: () => {
+          if (!widget.isAttached) {
+            // Attach the widget to the main work area if it's not there
+            app.shell.add(widget, 'main');
+          }
+          // Activate the widget
+          app.shell.activateById(widget.id);
+        }
+      });
+
+      // Add the command to the palette.
+      palette.addItem({ command, category: 'Tutorial' });
+    }
+};
+
+
 export class DepView {
 
     is_open: boolean;
@@ -29,7 +121,7 @@ export class DepView {
     dotgraph: any[];
     depdiv: any;
     svg: any;
-
+    widget: any;
 
 
 
@@ -44,14 +136,14 @@ export class DepView {
         this.debug_mode = false;
 
         //Divs and Div related variables
-        this.parentdiv = parentdiv || 'div.lower-header-bar';
+        this.parentdiv = parentdiv || 'div#depview';
         this.depdiv = null;
         this.side_panel = null;
         this.nodespanel = null;
         this.svg = null;
         this.tabular = null;
         this.execute_panel = null;
-
+        this.widget = DepViewer;
         //Label Styles should be set in text so that GraphViz can properly size the nodes
         this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
 
@@ -306,13 +398,12 @@ export class DepView {
             });
 
             that.dotgraph = Writer.write(g);
-
             // var graphtran = d3.transition()
             // .duration(750)
             // .ease(d3.easeLinear);
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
-            graphviz('#svg-div')
+            graphviz('#svg-div').options(defaultOptions)
                 .width(Number($('#svg-div').width()))
                 .height(Number($('#svg-div').height()))
                 .fit(true)
@@ -332,17 +423,17 @@ export class DepView {
             $("g.parentnode.cluster").each(function () {
                 $(this).mouseover(function(){
                 var node = $(this),
-                    cellid = node.find('text').text().substr(that.cell_label.length,6);
+                    cellid = node.find('text').text().substr(that.cell_label.length,uuid_length);
 
                 that.set_details(cellid);
 
                 //var cell = Jupyter.notebook.get_code_cell(cellid);
-                that.dfgraph.get_downstreams(cellid).forEach(function (t:string) { $('#'+t.substr(0,6)+'cluster').find('polygon').toggleClass('upcell',true); $('g.'+cellid+t.substr(0,6)).find('path').toggleClass('upstream',true); });
-                that.dfgraph.get_imm_upstreams(cellid).forEach(function (t:string) { $('#'+t.substr(0,6)+'cluster').find('polygon').toggleClass('downcell',true); $('g.'+t.substr(0,6)+cellid).find('path').toggleClass('downstream',true); });
+                that.dfgraph.get_downstreams(cellid).forEach(function (t:string) { $('#'+t.substr(0,uuid_length)+'cluster').find('polygon').toggleClass('upcell',true); $('g.'+cellid+t.substr(0,uuid_length)).find('path').toggleClass('upstream',true); });
+                that.dfgraph.get_imm_upstreams(cellid).forEach(function (t:string) { $('#'+t.substr(0,uuid_length)+'cluster').find('polygon').toggleClass('downcell',true); $('g.'+t.substr(0,uuid_length)+cellid).find('path').toggleClass('downstream',true); });
             })
                 .on("mouseout",function(){
                 //var node = $(this);
-                    //cellid = node.find('text').text().substr(that.cell_label.length,6);
+                    //cellid = node.find('text').text().substr(that.cell_label.length,uuid_length);
                 //var cell = Jupyter.notebook.get_code_cell(cellid);
                 $('.edge').each(function(){
                     $(this).find('path').toggleClass('upstream',false).toggleClass('downstream',false);});
@@ -375,7 +466,7 @@ export class DepView {
                 })
             //FIXME: Fix this
                 // .on("contextmenu",function(event){
-                //     var cellid = $(this).find('text').text().substr(that.cell_label.length, 6);
+                //     var cellid = $(this).find('text').text().substr(that.cell_label.length, uuid_length);
                 //     Jupyter.notebook.get_code_cell(cellid).execute();
                 // });
 
@@ -466,8 +557,9 @@ export class DepView {
 
             }
             that.output_nodes[a].forEach(function (t:string) {
-                //var uuid = t.substr(4,6);
-                if(/Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
+                //var uuid = t.substr(4,uuid_length);
+                //FIXME: Make this more robust so it uses uuid_length
+                if(/Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
                     g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
                 }
                 else{
@@ -479,9 +571,9 @@ export class DepView {
         that.cell_links.forEach(function (a:any) {
             if(g.hasNode(a.source) && g.hasNode(a.target)) {
                 g.setEdge(a.source, a.target, {
-                    class: a.source.substr(0, 6) + a.target.substr(0, 6) + ' viz-'+a.source,
+                    class: a.source.substr(0, uuid_length) + a.target.substr(0, uuid_length) + ' viz-'+a.source,
                     id: 'viz-'+a.source + a.target,
-                    lhead: 'clusterOut[' + a.target.substr(0, 6) + ']'
+                    lhead: 'clusterOut[' + a.target.substr(0, uuid_length) + ']'
                 });
             }
         });

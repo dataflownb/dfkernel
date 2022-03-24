@@ -18,7 +18,7 @@
     "rootDir": "src",
     "strictNullChecks": true,
     "target": "es2017",
-    "types": ["node","graphlib"]
+    "types": ["node","graphlib","d3-graphviz"]
   },
   "include": ["src/*"],
   "references": [
