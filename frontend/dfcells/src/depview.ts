@@ -225,6 +225,7 @@ export class DepView {
         this.svg = d3.select("div.dep-div").append('div').attr('id', 'svg-div').on('contextmenu', function () {
                 return false;
             });
+        this.is_created = true;
     };
 
         /** @method upon a new cell selection will change the details of the viewer **/
@@ -241,6 +242,7 @@ export class DepView {
                 d3.select('#svg-div svg g').insert('g', '#a_graph0 + *').attr('id', 'select-identifier').append('rect').attr('x', parseInt(rect_top[0])-3).attr('y', parseInt(rect_top[1])).attr('height', height).attr('width', '3px');
             }
             //FIXME: Find equivalent in Lab
+            //console.log(NotebookTools);
             //Jupyter.notebook.select_by_id(that.active_cell);
             //Jupyter.notebook.scroll_to_cell_id(that.active_cell);
             $('#'+cellid+'cluster').find('polygon').toggleClass('selected',true);
@@ -356,6 +358,7 @@ export class DepView {
                 .zoom(true)
                 .on('end',function(){
                     that.update_cell_lists();
+                    $('#svg-div').height('100vh');
                     that.done_rendering = true;
                 })
             .renderDot(that.dotgraph);

@@ -16,3 +16,12 @@
 @import url('~@dfnotebook/dfoutputarea/style/index.css');
 
 @import url('./base.css');
+@import url('./collapser.css');
+@import url('./depview.css');
+@import url('./headerfooter.css');
+@import url('./icon.css');
+@import url('./inputarea.css');
+@import url('./mdb.css');
+@import url('./placeholder.css');
+@import url('./toolbar.css');
+@import url('./widget.css');

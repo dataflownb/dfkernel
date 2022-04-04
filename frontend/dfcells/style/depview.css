@@ -1,6 +1,5 @@
 .dep-div {
     height: 100%;
-    display:none;
     z-index: -999;
     background-color: rgba(255,255,255,.5);
     overflow-x: hidden;
