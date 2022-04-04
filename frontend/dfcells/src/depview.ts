@@ -4,16 +4,16 @@ import '@hpcc-js/wasm';
 import Writer from "graphlib-dot";
 import { graphviz, GraphvizOptions } from "d3-graphviz";
 import * as GraphLib from "graphlib";
+// import { NotebookTools } from '@dfnotebook/dfnotebook';
 
+// import {
+//   JupyterFrontEnd,
+//   JupyterFrontEndPlugin
+// } from '@jupyterlab/application';
 
-import {
-  JupyterFrontEnd,
-  JupyterFrontEndPlugin
-} from '@jupyterlab/application';
+//import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
 
-import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
-
-import { Widget } from '@lumino/widgets';
+//import { Widget } from '@lumino/widgets';
 
 //UUID length has been changed need to compensate for that
 const uuid_length = 8;
@@ -53,53 +53,10 @@ const workeroptions: GraphvizOptions = {
   zoom: false
 };
 
-/**
- * Initialization data for the Dfnb Depviewer extension.
- */
-export const DepViewer: JupyterFrontEndPlugin<void> = {
-  id: 'dfnb-depview',
-  autoStart: true,
-  requires: [ICommandPalette],
-  activate: (app: JupyterFrontEnd, palette: ICommandPalette) => {
-  console.log('JupyterLab extension jupyterlab_apod is activated!');
-
-  // Create a blank content widget inside of a MainAreaWidget
-  const content = new Widget();
-  const widget = new MainAreaWidget({ content });
-  // Add a div to the panel
-    let panel = document.createElement('div');
-    panel.setAttribute('id','depview');
-    content.node.appendChild(panel);
-
-
-
-
-      widget.id = 'dfnb-depview';
-      widget.title.label = 'Dependency Viewer';
-      widget.title.closable = true;
-
-      // Add an application command
-      const command: string = 'depview:open';
-      app.commands.addCommand(command, {
-        label: 'Open Dependency Viewer',
-        execute: () => {
-          if (!widget.isAttached) {
-            // Attach the widget to the main work area if it's not there
-            app.shell.add(widget, 'main');
-          }
-          // Activate the widget
-          app.shell.activateById(widget.id);
-        }
-      });
-
-      // Add the command to the palette.
-      palette.addItem({ command, category: 'Tutorial' });
-    }
-};
-
 
 export class DepView {
 
+    is_created: boolean;
     is_open: boolean;
     dataflow: boolean;
     selected: boolean;
@@ -131,6 +88,7 @@ export class DepView {
         this.dataflow = true;
         this.selected = false;
         this.done_rendering = false;
+        this.is_created = false;
 
         //Turn on console logs
         this.debug_mode = false;
@@ -143,7 +101,7 @@ export class DepView {
         this.svg = null;
         this.tabular = null;
         this.execute_panel = null;
-        this.widget = DepViewer;
+        //this.widget = DepViewer;
         //Label Styles should be set in text so that GraphViz can properly size the nodes
         this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
 
@@ -160,7 +118,7 @@ export class DepView {
         this.active_cell = '';
 
         this.dfgraph = dfgraph;
-
+        //console.log(NotebookTools);
 
         this.dotgraph = [];
 
@@ -218,21 +176,9 @@ export class DepView {
 
         var that = this;
 
-        //var cssfiles = ['depview','mdb'];
-
-        //FIXME: Fix this requiretourl doesn't work here
-        // cssfiles.forEach(function (file) {
-        //     var link = document.createElement("link");
-        //     link.type = "text/css";
-        //     link.rel = "stylesheet";
-        //     link.href = require.toUrl('./css/'+file+'.css', 'css');
-        //     document.getElementsByTagName("head")[0].appendChild(link);
-        // });
-
 
         this.depdiv = document.createElement('div');
         this.depdiv.setAttribute('class','dep-div container');
-        this.depdiv.style.display = "none";
         $(this.parentdiv).append(this.depdiv);
 
         this.side_panel = d3.select('div.dep-div').append('div').attr('id','side-panel');

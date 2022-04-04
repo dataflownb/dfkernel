@@ -17,7 +17,7 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { CodeCell, DepViewer } from '@dfnotebook/dfcells';
+import { CodeCell, DfGraph } from '@dfnotebook/dfcells';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -90,7 +90,7 @@ import { DisposableSet } from '@lumino/disposable';
 
 import { Message, MessageLoop } from '@lumino/messaging';
 
-import { Panel, Menu } from '@lumino/widgets';
+import { Panel, Menu, Widget } from '@lumino/widgets';
 
 /**
  * The command IDs used by the notebook plugin.
@@ -405,6 +405,58 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
   activate: activateWidgetFactory,
   autoStart: true
 };
+
+/**
+ * Initialization data for the Dfnb Depviewer extension.
+ */
+const DepViewer: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-depview',
+  autoStart: true,
+  requires: [ICommandPalette],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette) => {
+  console.log('JupyterLab extension jupyterlab_apod is activated!');
+
+  // Create a blank content widget inside of a MainAreaWidget
+  const content = new Widget();
+  const widget = new MainAreaWidget({ content });
+  // Add a div to the panel
+    let panel = document.createElement('div');
+    panel.setAttribute('id','depview');
+    content.node.appendChild(panel);
+
+
+      widget.id = 'dfnb-depview';
+      widget.title.label = 'Dependency Viewer';
+      widget.title.closable = true;
+
+      // Add an application command
+      const command: string = 'depview:open';
+      app.commands.addCommand(command, {
+        label: 'Open Dependency Viewer',
+        execute: () => {
+          if (!widget.isAttached) {
+            // Attach the widget to the main work area if it's not there
+            app.shell.add(widget, 'main');
+            if (!DfGraph.depview.is_created){
+              DfGraph.depview.create_dep_div();
+              console.log(DfGraph);
+              console.log("Widget added");
+            }
+
+
+          }
+          // Activate the widget
+          app.shell.activateById(widget.id);
+          DfGraph.depview.startGraphCreation();
+        }
+      });
+
+      // Add the command to the palette.
+      palette.addItem({ command, category: 'Tutorial' });
+    }
+};
+
+
 
 /**
  * Export the plugins as default.
