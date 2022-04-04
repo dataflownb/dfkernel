@@ -43,7 +43,7 @@ import { DepView } from './depview'
         }
     };
 
-export class Graph {
+class Graph {
 
 
 
@@ -315,6 +315,8 @@ export class Graph {
 
 }
 
+//let DfGraph = new Graph();
+export const DfGraph = new Graph();
 
 
 

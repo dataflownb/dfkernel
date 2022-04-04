@@ -75,7 +75,8 @@ import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
 //import { Graph } from '@dfnotebook/dfgraph';
 //import { Graph } from '../../dfgraph'
-import { Graph } from './dfgraph';
+import { DfGraph } from './dfgraph';
+//import * as DfGraph from './dfgraph';
 
 /**
  * The CSS class added to cell widgets.
@@ -180,7 +181,7 @@ export class Cell extends Widget {
   /**
    * Construct a new base cell widget.
    */
-  dfgraph: any;
+  //dfgraph: any;
   
   constructor(options: Cell.IOptions) {
     super();
@@ -190,7 +191,8 @@ export class Cell extends Widget {
       options.contentFactory || Cell.defaultContentFactory);
     this.layout = new PanelLayout();
 
-    this.dfgraph = new Graph();
+    //this.dfgraph = DfGraph;
+    //this.dfgraph = new Graph();
     // Header
     let header = contentFactory.createCellHeader();
     header.addClass(CELL_HEADER_CLASS);
@@ -1143,7 +1145,8 @@ export namespace CodeCell {
       const msg = (await msgPromise)!;
       model.executionCount = msg.content.execution_count;
       console.log(msg);
-      console.log(cell.dfgraph);
+      console.log(DfGraph);
+      console.log("This has been changed");
       let content = (msg.content as any)
       var nodes = content.nodes;
       var uplinks = content.links;
@@ -1151,10 +1154,11 @@ export namespace CodeCell {
       var downlinks = content.imm_downstream_deps;
       var all_ups = content.upstream_deps;
       var internal_nodes = content.internal_nodes;
-      cell.dfgraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+      console.log(content.internal_nodes);
+      DfGraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
 
        if (content.update_downstreams) {
-                    cell.dfgraph.update_down_links(content.update_downstreams);
+                    DfGraph.update_down_links(content.update_downstreams);
       }
 
       const started = msg.metadata.started as string;
