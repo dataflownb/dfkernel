@@ -566,10 +566,10 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # FIXME evaluate whether internalnodes is required for anything
         # -- I don't think it is, only used in graph stuff -DK
         #
-        # internalnodes = []
-        # for node in ast.walk(code_ast):
-        #     if (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)):
-        #         internalnodes.append(node.id)
+        internalnodes = []
+        for node in ast.walk(ast.parse(transformed_cell)):
+            if (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)):
+                internalnodes.append(node.id)
 
         # before run_ast_nodes runs, have some code to run, used to be in run_cell
         # but should be able to live in run_ast_nodes...
@@ -648,7 +648,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
                 result.deleted_cells = self.dataflow_history_manager.deleted_cells
                 # FIXME decide if this is worth keeping
-                result.internal_nodes = []
+                result.internal_nodes = internalnodes
                 # print("GOT DELETED CELLS:", result.deleted_cells, file=sys.__stdout__)
                 self.dataflow_history_manager.deleted_cells = []
 
