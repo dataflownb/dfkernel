@@ -563,9 +563,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         result_deleted_cells = self.dataflow_history_manager.deleted_cells
         self.dataflow_history_manager.deleted_cells = []
 
-        # FIXME evaluate whether internalnodes is required for anything
-        # -- I don't think it is, only used in graph stuff -DK
-        #
         internalnodes = []
         for node in ast.walk(ast.parse(transformed_cell)):
             if (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)):
