@@ -36,23 +36,6 @@ const defaultOptions: GraphvizOptions = {
   zoom: false
 };
 
-const workeroptions: GraphvizOptions = {
-  height: 500,
-  width: 500,
-  scale: 1,
-  tweenPrecision: 1,
-  engine: "dot",
-  keyMode: "title",
-  convertEqualSidedPolygons: false,
-  fade: false,
-  growEnteringEdges: false,
-  fit: true,
-  tweenPaths: false,
-  tweenShapes: false,
-  useWorker: true,
-  zoom: false
-};
-
 
 export class DepView {
 
