@@ -563,6 +563,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         result_deleted_cells = self.dataflow_history_manager.deleted_cells
         self.dataflow_history_manager.deleted_cells = []
 
+        #FIXME low priority possibly change how these are calculated, this can probably be moved elsewhere
         internalnodes = []
         for node in ast.walk(ast.parse(transformed_cell)):
             if (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)):
@@ -644,7 +645,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 result.cells = cells
                 result.links = self.dataflow_history_manager.raw_semantic_upstream(uuid)
                 result.deleted_cells = self.dataflow_history_manager.deleted_cells
-                # FIXME decide if this is worth keeping
+
                 result.internal_nodes = internalnodes
                 # print("GOT DELETED CELLS:", result.deleted_cells, file=sys.__stdout__)
                 self.dataflow_history_manager.deleted_cells = []
