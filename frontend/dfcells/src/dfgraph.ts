@@ -72,13 +72,14 @@ class Graph {
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
         this.depview = new DepView(this);
-
+        console.log("Lerna is active");
+        console.log("Lerna is active?");
     }
 
 
     /** @method update_graph */
-    update_graph(cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, all_ups: any, internal_nodes: any){
-        var that = this;
+    update_graph(this:Graph,cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, all_ups: any, internal_nodes: any){
+        var that:Graph = this;
         if(that.depview.is_open === false){
             that.was_changed = true;
         }
@@ -97,8 +98,8 @@ class Graph {
     };
 
     /** @method removes a cell entirely from the graph **/
-    remove_cell = function(uuid: string){
-        var that = this;
+    remove_cell = function(this:Graph,uuid: string){
+        var that:Graph = this;
         var cell_index = that.cells.indexOf(uuid);
         if(cell_index > -1){
           that.cells.splice(cell_index,1);
@@ -120,7 +121,9 @@ class Graph {
           }
           delete that.uplinks[uuid];
           if(uuid in that.upstream_list){
+              // @ts-ignore
               var all_ups = that.upstream_list[uuid].slice(0);
+              // @ts-ignore
               delete that.upstream_list[uuid];
               all_ups.forEach(function (up : any) {
                       //Better to just invalidate the cached list so you don't have to worry about downstreams too
@@ -132,7 +135,7 @@ class Graph {
 
 
     /** @method set_internal_nodes */
-    set_internal_nodes = function (uuid: string | number, internal_nodes: any){
+    set_internal_nodes = function (this:Graph,uuid: string | number, internal_nodes: any){
         this.internal_nodes[uuid] = internal_nodes;
     };
 
@@ -149,8 +152,8 @@ class Graph {
     };
 
     /** @method recursively yield all downstream deps */
-    all_downstream(uuid: string | number){
-        var that = this;
+    all_downstream(this:Graph,uuid: string | number){
+        var that:Graph = this;
         let visited = new Array();// Array<string> = [];
         var res = new Array();//: Array<string> = [];
         var downlinks = (this.downlinks[uuid] || []).slice(0);
@@ -198,8 +201,8 @@ class Graph {
 
 
      /** @method updates all downstream links with downstream updates passed from kernel */
-    update_down_links(downupdates: any[]) {
-        var that = this;
+    update_down_links(this:Graph,downupdates: any[]) {
+        var that:Graph = this;
         downupdates.forEach(function (t) {
             var uuid = t['key'].substr(0, uuid_length);
             //FIXME: FIND Jupyter.notebook.has_id equivalent
@@ -213,8 +216,8 @@ class Graph {
 
 
     /** @method update_dep_lists */
-    update_dep_lists(all_ups: string | any[], uuid: string | number){
-        var that = this;
+    update_dep_lists(this:Graph,all_ups: string | any[], uuid: string | number){
+        var that:Graph = this;
     //     var cell = Jupyter.notebook.get_code_cell(uuid);
     //
     //     if(cell.last_msg_id){
@@ -239,8 +242,8 @@ class Graph {
     };
 
     /** @method returns upstreams for a cell with a given uuid */
-    get_upstreams(uuid: string | number){
-        var that = this;
+    get_upstreams(this:Graph,uuid: string | number){
+        var that:Graph = this;
         return Object.keys(that.uplinks[uuid] || []).reduce(function (arr,uplink) {
            var links = that.uplinks[uuid][uplink].map(function (item: string){
                return uplink === item ? item : uplink+item;}) || [];
@@ -260,9 +263,9 @@ class Graph {
         return [];
     };
 
-    get_imm_upstream_names(uuid: string | number | undefined) {
+    get_imm_upstream_names(this:Graph,uuid: string | number | undefined) {
         var arr: never[] = [];
-        var that = this;
+        var that:Graph = this;
         // @ts-ignore
         this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
             // @ts-ignore
@@ -273,7 +276,7 @@ class Graph {
 
     get_imm_upstream_pairs(uuid: string | number | undefined) {
         var arr: never[] = [];
-        var that = this;
+        var that:Graph = this;
         // @ts-ignore
         this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
             // @ts-ignore
@@ -294,8 +297,8 @@ class Graph {
     };
 
     /** @method returns all nodes for a cell*/
-    get_nodes(uuid: string){
-        var that = this;
+    get_nodes(this:Graph,uuid: string){
+        var that:Graph = this;
         console.log(uuid);
         if (uuid in that.nodes) {
             if ((that.nodes[uuid] || []).length > 0) {
@@ -307,7 +310,7 @@ class Graph {
     };
 
     /** @method returns all cells on kernel side*/
-    get_cells = function(){
+    get_cells = function(this:Graph){
         return this.cells;
     };
 
