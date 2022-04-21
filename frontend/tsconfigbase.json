@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "composite": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "jsx": "react",
+	"lib": [
+      "es2017",
+      "DOM",
+      "DOM.Iterable",
+      // ... your other libs
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "preserveWatchOutput": true,
+    "resolveJsonModule": true,
+	"sourceMap":true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+	"strictPropertyInitialization": false,
+    "target": "es2017",
+    "types": ["resize-observer-browser"]
+  }
+}
