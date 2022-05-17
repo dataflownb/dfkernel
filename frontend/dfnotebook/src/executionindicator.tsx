@@ -19,11 +19,11 @@ import {
 } from '@jupyterlab/ui-components';
 
 import { Notebook } from './widget';
-import { KernelMessage } from '@jupyterlab/services';
-import {
-  IAnyMessageArgs,
-  IKernelConnection
-} from '@jupyterlab/services/src/kernel/kernel';
+import { KernelMessage, Kernel } from '@jupyterlab/services';
+// import {
+//   IAnyMessageArgs,
+//   IKernelConnection
+// } from '@jupyterlab/services/src/kernel/kernel';
 import { NotebookPanel } from './panel';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { Widget } from '@lumino/widgets';
@@ -289,8 +289,8 @@ export namespace ExecutionIndicator {
             ctx.statusChanged.disconnect(contextStatusChanged, this);
           });
           const handleKernelMsg = (
-            sender: IKernelConnection,
-            msg: IAnyMessageArgs
+            sender: Kernel.IKernelConnection,
+            msg: Kernel.IAnyMessageArgs
           ) => {
             const message = msg.msg;
             const msgId = message.header.msg_id;
@@ -328,8 +328,8 @@ export namespace ExecutionIndicator {
           const kernelChangedSlot = (
             _: ISessionContext,
             kernelData: IChangedArgs<
-              IKernelConnection | null,
-              IKernelConnection | null,
+              Kernel.IKernelConnection | null,
+              Kernel.IKernelConnection | null,
               'kernel'
             >
           ) => {

@@ -6,7 +6,7 @@ import {
   TranslationBundle
 } from '@jupyterlab/translation';
 import * as React from 'react';
-import { Text } from '@jupyterlab/coreutils';
+//import { Text } from '@jupyterlab/coreutils';
 import { Notebook, NotebookMode } from '.';
 
 /**

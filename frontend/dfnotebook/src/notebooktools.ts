@@ -123,8 +123,8 @@ export class NotebookTools extends Widget implements INotebookTools {
    * Add a cell tool item.
    */
   addItem(options: NotebookTools.IAddOptions): void {
-    let tool = options.tool;
-    let rank = options.rank ?? 100;
+    const tool = options.tool;
+    const rank = options.rank ?? 100;
 
     let section: RankedPanel<NotebookTools.Tool>;
     if (options.section === 'advanced') {
@@ -908,12 +908,15 @@ export namespace NotebookTools {
    * Create an nbconvert selector.
    */
   export function createNBConvertSelector(
-    optionsMap: ReadonlyPartialJSONObject
+    optionValueArray: ReadonlyPartialJSONOptionValueArray,
+    translator?: ITranslator
   ): KeySelector {
+    translator = translator || nullTranslator;
+    const trans = translator.load('jupyterlab');
     return new KeySelector({
       key: 'raw_mimetype',
-      title: 'Raw NBConvert Format',
-      optionsMap: optionsMap,
+      title: trans.__('Raw NBConvert Format'),
+      optionValueArray: optionValueArray,
       validCellTypes: ['raw']
     });
   }
@@ -951,14 +954,17 @@ namespace Private {
   export function createSelectorNode(
     options: NotebookTools.KeySelector.IOptions
   ): HTMLElement {
-    let name = options.key;
-    let title = options.title || name[0].toLocaleUpperCase() + name.slice(1);
-    let optionNodes: VirtualNode[] = [];
-    for (let label in options.optionsMap) {
-      let value = JSON.stringify(options.optionsMap[label]);
-      optionNodes.push(h.option({ value }, label));
-    }
-    let node = VirtualDOM.realize(
+    const name = options.key;
+    const title = options.title || name[0].toLocaleUpperCase() + name.slice(1);
+    const optionNodes: VirtualNode[] = [];
+    let value: any;
+    let option: any;
+    each(options.optionValueArray, item => {
+      option = item[0];
+      value = JSON.stringify(item[1]);
+      optionNodes.push(h.option({ value }, option));
+    });
+    const node = VirtualDOM.realize(
       h.div({}, h.label(title, h.select({}, optionNodes)))
     );
     Styling.styleNode(node);
