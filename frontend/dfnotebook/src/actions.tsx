@@ -1387,7 +1387,7 @@ export namespace NotebookActions {
         (cell as CodeCell).outputHidden = true;
       }
     });
-    Private.handleState(notebook, state);
+    Private.handleState(notebook, state, true);
   }
 
   /**
@@ -1427,7 +1427,25 @@ export namespace NotebookActions {
         (cell as CodeCell).outputHidden = true;
       }
     });
-    Private.handleState(notebook, state);
+    Private.handleState(notebook, state, true);
+  }
+
+  /**
+   * Render side-by-side.
+   *
+   * @param notebook - The target notebook widget.
+   */
+  export function renderSideBySide(notebook: Notebook): void {
+    notebook.renderingLayout = 'side-by-side';
+  }
+
+  /**
+   * Render not side-by-side.
+   *
+   * @param notebook - The target notebook widget.
+   */
+  export function renderDefault(notebook: Notebook): void {
+    notebook.renderingLayout = 'default';
   }
 
   /**
@@ -1467,7 +1485,7 @@ export namespace NotebookActions {
         (cell as CodeCell).outputsScrolled = true;
       }
     });
-    Private.handleState(notebook, state);
+    Private.handleState(notebook, state, true);
   }
 
   /**
@@ -2123,12 +2141,26 @@ Please wait for the complete rendering before invoking that action.`,
             });
             break;
           }
+          if (sessionContext.pendingInput) {
+            void showDialog({
+              title: trans.__('Cell not executed due to pending input'),
+              body: trans.__(
+                'The cell has not been executed to avoid kernel deadlock as there is another pending input! Submit your pending input and try again.'
+              ),
+              buttons: [Dialog.okButton({ label: trans.__('Ok') })]
+            });
+            return Promise.resolve(false);
+          }
+          if (sessionContext.hasNoKernel) {
+            void sessionContextDialogs.selectKernel(sessionContext);
+            return Promise.resolve(false);
+          }
           const deletedCells = notebook.model?.deletedCells ?? [];
           const codeDict: { [key: string]: string } = {};
           const cellIdWidgetMap: { [key: string]: any } = {};
           const outputTags: { [key: string]: string[] } = {};
           const inputTags: { [key: string]: string } = {};
-          if (notebook.model) {
+	  if (notebook.model) {
             each(notebook.model.cells, (c: ICodeCellModel, index) => {
               const child = notebook.widgets[index] as CodeCell;
               if (c.type === 'code') {
@@ -2165,21 +2197,6 @@ Please wait for the complete rendering before invoking that action.`,
             auto_update_flags: {}, // this.notebook.get_auto_update_flags(),
             force_cached_flags: {} // this.notebook.get_force_cached_flags()})
           };
-          if (sessionContext.pendingInput) {
-            void showDialog({
-              title: trans.__('Cell not executed due to pending input'),
-              body: trans.__(
-                'The cell has not been executed to avoid kernel deadlock as there is another pending input! Submit your pending input and try again.'
-              ),
-              buttons: [Dialog.okButton({ label: trans.__('Ok') })]
-            });
-            return Promise.resolve(false);
-          }
-          if (sessionContext.hasNoKernel) {
-            void sessionContextDialogs.selectKernel(sessionContext);
-            return Promise.resolve(false);
-          }
-          const deletedCells = notebook.model?.deletedCells ?? [];
           executionScheduled.emit({ notebook, cell });
           return CodeCell.execute(cell as CodeCell, sessionContext, {
             deletedCells,
