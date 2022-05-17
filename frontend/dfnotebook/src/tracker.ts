@@ -3,14 +3,13 @@
 
 import { WidgetTracker } from '@jupyterlab/apputils';
 import { Cell } from '@dfnotebook/dfcells';
-
 import { ISignal, Signal } from '@lumino/signaling';
-
-import { INotebookTracker } from './tokens';
 import { NotebookPanel } from './panel';
+import { INotebookTracker } from './tokens';
 import { Notebook } from './widget';
 
-export class NotebookTracker extends WidgetTracker<NotebookPanel>
+export class NotebookTracker
+  extends WidgetTracker<NotebookPanel>
   implements INotebookTracker {
   /**
    * The currently focused cell.
@@ -20,7 +19,7 @@ export class NotebookTracker extends WidgetTracker<NotebookPanel>
    * value is `null`.
    */
   get activeCell(): Cell | null {
-    let widget = this.currentWidget;
+    const widget = this.currentWidget;
     if (!widget) {
       return null;
     }
@@ -69,7 +68,7 @@ export class NotebookTracker extends WidgetTracker<NotebookPanel>
    */
   protected onCurrentChanged(widget: NotebookPanel): void {
     // Store an internal reference to active cell to prevent false positives.
-    let activeCell = this.activeCell;
+    const activeCell = this.activeCell;
     if (activeCell && activeCell === this._activeCell) {
       return;
     }

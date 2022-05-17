@@ -1,27 +1,25 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { isMarkdownCellModel } from '@dfnotebook/dfcells';
-
-import { Kernel, KernelMessage, Session } from '@jupyterlab/services';
-
-import { each } from '@lumino/algorithm';
-
-import { Token } from '@lumino/coreutils';
-
 import {
+  Dialog,
   ISessionContext,
   Printing,
-  showDialog,
-  Dialog
+  showDialog
 } from '@jupyterlab/apputils';
-
-import { DocumentWidget, DocumentRegistry } from '@jupyterlab/docregistry';
-
-import { INotebookModel } from './model';
-
-import { Notebook, StaticNotebook } from './widget';
+import { isMarkdownCellModel } from '@dfnotebook/dfcells';
 import { PageConfig } from '@jupyterlab/coreutils';
+import { DocumentRegistry, DocumentWidget } from '@jupyterlab/docregistry';
+import { Kernel, KernelMessage, Session } from '@jupyterlab/services';
+import {
+  ITranslator,
+  nullTranslator,
+  TranslationBundle
+} from '@jupyterlab/translation';
+import { each } from '@lumino/algorithm';
+import { Token } from '@lumino/coreutils';
+import { INotebookModel } from './model';
+import { Notebook, StaticNotebook } from './widget';
 
 /**
  * The class name added to notebook panels.
@@ -31,6 +29,11 @@ const NOTEBOOK_PANEL_CLASS = 'jp-NotebookPanel';
 const NOTEBOOK_PANEL_TOOLBAR_CLASS = 'jp-NotebookPanel-toolbar';
 
 const NOTEBOOK_PANEL_NOTEBOOK_CLASS = 'jp-NotebookPanel-notebook';
+
+/**
+ * The class name to add when the document is loaded for the search box.
+ */
+const SEARCH_DOCUMENT_LOADED_CLASS = 'jp-DocumentSearch-document-loaded';
 
 /**
  * A widget that hosts a notebook toolbar and content area.
@@ -45,6 +48,8 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
    */
   constructor(options: DocumentWidget.IOptions<Notebook, INotebookModel>) {
     super(options);
+    this.translator = options.translator || nullTranslator;
+    this._trans = this.translator.load('jupyterlab');
 
     // Set up CSS classes
     this.addClass(NOTEBOOK_PANEL_CLASS);
@@ -61,6 +66,7 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
       this._onSessionStatusChanged,
       this
     );
+    this.content.fullyRendered.connect(this._onFullyRendered, this);
     this.context.saveState.connect(this._onSave, this);
     void this.revealed.then(() => {
       if (this.isDisposed) {
@@ -70,7 +76,7 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
 
       // Set the document edit mode on initial open if it looks like a new document.
       if (this.content.widgets.length === 1) {
-        let cellModel = this.content.widgets[0].model;
+        const cellModel = this.content.widgets[0].model;
         if (cellModel.type === 'code' && cellModel.value.text === '') {
           this.content.mode = 'edit';
         }
@@ -78,13 +84,16 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
     });
   }
 
-  _onSave(sender: DocumentRegistry.Context, state: DocumentRegistry.SaveState) {
+  _onSave(
+    sender: DocumentRegistry.Context,
+    state: DocumentRegistry.SaveState
+  ): void {
     if (state === 'started' && this.model) {
       // Find markdown cells
       const { cells } = this.model;
       each(cells, cell => {
         if (isMarkdownCellModel(cell)) {
-          for (let key of cell.attachments.keys) {
+          for (const key of cell.attachments.keys) {
             if (!cell.value.text.includes(key)) {
               cell.attachments.remove(key);
             }
@@ -100,11 +109,6 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
   get sessionContext(): ISessionContext {
     return this.context.sessionContext;
   }
-
-  /**
-   * The notebook used by the widget.
-   */
-  readonly content: Notebook;
 
   /**
    * The model for the widget.
@@ -167,6 +171,15 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
   }
 
   /**
+   * Handle a fully rendered signal notebook.
+   */
+  private _onFullyRendered(notebook: Notebook, fullyRendered: boolean): void {
+    fullyRendered
+      ? this.removeClass(SEARCH_DOCUMENT_LOADED_CLASS)
+      : this.addClass(SEARCH_DOCUMENT_LOADED_CLASS);
+  }
+
+  /**
    * Handle a change in the kernel by updating the document metadata.
    */
   private _onKernelChanged(
@@ -176,7 +189,7 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
     if (!this.model || !args.newValue) {
       return;
     }
-    let { newValue } = args;
+    const { newValue } = args;
     void newValue.info.then(info => {
       if (
         this.model &&
@@ -198,9 +211,12 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
       // The kernel died and the server is restarting it. We notify the user so
       // they know why their kernel state is gone.
       void showDialog({
-        title: 'Kernel Restarting',
-        body: `The kernel for ${this.sessionContext.session?.path} appears to have died. It will restart automatically.`,
-        buttons: [Dialog.okButton()]
+        title: this._trans.__('Kernel Restarting'),
+        body: this._trans.__(
+          'The kernel for %1 appears to have died. It will restart automatically.',
+          this.sessionContext.session?.path
+        ),
+        buttons: [Dialog.okButton({ label: this._trans.__('Ok') })]
       });
       this._autorestarting = true;
     } else if (status === 'restarting') {
@@ -235,6 +251,8 @@ export class NotebookPanel extends DocumentWidget<Notebook, INotebookModel> {
     });
   }
 
+  translator: ITranslator;
+  private _trans: TranslationBundle;
   /**
    * Whether we are currently in a series of autorestarts we have already
    * notified the user about.
@@ -277,7 +295,8 @@ export namespace NotebookPanel {
   /**
    * The default implementation of an `IContentFactory`.
    */
-  export class ContentFactory extends Notebook.ContentFactory
+  export class ContentFactory
+    extends Notebook.ContentFactory
     implements IContentFactory {
     /**
      * Create a new content area for the panel.
