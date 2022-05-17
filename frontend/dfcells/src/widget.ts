@@ -53,7 +53,7 @@ import { IDragEvent } from '@lumino/dragdrop';
 
 import { Message } from '@lumino/messaging';
 
-import { Debouncer } from '@lumino/polling';
+//import { Debouncer } from '@lumino/polling';
 
 import { ISignal, Signal } from '@lumino/signaling';
 
@@ -571,9 +571,9 @@ export class Cell<T extends ICellModel = ICellModel> extends Widget {
   private _inputPlaceholder: InputPlaceholder;
   private _syncCollapse = false;
   private _syncEditable = false;
-  private _resizeDebouncer = new Debouncer(() => {
-    this._displayChanged.emit();
-  }, 0);
+//   private _resizeDebouncer = new Debouncer(() => {
+//     this._displayChanged.emit();
+//   }, 0);
 }
 
 /**
