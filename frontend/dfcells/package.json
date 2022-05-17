@@ -85,7 +85,8 @@
     "@types/jquery": "^3.5.14",
     "@types/node": "^17.0.22",
     "@types/graphlib-dot": "^0.6.1",
-    "@types/graphlib": "^2.1.8"
+    "@types/graphlib": "^2.1.8",
+    "@types/resize-observer-browser": "^0.1.7"
   },
   "devDependencies": {
     "@jupyterlab/testutils": "^3.4.2",

@@ -65,8 +65,9 @@
     "@lumino/virtualdom": "^1.14.0",
     "@lumino/widgets": "^1.30.0",
     "codemirror": "^5.55.0",
-    "react": "^17.0.1"
-    "@dfnotebook/dfcells": "^0.1.0-beta"
+    "react": "^17.0.1",
+    "@dfnotebook/dfcells": "^0.1.0-beta",
+    "@types/resize-observer-browser": "^0.1.7"
   },
   "devDependencies": {
     "@jupyterlab/testutils": "^3.4.2",
