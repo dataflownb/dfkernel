@@ -1,4 +1,4 @@
-/*-----------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -33,7 +33,7 @@ const INPUT_PROMPT_CLASS = 'jp-InputPrompt';
  */
 const INPUT_AREA_EDITOR_CLASS = 'jp-InputArea-editor';
 
-/******************************************************************************
+/** ****************************************************************************
  * InputArea
  ******************************************************************************/
 
@@ -47,26 +47,28 @@ export class InputArea extends Widget {
   constructor(options: InputArea.IOptions) {
     super();
     this.addClass(INPUT_AREA_CLASS);
-    let model = (this.model = options.model);
-    let contentFactory = (this.contentFactory =
+    const model = (this.model = options.model);
+    const contentFactory = (this.contentFactory =
       options.contentFactory || InputArea.defaultContentFactory);
 
     // Prompt
-    let prompt = (this._prompt = contentFactory.createInputPrompt(model));
+    const prompt = (this._prompt = contentFactory.createInputPrompt(model));
     prompt.addClass(INPUT_AREA_PROMPT_CLASS);
 
     // Editor
-    let editorOptions = {
+    const editorOptions = {
       model,
       factory: contentFactory.editorFactory,
       updateOnShow: options.updateOnShow
     };
-    let editor = (this._editor = new CodeEditorWrapper(editorOptions));
+    const editor = (this._editor = new CodeEditorWrapper(editorOptions));
     editor.addClass(INPUT_AREA_EDITOR_CLASS);
 
-    let layout = (this.layout = new PanelLayout());
+    const layout = (this.layout = new PanelLayout());
     layout.addWidget(prompt);
-    layout.addWidget(editor);
+    if (!options.placeholder) {
+      layout.addWidget(editor);
+    }
   }
 
   /**
@@ -101,10 +103,17 @@ export class InputArea extends Widget {
   }
 
   /**
+   * Get the rendered input area widget, if any.
+   */
+  get renderedInput(): Widget {
+    return this._rendered;
+  }
+
+  /**
    * Render an input instead of the text editor.
    */
   renderInput(widget: Widget): void {
-    let layout = this.layout as PanelLayout;
+    const layout = this.layout as PanelLayout;
     if (this._rendered) {
       this._rendered.parent = null;
     }
@@ -173,6 +182,11 @@ export namespace InputArea {
      * Whether to send an update request to the editor when it is shown.
      */
     updateOnShow?: boolean;
+
+    /**
+     * Whether this input area is a placeholder for future rendering.
+     */
+    placeholder?: boolean;
   }
 
   /**
@@ -183,7 +197,7 @@ export namespace InputArea {
    */
   export interface IContentFactory {
     /**
-     * The editor factory we need to include in `CodeEditorWratter.IOptions`.
+     * The editor factory we need to include in `CodeEditorWrapper.IOptions`.
      *
      * This is a separate readonly attribute rather than a factory method as we need
      * to pass it around.
@@ -248,7 +262,7 @@ export namespace InputArea {
    * A function to create the default CodeMirror editor factory.
    */
   function _createDefaultEditorFactory(): CodeEditor.Factory {
-    let editorServices = new CodeMirrorEditorFactory();
+    const editorServices = new CodeMirrorEditorFactory();
     return editorServices.newInlineEditor;
   }
 
@@ -263,7 +277,7 @@ export namespace InputArea {
   export const defaultContentFactory = new ContentFactory({});
 }
 
-/******************************************************************************
+/** ****************************************************************************
  * InputPrompt
  ******************************************************************************/
 
@@ -282,7 +296,7 @@ export interface IInputPrompt extends Widget {
  */
 export class InputPrompt extends Widget implements IInputPrompt {
   /*
-   * Create an input prompt widget.
+   * Create an output prompt widget.
    */
   constructor(model: ICellModel) {
     super();
