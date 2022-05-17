@@ -629,11 +629,15 @@ export class CodeCellModel extends CellModel implements ICodeCellModel {
    */
   constructor(options: CodeCellModel.IOptions) {
     // FIXME find better way to do this, probably define the interface?
-    if (options.cell !== undefined &&
+    super( (() => {
+        if (options.cell !== undefined &&
         options.cell.metadata.dfnotebook &&
         (options.cell.metadata.dfnotebook as PartialJSONObject).id !== undefined) {
       options.id = (options.cell.metadata.dfnotebook as PartialJSONObject).id as string;
-    }
+        }
+        return options;
+	})() )
+
     super(options);
     const factory =
       options.contentFactory || CodeCellModel.defaultContentFactory;
