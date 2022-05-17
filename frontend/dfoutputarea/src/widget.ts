@@ -122,9 +122,19 @@ export class OutputArea extends Widget {
   readonly rendermime: IRenderMimeRegistry;
 
   /**
+  * The cellIdWidgetMap is a hack to map outputs to other cells.
+  */
+  static cellIdWidgetMap: { [key:string]: Widget } | undefined;
+
+  /**
    * The hidden output models.
    */
   private trimmedOutputModels: IOutputModel[];
+
+  /*
+  * The cell's id
+  */
+  private cellId: string;
 
   /*
    * The maximum outputs to show in the trimmed
