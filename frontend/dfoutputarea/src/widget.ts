@@ -134,7 +134,7 @@ export class OutputArea extends Widget {
   /*
   * The cell's id
   */
-  private cellId: string;
+  cellId: string;
 
   /*
    * The maximum outputs to show in the trimmed
