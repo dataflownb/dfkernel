@@ -2,7 +2,7 @@
 // Distributed under the terms of the Modified BSD License.
 /**
  * @packageDocumentation
- * @module notebook-extension
+ * @module dfnotebook-extension
  */
 
 import {
@@ -280,7 +280,7 @@ const FORMAT_EXCLUDE = ['notebook', 'python', 'custom'];
  * Setting Id storing the customized toolbar definition.
  */
 //FIXME: Change to dfnotebook?
-const PANEL_SETTINGS = 'dfnotebook/notebook-extension:panel';
+const PANEL_SETTINGS = '@dfnotebook/dfnotebook-extension:panel';
 
 /**
  * The id to use on the style tag for the side by side margins.
@@ -291,7 +291,7 @@ const SIDE_BY_SIDE_STYLE_ID = 'jp-NotebookExtension-sideBySideMargins';
  * The notebook widget tracker provider.
  */
 const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
-  id: 'dfnotebook-extension:tracker',
+  id: '@dfnotebook/dfnotebook-extension:tracker',
   provides: INotebookTracker,
   requires: [INotebookWidgetFactory, ITranslator],
   optional: [
@@ -311,7 +311,7 @@ const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
  * The notebook cell factory provider.
  */
 const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
-  id: 'dfnotebook-extension:factory',
+  id: '@dfnotebook/dfnotebook-extension:factory',
   provides: NotebookPanel.IContentFactory,
   requires: [IEditorServices],
   autoStart: true,
@@ -327,7 +327,7 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
 const tools: JupyterFrontEndPlugin<INotebookTools> = {
   activate: activateNotebookTools,
   provides: INotebookTools,
-  id: 'dfnotebook-extension:tools',
+  id: '@dfnotebook/dfnotebook-extension:tools',
   autoStart: true,
   requires: [INotebookTracker, IEditorServices, IStateDB, ITranslator],
   optional: [IPropertyInspectorProvider]
@@ -337,7 +337,7 @@ const tools: JupyterFrontEndPlugin<INotebookTools> = {
  * A plugin providing a CommandEdit status item.
  */
 export const commandEditItem: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook-extension:mode-status',
+  id: '@dfnotebook/dfnotebook-extension:mode-status',
   autoStart: true,
   requires: [INotebookTracker, ITranslator],
   optional: [IStatusBar],
@@ -361,7 +361,7 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
       item.model.notebook = current && current.content;
     });
 
-    statusBar.registerStatusItem('dfnotebook-extension:mode-status', {
+    statusBar.registerStatusItem('@dfnotebook/dfnotebook-extension:mode-status', {
       item,
       align: 'right',
       rank: 4,
@@ -377,7 +377,7 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
  * A plugin that provides a execution indicator item to the status bar.
  */
 export const executionIndicator: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook/notebook-extension:execution-indicator',
+  id: '@dfnotebook/dfnotebook-extension:execution-indicator',
   autoStart: true,
   requires: [INotebookTracker, ILabShell, ITranslator],
   optional: [IStatusBar, ISettingRegistry],
@@ -426,7 +426,7 @@ export const executionIndicator: JupyterFrontEndPlugin<void> = {
             }
           };
           statusBarDisposable = statusBar.registerStatusItem(
-            '@jupyterlab/notebook-extension:execution-indicator',
+            '@dfnotebook/dfnotebook-extension:execution-indicator',
             {
               item: statusbarItem,
               align: 'left',
@@ -485,7 +485,7 @@ export const executionIndicator: JupyterFrontEndPlugin<void> = {
  */
 export const exportPlugin: JupyterFrontEndPlugin<void> = {
 //FIXME: Change to dfnotebook?
-  id: 'dfnotebook/notebook-extension:export',
+  id: '@dfnotebook/dfnotebook-extension:export',
   autoStart: true,
   requires: [ITranslator, INotebookTracker],
   optional: [IMainMenu, ICommandPalette],
@@ -594,7 +594,7 @@ export const exportPlugin: JupyterFrontEndPlugin<void> = {
  * A plugin that adds a notebook trust status item to the status bar.
  */
 export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook-extension:trust-status',
+  id: '@dfnotebook/dfnotebook-extension:trust-status',
   autoStart: true,
   requires: [INotebookTracker, ITranslator],
   optional: [IStatusBar],
@@ -618,7 +618,7 @@ export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
     });
 
     statusBar.registerStatusItem(
-      'dfnotebook-extension:trust-status',
+      '@dfnotebook/dfnotebook-extension:trust-status',
       {
         item,
         align: 'right',
@@ -636,7 +636,7 @@ export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
  * The notebook widget factory provider.
  */
 const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
-  id: 'dfnotebook-extension:widget-factory',
+  id: '@dfnotebook/dfnotebook-extension:widget-factory',
   provides: INotebookWidgetFactory,
   requires: [
     NotebookPanel.IContentFactory,
@@ -656,7 +656,7 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
  * The cloned output provider.
  */
 const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook/notebook-extension:cloned-outputs',
+  id: '@dfnotebook/dfnotebook-extension:cloned-outputs',
   requires: [IDocumentManager, INotebookTracker, ITranslator],
   optional: [ILayoutRestorer],
   activate: activateClonedOutputs,
@@ -667,7 +667,7 @@ const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
  * A plugin for code consoles functionalities.
  */
 const codeConsolePlugin: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook/notebook-extension:code-console',
+  id: '@dfnotebook/dfnotebook-extension:code-console',
   requires: [INotebookTracker, ITranslator],
   activate: activateCodeConsole,
   autoStart: true
@@ -677,7 +677,7 @@ const codeConsolePlugin: JupyterFrontEndPlugin<void> = {
  * A plugin to copy CodeCell outputs.
  */
 const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
-  id: 'dfnotebook/notebook-extensions:copy-output',
+  id: '@dfnotebook/dfnotebook-extensions:copy-output',
   activate: activateCopyOutput,
   requires: [ITranslator, INotebookTracker],
   autoStart: true
