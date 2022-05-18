@@ -638,7 +638,6 @@ export class CodeCellModel extends CellModel implements ICodeCellModel {
         return options;
 	})() )
 
-    super(options);
     const factory =
       options.contentFactory || CodeCellModel.defaultContentFactory;
     const trusted = this.trusted;
