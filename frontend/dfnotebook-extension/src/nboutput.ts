@@ -15,7 +15,7 @@ import { KernelMessage } from '@jupyterlab/services';
  */
 export const logNotebookOutput: JupyterFrontEndPlugin<void> = {
   activate: activateNBOutput,
-  id: '@jupyterlab/notebook-extension:log-output',
+  id: '@dfnotebook/notebook-extension:log-output',
   requires: [INotebookTracker],
   optional: [ILoggerRegistry],
   autoStart: true
