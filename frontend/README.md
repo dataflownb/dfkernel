@@ -76,6 +76,8 @@ pip install -e .
 jlpm
 # Build Typescript source
 jlpm build
+# uninstall the standard notebook-extension
+jupyter labextension uninstall @jupyterlab/notebook-extension --no-build
 # Link your development version of the extension with JupyterLab
 jupyter labextension link dfoutputarea --no-build
 jupyter labextension link dfcells --no-build
