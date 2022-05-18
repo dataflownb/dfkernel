@@ -26,7 +26,7 @@ import {
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
-import { PageConfig, URLExt } from '@jupyterlab/coreutils';
+import { PageConfig } from '@jupyterlab/coreutils';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -44,11 +44,11 @@ import {
 } from '@jupyterlab/mainmenu';
 import * as nbformat from '@jupyterlab/nbformat';
 import {
-  CommandEditStatus,
   ExecutionIndicator,
   INotebookTools,
   INotebookTracker,
   INotebookWidgetFactory,
+  Notebook,
   ToolbarItems
 } from '@jupyterlab/notebook'
 
@@ -280,7 +280,7 @@ const FORMAT_EXCLUDE = ['notebook', 'python', 'custom'];
  * Setting Id storing the customized toolbar definition.
  */
 //FIXME: Change to dfnotebook?
-const PANEL_SETTINGS = '@jupyterlab/notebook-extension:panel';
+const PANEL_SETTINGS = 'dfnotebook/notebook-extension:panel';
 
 /**
  * The id to use on the style tag for the side by side margins.
@@ -293,7 +293,7 @@ const SIDE_BY_SIDE_STYLE_ID = 'jp-NotebookExtension-sideBySideMargins';
 const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
   id: 'dfnotebook-extension:tracker',
   provides: INotebookTracker,
-  requires: [INotebookWidgetFactory, IDocumentManager],
+  requires: [INotebookWidgetFactory, ITranslator],
   optional: [
     ICommandPalette,
     IFileBrowserFactory,
@@ -377,7 +377,7 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
  * A plugin that provides a execution indicator item to the status bar.
  */
 export const executionIndicator: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extension:execution-indicator',
+  id: 'dfnotebook/notebook-extension:execution-indicator',
   autoStart: true,
   requires: [INotebookTracker, ILabShell, ITranslator],
   optional: [IStatusBar, ISettingRegistry],
@@ -420,7 +420,7 @@ export const executionIndicator: JupyterFrontEndPlugin<void> = {
             if (newValue && notebookTracker.has(newValue)) {
               const panel = newValue as NotebookPanel;
               statusbarItem.model!.attachNotebook({
-                content: panel.content,
+                content: panel.content as unknown as Notebook,
                 context: panel.sessionContext
               });
             }
@@ -485,7 +485,7 @@ export const executionIndicator: JupyterFrontEndPlugin<void> = {
  */
 export const exportPlugin: JupyterFrontEndPlugin<void> = {
 //FIXME: Change to dfnotebook?
-  id: '@jupyterlab/notebook-extension:export',
+  id: 'dfnotebook/notebook-extension:export',
   autoStart: true,
   requires: [ITranslator, INotebookTracker],
   optional: [IMainMenu, ICommandPalette],
@@ -653,29 +653,10 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
 
 
 /**
- * The notebook widget factory provider.
- */
-const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
-  id: '@jupyterlab/notebook-extension:widget-factory',
-  provides: INotebookWidgetFactory,
-  requires: [
-    NotebookPanel.IContentFactory,
-    IEditorServices,
-    IRenderMimeRegistry,
-    ISessionContextDialogs,
-    IToolbarWidgetRegistry,
-    ITranslator
-  ],
-  optional: [ISettingRegistry],
-  activate: activateWidgetFactory,
-  autoStart: true
-};
-
-/**
  * The cloned output provider.
  */
 const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extension:cloned-outputs',
+  id: 'dfnotebook/notebook-extension:cloned-outputs',
   requires: [IDocumentManager, INotebookTracker, ITranslator],
   optional: [ILayoutRestorer],
   activate: activateClonedOutputs,
@@ -686,7 +667,7 @@ const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
  * A plugin for code consoles functionalities.
  */
 const codeConsolePlugin: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extension:code-console',
+  id: 'dfnotebook/notebook-extension:code-console',
   requires: [INotebookTracker, ITranslator],
   activate: activateCodeConsole,
   autoStart: true
@@ -696,7 +677,7 @@ const codeConsolePlugin: JupyterFrontEndPlugin<void> = {
  * A plugin to copy CodeCell outputs.
  */
 const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/notebook-extensions:copy-output',
+  id: 'dfnotebook/notebook-extensions:copy-output',
   activate: activateCopyOutput,
   requires: [ITranslator, INotebookTracker],
   autoStart: true
@@ -870,8 +851,10 @@ function activateWidgetFactory(
   toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'save', panel =>
     DocToolbarItems.createSaveButton(commands, panel.context.fileChanged)
   );
-  toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'cellType', panel =>
-    ToolbarItems.createCellTypeItem(panel, translator)
+  toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'cellType', panel => {
+    // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
+    return ToolbarItems.createCellTypeItem(panel as unknown as NotebookPanel, translator);
+    }
   );
   toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'kernelName', panel =>
     Toolbar.createKernelNameItem(
@@ -886,7 +869,8 @@ function activateWidgetFactory(
     'executionProgress',
     panel => {
       return ExecutionIndicator.createExecutionIndicatorItem(
-        panel,
+        // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
+        panel as unknown as NotebookPanel,
         translator,
         settingRegistry?.load(trackerPlugin.id)
       );
@@ -974,7 +958,7 @@ function activateClonedOutputs(
           return;
         }
       } else {
-        current = notebookTracker.currentWidget;
+        current = notebookTracker.currentWidget as unknown as NotebookPanel;
         if (!current) {
           return;
         }
@@ -1039,7 +1023,7 @@ function activateCodeConsole(
 
       return Private.createConsole(
         commands,
-        current,
+        current as unknown as NotebookPanel,
         args['activate'] as boolean
       );
     },
@@ -1209,7 +1193,7 @@ function activateCopyOutput(
   app.commands.addCommand(CommandIDs.copyToClipboard, {
     label: trans.__('Copy Output to Clipboard'),
     execute: args => {
-      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const cell = tracker.currentWidget?.content.activeCell as unknown as CodeCell;
 
       if (cell == null) {
         return;
@@ -1540,7 +1524,7 @@ function getCurrent(
   if (activate && widget) {
     shell.activateById(widget.id);
   }
-  return widget;
+  return widget as unknown as NotebookPanel;
   // FIXME as unknown
   //return tracker as unknown as INotebookTracker;
 }
@@ -1560,16 +1544,16 @@ function addCommands(
   sessionDialogs = sessionDialogs ?? sessionContextDialogs;
 
   // Get the current widget and activate unless the args specify otherwise.
-  function getCurrent(args: ReadonlyPartialJSONObject): NotebookPanel | null {
-    const widget = tracker.currentWidget;
-    const activate = args['activate'] !== false;
-
-    if (activate && widget) {
-      shell.activateById(widget.id);
-    }
-
-    return widget;
-  }
+//   function getCurrent(args: ReadonlyPartialJSONObject): NotebookPanel | null {
+//     const widget = tracker.currentWidget;
+//     const activate = args['activate'] !== false;
+//
+//     if (activate && widget) {
+//       shell.activateById(widget.id);
+//     }
+//
+//     return widget;
+//   }
 
   /**
    * Whether there is an active notebook.
@@ -1581,25 +1565,70 @@ function addCommands(
     );
   }
 
+  const isEnabledAndSingleSelected = (): boolean => {
+    return Private.isEnabledAndSingleSelected(shell, tracker as unknown as INotebookTracker);
+  };
+
   /**
    * Whether there is an notebook active, with a single selected cell.
    */
-  function isEnabledAndSingleSelected(): boolean {
-    if (!isEnabled()) {
-      return false;
-    }
-    const { content } = tracker.currentWidget!;
-    const index = content.activeCellIndex;
-    // If there are selections that are not the active cell,
-    // this command is confusing, so disable it.
-    for (let i = 0; i < content.widgets.length; ++i) {
-      if (content.isSelected(content.widgets[i]) && i !== index) {
-        return false;
+//   function isEnabledAndSingleSelected(): boolean {
+//     if (!isEnabled()) {
+//       return false;
+//     }
+//     const { content } = tracker.currentWidget!;
+//     const index = content.activeCellIndex;
+//     // If there are selections that are not the active cell,
+//     // this command is confusing, so disable it.
+//     for (let i = 0; i < content.widgets.length; ++i) {
+//       if (content.isSelected(content.widgets[i]) && i !== index) {
+//         return false;
+//       }
+//     }
+//     return true;
+//   }
+
+  const refreshCellCollapsed = (notebook: Notebook): void => {
+    for (const cell of notebook.widgets) {
+      if (cell instanceof MarkdownCell && (cell as unknown as MarkdownCell).headingCollapsed) {
+        NotebookActions.setHeadingCollapse(cell as unknown as MarkdownCell, true, notebook as unknown as StaticNotebook);
+      }
+      if (cell.model.id === notebook.activeCell?.model?.id) {
+      // @ts-ignore
+        NotebookActions.expandParent(cell as unknown as ICellModel, notebook);
       }
     }
-    return true;
-  }
+  };
 
+const isEnabledAndHeadingSelected = (): boolean => {
+    return Private.isEnabledAndHeadingSelected(shell, tracker as unknown as INotebookTracker);
+  };
+
+  // Set up signal handler to keep the collapse state consistent
+  tracker.currentChanged.connect(
+    (sender: NotebookTracker, panel: NotebookPanel) => {
+      if (!panel?.content?.model?.cells) {
+        return;
+      }
+      panel.content.model.cells.changed.connect(
+        (
+          list: IObservableUndoableList<ICellModel>,
+          args: IObservableList.IChangedArgs<ICellModel>
+        ) => {
+          // Might be overkill to refresh this every time, but
+          // it helps to keep the collapse state consistent.
+          refreshCellCollapsed(panel.content as unknown as Notebook);
+        }
+      );
+      panel.content.activeCellChanged.connect(
+       // @ts-ignore FIXME: Similar issues
+        (notebook: Notebook, cell: Cell) => {
+        // @ts-ignore FIXME: Property missing from Notebook?
+          NotebookActions.expandParent(cell as unknown as Cell, notebook as unknown as Notebook);
+        }
+      );
+    }
+  );
 
   commands.addCommand(CommandIDs.runAndAdvance, {
     label: trans.__('Run Selected Cells'),
