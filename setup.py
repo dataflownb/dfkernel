@@ -55,14 +55,8 @@ package_data = {
     'dfkernel': package_files
 }
 
-version_ns = {}
-with open(pjoin(here, name, '_version.py')) as f:
-    exec(f.read(), {}, version_ns)
-
-
 setup_args = dict(
     name            = name,
-    version         = version_ns['__version__'],
     scripts         = glob(pjoin('scripts', '*')),
     packages        = packages,
     py_modules      = ['dfkernel_launcher'],
@@ -96,7 +90,8 @@ install_requires = setuptools_args['install_requires'] = [
     'tornado>=4.0',
     'ipykernel>=4.8.2',
     'notebook>=5.0',
-    'nest_asyncio>=1.4'
+    'nest_asyncio>=1.4',
+    'packaging',
 ]
 
 
