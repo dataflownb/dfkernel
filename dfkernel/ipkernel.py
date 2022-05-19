@@ -6,8 +6,7 @@ from ipykernel.ipkernel import *
 import ast
 import sys
 import time
-from tornado import gen
-import nest_asyncio
+import inspect
 
 from ipython_genutils.py3compat import safe_unicode
 from traitlets import Type
@@ -23,6 +22,13 @@ except ImportError:
 from .zmqshell import ZMQInteractiveShell
 from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer
 
+def _accepts_cell_id(meth):
+    parameters = inspect.signature(meth).parameters
+    cid_param = parameters.get("cell_id")
+    return (cid_param and cid_param.kind == cid_param.KEYWORD_ONLY) or any(
+        p.kind == p.VAR_KEYWORD for p in parameters.values()
+    )
+
 class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     shell_class = Type(ZMQInteractiveShell)
     execution_count = None
@@ -32,16 +38,16 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         super(IPythonKernel, self).__init__(**kwargs)
         self.shell.displayhook.get_execution_count = lambda: int(self.execution_count, 16)
         self.shell.display_pub.get_execution_count = lambda: int(self.execution_count, 16)
-        # first use nest_ayncio for nested async, then add asyncio.Future to tornado
-        nest_asyncio.apply()
-        # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
-        # If tornado is imported, add the patched asyncio.Future to its tuple of acceptable Futures"""
-        # original from vaex/asyncio.py
-        if 'tornado' in sys.modules:
-            import tornado.concurrent
-            if asyncio.Future not in tornado.concurrent.FUTURES:
-                tornado.concurrent.FUTURES = tornado.concurrent.FUTURES + (
-                asyncio.Future,)
+        # # first use nest_ayncio for nested async, then add asyncio.Future to tornado
+        # nest_asyncio.apply()
+        # # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
+        # # If tornado is imported, add the patched asyncio.Future to its tuple of acceptable Futures"""
+        # # original from vaex/asyncio.py
+        # if 'tornado' in sys.modules:
+        #     import tornado.concurrent
+        #     if asyncio.Future not in tornado.concurrent.FUTURES:
+        #         tornado.concurrent.FUTURES = tornado.concurrent.FUTURES + (
+        #         asyncio.Future,)
 
     @property
     def execution_count(self):
@@ -112,10 +118,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #
     #     super()._publish_execute_input(code, parent, execution_count)
 
-    # @gen.coroutine
-    def execute_request(self, stream, ident, parent):
+    async def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
 
+        print("RUNNING EXECUTE_REQUEST")
         try:
             content = parent[u'content']
             code = py3compat.cast_unicode_py2(content[u'code'])
@@ -145,7 +151,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
 
-        res = self.inner_execute_request(
+        print("CALLING INNER EXECUTE", file=sys.stderr)
+        res = await self.inner_execute_request(
             code, dfkernel_data.get('uuid'), silent, store_history,
             user_expressions,
         )
@@ -157,8 +164,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # self._outer_allow_stdin = None
         # self._outer_dfkernel_data = None
 
-    @gen.coroutine
-    def inner_execute_request(self, code, uuid, silent,
+    async def inner_execute_request(self, code, uuid, silent,
                               store_history=True, user_expressions=None):
 
         stream = self._outer_stream
@@ -173,7 +179,12 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
 
-        execution_count = int(uuid, 16)
+        try:
+            execution_count = int(uuid, 16)
+        except:
+            # FIXME for debugging
+            uuid = '1'
+            execution_count = 1
         try:
             code = self.ground_code(code, uuid, input_tags)
         except SyntaxError:
@@ -190,10 +201,37 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             # ignore this for now, catch it in do_execute
             pass
 
-        reply_content, res = yield gen.maybe_future(
-            self.do_execute(code, uuid, dfkernel_data, silent, store_history,
-                                        user_expressions, allow_stdin)
-        )
+        cell_id = (parent.get("metadata") or {}).get("cellId")
+        print("CALLING DO_EXECUTE", file=sys.stderr)
+        if _accepts_cell_id(self.do_execute):
+            reply_content = self.do_execute(
+                code,
+                uuid,
+                dfkernel_data,
+                silent,
+                store_history,
+                user_expressions,
+                allow_stdin,
+                cell_id=cell_id,
+            )
+        else:
+            reply_content = self.do_execute(
+                code,
+                uuid,
+                dfkernel_data,
+                silent,
+                store_history,
+                user_expressions,
+                allow_stdin,
+            )
+
+        print("DONE WITH DO_EXECUTE", file=sys.stderr)
+        if inspect.isawaitable(reply_content):
+            reply_content = await reply_content
+        print("REPLY_CONTENT:", reply_content, file=sys.stderr)
+
+        # need to unpack
+        reply_content, res = reply_content
 
         # Flush output before sending the reply.
         sys.stdout.flush()
@@ -208,21 +246,25 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         reply_content = json_clean(reply_content)
         metadata = self.finish_metadata(parent, metadata, reply_content)
 
-        reply_msg = self.session.send(stream, u'execute_reply',
-                                      reply_content, parent, metadata=metadata,
-                                      ident=ident)
+        reply_msg = self.session.send(
+            stream,
+            "execute_reply",
+            reply_content,
+            parent,
+            metadata=metadata,
+            ident=ident,
+        )
 
         self.log.debug("%s", reply_msg)
 
         if not silent and reply_msg['content']['status'] == u'error' and stop_on_error:
-            # FIXME here's the problem if I don't do coroutine here...
-            yield self._abort_queues()
+            self._abort_queues()
 
         return res
 
-    @gen.coroutine
-    def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
-                   user_expressions=None, allow_stdin=False):
+    async def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
+                   user_expressions=None, allow_stdin=False, *, cell_id=None):
+        print("CALLING DO_EXECUTE", file=sys.stderr)
         shell = self.shell # we'll need this a lot here
 
         self._forward_input(allow_stdin)
@@ -232,35 +274,63 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if hasattr(shell, 'run_cell_async') and hasattr(shell, 'should_run_async'):
             run_cell = partial(shell.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
             should_run_async = shell.should_run_async
+            with_cell_id = _accepts_cell_id(run_cell)
         else:
             should_run_async = lambda cell: False
             # older IPython,
             # use blocking run_cell and wrap it in coroutine
-            @gen.coroutine
-            def run_cell(*args, **kwargs):
+            async def run_cell(*args, **kwargs):
                 kwargs['uuid'] = uuid
                 kwargs['dfkernel_data'] = dfkernel_data
                 return shell.run_cell(*args, **kwargs)
+            with_cell_id = _accepts_cell_id(shell.run_cell)
 
         res = None
         try:
             # default case: runner is asyncio and asyncio is already running
             # TODO: this should check every case for "are we inside the runner",
             # not just asyncio
+            preprocessing_exc_tuple = None
+            try:
+                transformed_cell = self.shell.transform_cell(code)
+            except Exception:
+                transformed_cell = code
+                preprocessing_exc_tuple = sys.exc_info()
+
             if (
                 _asyncio_runner
-                and should_run_async(code)
                 and shell.loop_runner is _asyncio_runner
                 and asyncio.get_event_loop().is_running()
+                and should_run_async(
+                    code,
+                    transformed_cell=transformed_cell,
+                    preprocessing_exc_tuple=preprocessing_exc_tuple,
+                )
             ):
                 # print("RUNNING CELL ASYNC:", uuid, file=sys.__stdout__)
-                coro = run_cell(code, store_history=store_history, silent=silent)
+                if with_cell_id:
+                    coro = run_cell(
+                        code,
+                        store_history=store_history,
+                        silent=silent,
+                        transformed_cell=transformed_cell,
+                        preprocessing_exc_tuple=preprocessing_exc_tuple,
+                        cell_id=cell_id,
+                    )
+                else:
+                    coro = run_cell(
+                        code,
+                        store_history=store_history,
+                        silent=silent,
+                        transformed_cell=transformed_cell,
+                        preprocessing_exc_tuple=preprocessing_exc_tuple,
+                    )
                 coro_future = asyncio.ensure_future(coro)
 
                 with self._cancel_on_sigint(coro_future):
                     try:
                         # print("TRYING TO YIELD CORO_FUTURE")
-                        res = yield coro_future
+                        res = await coro_future
                     finally:
                         shell.events.trigger('post_execute')
                         if not silent:
@@ -269,8 +339,18 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 # runner isn't already running,
                 # make synchronous call,
                 # letting shell dispatch to loop runners
-                res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
-                                     store_history=store_history, silent=silent)
+                if with_cell_id:
+                    res = shell.run_cell(
+                        code,
+                        uuid=uuid,
+                        dfkernel_data=dfkernel_data,
+                        store_history=store_history,
+                        silent=silent,
+                        cell_id=cell_id,
+                    )
+                else:
+                    res = shell.run_cell(code, uuid=uuid, dfkernel_data=dfkernel_data,
+                                         store_history=store_history, silent=silent)
         finally:
             self._restore_input()
 
@@ -281,21 +361,24 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             err = res.error_in_exec
 
         # print("DELETED CELLS:", res, file=sys.__stdout__)
-        reply_content[u'deleted_cells'] = res.deleted_cells
+        if hasattr(res, 'deleted_cells'):
+            reply_content[u'deleted_cells'] = res.deleted_cells
 
         if res.success:
             # print("SETTING DEPS", res.all_upstream_deps, res.all_downstream_deps,file=sys.__stdout__)
             reply_content[u'status'] = u'ok'
-            reply_content[u'nodes'] = res.nodes
-            reply_content[u'links'] = res.links
-            reply_content[u'cells'] = res.cells
 
-            reply_content[u'upstream_deps'] = res.all_upstream_deps
-            reply_content[u'downstream_deps'] = res.all_downstream_deps
-            reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
-            reply_content[u'imm_downstream_deps'] = res.imm_downstream_deps
-            reply_content[u'update_downstreams'] = res.update_downstreams
-            reply_content[u'internal_nodes'] = res.internal_nodes
+            if hasattr(res, 'nodes'):
+                reply_content[u'nodes'] = res.nodes
+                reply_content[u'links'] = res.links
+                reply_content[u'cells'] = res.cells
+
+                reply_content[u'upstream_deps'] = res.all_upstream_deps
+                reply_content[u'downstream_deps'] = res.all_downstream_deps
+                reply_content[u'imm_upstream_deps'] = res.imm_upstream_deps
+                reply_content[u'imm_downstream_deps'] = res.imm_downstream_deps
+                reply_content[u'update_downstreams'] = res.update_downstreams
+                reply_content[u'internal_nodes'] = res.internal_nodes
         else:
             reply_content[u'status'] = u'error'
 

@@ -13,7 +13,6 @@ from functools import partial
 import inspect
 import sys
 import types
-from tornado import gen
 from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC, \
     _assign_nodes, _single_targets_nodes
@@ -414,15 +413,24 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
-                                    shell_futures=True, update_downstream_deps=False):
+                                    shell_futures=True, update_downstream_deps=False, cell_id=None):
         if (
             _asyncio_runner
             and self.loop_runner is _asyncio_runner
             and asyncio.get_event_loop().is_running()
         ):
-            future = gen.maybe_future(self.kernel.inner_execute_request(code, uuid, silent, store_history))
-            asyncio.get_event_loop().run_until_complete(future)
-            res = future.result()
+            reply_content = self.kernel.inner_execute_request(
+                code=code,
+                uuid=uuid,
+                silent=silent,
+                store_history=store_history,
+                cell_id=cell_id
+            )
+            if inspect.isawaitable(reply_content):
+                # make this synchronous here for now
+                asyncio.get_event_loop().run_until_complete(reply_content)
+            # unpack
+            reply_content, res = reply_content
             return res
         else:
             raise Exception("FIXME asyncio not enabled")
@@ -511,12 +519,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     # need to reset self.execution_count to store history correctly
 
     def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
-                 store_history=False, silent=False, shell_futures=True):
+                 store_history=False, silent=False, shell_futures=True, cell_id=None):
         # set partial on run_cell_async
         # print("RUN CELL:", uuid, self.max_execution_count, self.execution_count)
         self.run_cell_async = partial(self.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
         # self.execution_count = int(uuid, 16)
-        res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
+        res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures,
+            cell_id=cell_id)
         # self.max_execution_count = max(self.max_execution_count, self.execution_count)
         # print("DONE:", self.uuid, self.execution_count)
         return res
@@ -527,8 +536,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                              update_downstream_deps=False,
                              *,
                              transformed_cell: Optional[str] = None,
-                             preprocessing_exc_tuple: Optional[Any] = None
-                                      ) -> ExecutionResult:
+                             preprocessing_exc_tuple: Optional[Any] = None,
+                             cell_id=None) -> ExecutionResult:
 
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
@@ -591,6 +600,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                                               shell_futures=shell_futures,
                                               transformed_cell=transformed_cell,
                                               preprocessing_exc_tuple=preprocessing_exc_tuple,
+                                              cell_id=cell_id
                                               )
 
         self.pop_result()
