@@ -45,7 +45,6 @@ import {
 import * as nbformat from '@jupyterlab/nbformat';
 import {
   ExecutionIndicator,
-  INotebookTools,
   INotebookTracker,
   INotebookWidgetFactory,
   Notebook,
@@ -53,7 +52,7 @@ import {
 } from '@jupyterlab/notebook'
 
 import {
-  NotebookTools,
+//  NotebookTools,
   NotebookActions,
   NotebookModelFactory,
   NotebookPanel,
@@ -67,17 +66,14 @@ import {
   IObservableList,
   IObservableUndoableList
 } from '@jupyterlab/observables';
-import { IPropertyInspectorProvider } from '@jupyterlab/property-inspector';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 //import { ServiceManager } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { IStateDB } from '@jupyterlab/statedb';
 import { IStatusBar } from '@jupyterlab/statusbar';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import {
   addAboveIcon,
   addBelowIcon,
-  buildIcon,
   copyIcon,
   cutIcon,
   duplicateIcon,
@@ -91,13 +87,11 @@ import { CommandRegistry } from '@lumino/commands';
 import {
   JSONExt,
   JSONObject,
-  JSONValue,
   ReadonlyJSONValue,
   ReadonlyPartialJSONObject,
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet, IDisposable } from '@lumino/disposable';
-import { Message, MessageLoop } from '@lumino/messaging';
 import { Menu, Panel, Widget } from '@lumino/widgets';
 import { logNotebookOutput } from './nboutput';
 import { default as plugins } from '@jupyterlab/notebook-extension';
@@ -320,18 +314,6 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
     const editorFactory = editorServices.factoryService.newInlineEditor;
     return new NotebookPanel.ContentFactory({ editorFactory });
   }
-};
-
-/**
- * The notebook tools extension.
- */
-const tools: JupyterFrontEndPlugin<INotebookTools> = {
-  activate: activateNotebookTools,
-  provides: INotebookTools,
-  id: '@dfnotebook/dfnotebook-extension:tools',
-  autoStart: true,
-  requires: [INotebookTracker, IEditorServices, IStateDB, ITranslator],
-  optional: [IPropertyInspectorProvider]
 };
 
 /**
@@ -684,34 +666,16 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
   autoStart: true
 };
 
-/**
- * Export the plugins as default.
- */
-// const plugins: JupyterFrontEndPlugin<any>[] = [
-//   factory,
-//   DepViewer,
-//   trackerPlugin,
-//   executionIndicator,
-//   exportPlugin,
-//   tools,
-//   commandEditItem,
-//   notebookTrustItem,
-//   widgetFactoryPlugin,
-//   logNotebookOutput,
-//   clonedOutputsPlugin,
-//   codeConsolePlugin,
-//   copyOutputPlugin
-// ];
-// export default plugins;
+
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:tools')] = tools as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:execution-indicator')] = executionIndicator as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:export')] = exportPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:mode-status')] = commandEditItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:trust-status')] = notebookTrustItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
+//FIXME: Change to notebook-extension in 4.0
 plugins[indices.indexOf('@jupyterlab/notebook-extensions:copy-output')] = copyOutputPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
@@ -721,122 +685,6 @@ plugins[indices.indexOf('@jupyterlab/notebook-extension:cloned-outputs')] = clon
 console.log(plugins);
 export default plugins;
 
-/**
- * Activate the notebook tools extension.
- */
-function activateNotebookTools(
-  app: JupyterFrontEnd,
-  tracker: INotebookTracker,
-  editorServices: IEditorServices,
-  state: IStateDB,
-  translator: ITranslator,
-  inspectorProvider: IPropertyInspectorProvider | null
-): INotebookTools {
-  const trans = translator.load('jupyterlab');
-  const id = 'notebook-tools';
-  // FIXME as unknown
-  const notebookTools = new NotebookTools({ tracker: tracker as unknown as NotebookTracker, translator });
-  const activeCellTool = new NotebookTools.ActiveCellTool();
-  const slideShow = NotebookTools.createSlideShowSelector(translator);
-  const editorFactory = editorServices.factoryService.newInlineEditor;
-  const cellMetadataEditor = new NotebookTools.CellMetadataEditorTool({
-    editorFactory,
-    collapsed: false,
-    translator
-  });
-  const notebookMetadataEditor = new NotebookTools.NotebookMetadataEditorTool({
-    editorFactory,
-    translator
-  });
-
-  const services = app.serviceManager;
-
-  // Create message hook for triggers to save to the database.
-  const hook = (sender: any, message: Message): boolean => {
-    switch (message.type) {
-      case 'activate-request':
-        void state.save(id, { open: true });
-        break;
-      case 'after-hide':
-      case 'close-request':
-        void state.remove(id);
-        break;
-      default:
-        break;
-    }
-    return true;
-  };
-  const optionsMap: { [key: string]: JSONValue } = {};
-  optionsMap.None = null;
-  void services.nbconvert.getExportFormats().then(response => {
-    if (response) {
-      /**
-       * The excluded Cell Inspector Raw NbConvert Formats
-       * (returned from nbconvert's export list)
-       */
-      const rawFormatExclude = [
-        'pdf',
-        'slides',
-        'script',
-        'notebook',
-        'custom'
-      ];
-      let optionValueArray: any = [
-        [trans.__('PDF'), 'pdf'],
-        [trans.__('Slides'), 'slides'],
-        [trans.__('Script'), 'script'],
-        [trans.__('Notebook'), 'notebook'],
-        [trans.__('Custom'), 'custom']
-      ];
-
-      // convert exportList to palette and menu items
-      const formatList = Object.keys(response);
-      const formatLabels = Private.getFormatLabels(translator);
-      formatList.forEach(function (key) {
-        if (rawFormatExclude.indexOf(key) === -1) {
-          const altOption = trans.__(key[0].toUpperCase() + key.substr(1));
-          const option = formatLabels[key] ? formatLabels[key] : altOption;
-          const mimeTypeValue = response[key].output_mimetype;
-          optionValueArray.push([option, mimeTypeValue]);
-        }
-      });
-      const nbConvert = NotebookTools.createNBConvertSelector(
-        optionValueArray,
-        translator
-      );
-      notebookTools.addItem({ tool: nbConvert, section: 'common', rank: 3 });
-    }
-  });
-  notebookTools.title.icon = buildIcon;
-  notebookTools.title.caption = trans.__('Notebook Tools');
-  notebookTools.id = id;
-
-  notebookTools.addItem({ tool: activeCellTool, section: 'common', rank: 1 });
-  notebookTools.addItem({ tool: slideShow, section: 'common', rank: 2 });
-
-  notebookTools.addItem({
-    tool: cellMetadataEditor,
-    section: 'advanced',
-    rank: 1
-  });
-  notebookTools.addItem({
-    tool: notebookMetadataEditor,
-    section: 'advanced',
-    rank: 2
-  });
-
-  MessageLoop.installMessageHook(notebookTools, hook);
-
-  if (inspectorProvider) {
-    tracker.widgetAdded.connect((sender, panel) => {
-      const inspector = inspectorProvider.register(panel);
-      inspector.render(notebookTools);
-    });
-  }
-
-  // FIXME as unknown
-  return notebookTools as unknown as INotebookTools;
-}
 
 /**
  * Activate the notebook widget factory.
