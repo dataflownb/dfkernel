@@ -17,17 +17,13 @@ import {
   InputDialog,
   ISessionContextDialogs,
   IToolbarWidgetRegistry,
-  MainAreaWidget,
   sessionContextDialogs,
   showDialog,
-  Toolbar,
-  WidgetTracker
+  Toolbar
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
-
-import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
@@ -87,7 +83,7 @@ import {
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
-import { Panel, Widget } from '@lumino/widgets';
+import { Panel } from '@lumino/widgets';
 import { logNotebookOutput } from './nboutput';
 import { default as plugins } from '@jupyterlab/notebook-extension';
 
@@ -326,25 +322,12 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
 };
 
 
-/**
- * The cloned output provider.
- */
-const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
-  id: '@dfnotebook/dfnotebook-extension:cloned-outputs',
-  requires: [IDocumentManager, INotebookTracker, ITranslator],
-  optional: [ILayoutRestorer],
-  activate: activateClonedOutputs,
-  autoStart: true
-};
-
-
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
 plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:widget-factory')] = widgetFactoryPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:tracker')] = trackerPlugin as JupyterFrontEndPlugin<any>;
-plugins[indices.indexOf('@jupyterlab/notebook-extension:cloned-outputs')] = clonedOutputsPlugin as JupyterFrontEndPlugin<any>;
 console.log(plugins);
 export default plugins;
 
@@ -436,97 +419,6 @@ function activateWidgetFactory(
   });
   app.docRegistry.addWidgetFactory(factory);
   return factory;
-}
-
-/**
- * Activate the plugin to create and track cloned outputs.
- */
-function activateClonedOutputs(
-  app: JupyterFrontEnd,
-  docManager: IDocumentManager,
-  notebookTracker: INotebookTracker,
-  translator: ITranslator,
-  restorer: ILayoutRestorer | null
-): void {
-  const trans = translator.load('jupyterlab');
-  const clonedOutputs = new WidgetTracker<
-    MainAreaWidget<Private.ClonedOutputArea>
-  >({
-    namespace: 'cloned-outputs'
-  });
-
-  if (restorer) {
-    void restorer.restore(clonedOutputs, {
-      command: CommandIDs.createOutputView,
-      args: widget => ({
-        path: widget.content.path,
-        index: widget.content.index
-      }),
-      name: widget => `${widget.content.path}:${widget.content.index}`,
-      when: notebookTracker.restored // After the notebook widgets (but not contents).
-    });
-  }
-
-  const { commands, shell } = app;
-
-  const isEnabledAndSingleSelected = (): boolean => {
-    return Private.isEnabledAndSingleSelected(shell, notebookTracker);
-  };
-
-  commands.addCommand(CommandIDs.createOutputView, {
-    label: trans.__('Create New View for Output'),
-    execute: async args => {
-      let cell: CodeCell | undefined;
-      let current: NotebookPanel | undefined | null;
-      // If we are given a notebook path and cell index, then
-      // use that, otherwise use the current active cell.
-      const path = args.path as string | undefined | null;
-      let index = args.index as number | undefined | null;
-      if (path && index !== undefined && index !== null) {
-        current = docManager.findWidget(path, FACTORY) as NotebookPanel;
-        if (!current) {
-          return;
-        }
-      } else {
-        current = notebookTracker.currentWidget as unknown as NotebookPanel;
-        if (!current) {
-          return;
-        }
-        cell = current.content.activeCell as CodeCell;
-        index = current.content.activeCellIndex;
-      }
-      // Create a MainAreaWidget
-      const content = new Private.ClonedOutputArea({
-        notebook: current,
-        cell,
-        index,
-        translator
-      });
-      const widget = new MainAreaWidget({ content });
-      current.context.addSibling(widget, {
-        ref: current.id,
-        mode: 'split-bottom'
-      });
-
-      const updateCloned = () => {
-        void clonedOutputs.save(widget);
-      };
-
-      current.context.pathChanged.connect(updateCloned);
-      current.context.model?.cells.changed.connect(updateCloned);
-
-      // Add the cloned output to the output widget tracker.
-      void clonedOutputs.add(widget);
-
-      // Remove the output view if the parent notebook is closed.
-      current.content.disposed.connect(() => {
-        current!.context.pathChanged.disconnect(updateCloned);
-        current!.context.model?.cells.changed.disconnect(updateCloned);
-        widget.dispose();
-      });
-    },
-    isEnabled: isEnabledAndSingleSelected
-  });
 }
 
 /**
