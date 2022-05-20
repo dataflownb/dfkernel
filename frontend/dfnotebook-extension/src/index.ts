@@ -100,6 +100,7 @@ import { DisposableSet, IDisposable } from '@lumino/disposable';
 import { Message, MessageLoop } from '@lumino/messaging';
 import { Menu, Panel, Widget } from '@lumino/widgets';
 import { logNotebookOutput } from './nboutput';
+import { default as plugins } from '@jupyterlab/notebook-extension';
 
 /**
  * The command IDs used by the notebook plugin.
@@ -737,21 +738,39 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
 /**
  * Export the plugins as default.
  */
-const plugins: JupyterFrontEndPlugin<any>[] = [
-  factory,
-  DepViewer,
-  trackerPlugin,
-  executionIndicator,
-  exportPlugin,
-  tools,
-  commandEditItem,
-  notebookTrustItem,
-  widgetFactoryPlugin,
-  logNotebookOutput,
-  clonedOutputsPlugin,
-  codeConsolePlugin,
-  copyOutputPlugin
-];
+// const plugins: JupyterFrontEndPlugin<any>[] = [
+//   factory,
+//   DepViewer,
+//   trackerPlugin,
+//   executionIndicator,
+//   exportPlugin,
+//   tools,
+//   commandEditItem,
+//   notebookTrustItem,
+//   widgetFactoryPlugin,
+//   logNotebookOutput,
+//   clonedOutputsPlugin,
+//   codeConsolePlugin,
+//   copyOutputPlugin
+// ];
+// export default plugins;
+
+let indices = plugins.map(plug => plug.id);
+console.log(plugins);
+plugins[indices.indexOf('@jupyterlab/notebook-extension:tools')] = tools as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:execution-indicator')] = executionIndicator as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:export')] = exportPlugin as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:mode-status')] = commandEditItem as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:trust-status')] = notebookTrustItem as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extensions:copy-output')] = copyOutputPlugin as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:widget-factory')] = widgetFactoryPlugin as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:tracker')] = trackerPlugin as JupyterFrontEndPlugin<any>;
+plugins[indices.indexOf('@jupyterlab/notebook-extension:cloned-outputs')] = clonedOutputsPlugin as JupyterFrontEndPlugin<any>;
+plugins.push(DepViewer);
+console.log(plugins);
 export default plugins;
 
 /**

@@ -55,6 +55,7 @@
     "@jupyterlab/mainmenu": "^3.4.2",
     "@jupyterlab/nbformat": "^3.4.2",
     "@jupyterlab/notebook": "^3.4.2",
+    "@jupyterlab/notebook-extension": "^3.4.2",
     "@jupyterlab/observables": "^4.4.2",
     "@jupyterlab/property-inspector": "^3.4.2",
     "@jupyterlab/rendermime": "^3.4.2",
