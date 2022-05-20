@@ -51,14 +51,12 @@ import {
 } from '@jupyterlab/notebook'
 
 import {
-//  NotebookTools,
   NotebookActions,
   NotebookModelFactory,
   NotebookPanel,
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  CommandEditStatus,
   NotebookTrustStatus,
 } from '@dfnotebook/dfnotebook';
 import {
@@ -311,47 +309,6 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
 };
 
 /**
- * A plugin providing a CommandEdit status item.
- */
-export const commandEditItem: JupyterFrontEndPlugin<void> = {
-  id: '@dfnotebook/dfnotebook-extension:mode-status',
-  autoStart: true,
-  requires: [INotebookTracker, ITranslator],
-  optional: [IStatusBar],
-  activate: (
-    app: JupyterFrontEnd,
-    tracker: INotebookTracker,
-    translator: ITranslator,
-    statusBar: IStatusBar | null
-  ) => {
-    if (!statusBar) {
-      // Automatically disable if statusbar missing
-      return;
-    }
-    const { shell } = app;
-    const item = new CommandEditStatus(translator);
-
-    // Keep the status item up-to-date with the current notebook.
-    tracker.currentChanged.connect(() => {
-      // FIXME as unknown
-      const current = tracker.currentWidget as unknown as NotebookPanel;
-      item.model.notebook = current && current.content;
-    });
-
-    statusBar.registerStatusItem('@dfnotebook/dfnotebook-extension:mode-status', {
-      item,
-      align: 'right',
-      rank: 4,
-      isActive: () =>
-        !!shell.currentWidget &&
-        !!tracker.currentWidget &&
-        shell.currentWidget === tracker.currentWidget
-    });
-  }
-};
-
-
-/**
  * A plugin that adds a notebook trust status item to the status bar.
  */
 export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
@@ -499,7 +456,6 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:mode-status')] = commandEditItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:trust-status')] = notebookTrustItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
 //FIXME: Change to notebook-extension in 4.0
