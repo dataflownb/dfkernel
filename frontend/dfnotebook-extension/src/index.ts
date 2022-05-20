@@ -627,6 +627,7 @@ function activateNotebookHandler(
 
   // Utility function to create a new notebook.
   const createNew = (cwd: string, kernelName?: string) => {
+    (factory as NotebookWidgetFactory).kernel = kernelName || "none";
     return commands
       .execute('docmanager:new-untitled', { path: cwd, type: 'notebook' })
       .then(model => {

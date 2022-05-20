@@ -13,6 +13,7 @@ import { ToolbarItems } from './default-toolbar';
 import { INotebookModel } from './model';
 import { NotebookPanel } from './panel';
 import { StaticNotebook } from './widget';
+import { NotebookPanel as JupyterNotebookPanel } from '@jupyterlab/notebook';
 
 /**
  * A widget factory for notebook panels.
@@ -37,8 +38,10 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
     this._notebookConfig =
       options.notebookConfig || StaticNotebook.defaultNotebookConfig;
     this._sessionDialogs = options.sessionDialogs || sessionContextDialogs;
+    this.jupyterContentFactory = JupyterNotebookPanel.defaultContentFactory;
   }
 
+  readonly jupyterContentFactory: JupyterNotebookPanel.IContentFactory;
   /*
    * The rendermime instance.
    */
@@ -53,6 +56,9 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
    * The service used to look up mime types.
    */
   readonly mimeTypeService: IEditorMimeTypeService;
+
+ //@ts-ignore
+  public kernel: string;
 
   /**
    * A configuration object for cell editor settings.
@@ -96,8 +102,25 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
         : this._notebookConfig,
       translator: this.translator
     };
+    if(this.kernel != 'dfpython3'){
+        const jupyterNbOptions = {
+          rendermime: source
+            ? source.content.rendermime
+            : this.rendermime.clone({ resolver: context.urlResolver }),
+          contentFactory: this.jupyterContentFactory,
+          mimeTypeService: this.mimeTypeService,
+          editorConfig: source ? source.content.editorConfig : this._editorConfig,
+          notebookConfig: source
+            ? source.content.notebookConfig
+            : this._notebookConfig,
+          translator: this.translator
+        };
+        console.log('Not DfPython exiting');
+        const content = this.jupyterContentFactory.createNotebook(jupyterNbOptions);
+        console.log(content);
+        return new JupyterNotebookPanel({ context, content }) as unknown as NotebookPanel;
+    }
     const content = this.contentFactory.createNotebook(nbOptions);
-
     return new NotebookPanel({ context, content });
   }
 
