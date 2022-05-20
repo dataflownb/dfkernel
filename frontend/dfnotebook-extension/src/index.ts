@@ -1555,15 +1555,10 @@ function addCommands(
 //     return widget;
 //   }
 
-  /**
-   * Whether there is an active notebook.
-   */
-  function isEnabled(): boolean {
-    return (
-      tracker.currentWidget !== null &&
-      tracker.currentWidget === shell.currentWidget
-    );
-  }
+
+  const isEnabled = (): boolean => {
+    return Private.isEnabled(shell, tracker as unknown as INotebookTracker);
+  };
 
   const isEnabledAndSingleSelected = (): boolean => {
     return Private.isEnabledAndSingleSelected(shell, tracker as unknown as INotebookTracker);
