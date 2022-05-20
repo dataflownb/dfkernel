@@ -84,7 +84,6 @@ import {
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
 import { Panel } from '@lumino/widgets';
-import { logNotebookOutput } from './nboutput';
 import { default as plugins } from '@jupyterlab/notebook-extension';
 
 /**
@@ -324,7 +323,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:widget-factory')] = widgetFactoryPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:tracker')] = trackerPlugin as JupyterFrontEndPlugin<any>;
