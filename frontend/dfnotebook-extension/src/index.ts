@@ -57,7 +57,6 @@ import {
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  NotebookTrustStatus,
 } from '@dfnotebook/dfnotebook';
 import {
   IObservableList,
@@ -66,7 +65,6 @@ import {
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 //import { ServiceManager } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { IStatusBar } from '@jupyterlab/statusbar';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import {
   addAboveIcon,
@@ -309,48 +307,6 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
 };
 
 /**
- * A plugin that adds a notebook trust status item to the status bar.
- */
-export const notebookTrustItem: JupyterFrontEndPlugin<void> = {
-  id: '@dfnotebook/dfnotebook-extension:trust-status',
-  autoStart: true,
-  requires: [INotebookTracker, ITranslator],
-  optional: [IStatusBar],
-  activate: (
-    app: JupyterFrontEnd,
-    tracker: INotebookTracker,
-    tranlator: ITranslator,
-    statusBar: IStatusBar | null
-  ) => {
-    if (!statusBar) {
-      // Automatically disable if statusbar missing
-      return;
-    }
-    const { shell } = app;
-    const item = new NotebookTrustStatus(tranlator);
-
-    // Keep the status item up-to-date with the current notebook.
-    tracker.currentChanged.connect(() => {
-      const current = tracker.currentWidget as unknown as NotebookPanel;
-      item.model.notebook = current && current.content;
-    });
-
-    statusBar.registerStatusItem(
-      '@dfnotebook/dfnotebook-extension:trust-status',
-      {
-        item,
-        align: 'right',
-        rank: 3,
-        isActive: () =>
-          !!shell.currentWidget &&
-          !!tracker.currentWidget &&
-          shell.currentWidget === tracker.currentWidget
-      }
-    );
-  }
-};
-
-/**
  * The notebook widget factory provider.
  */
 const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
@@ -405,7 +361,6 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:trust-status')] = notebookTrustItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
 //FIXME: Change to notebook-extension in 4.0
 plugins[indices.indexOf('@jupyterlab/notebook-extensions:copy-output')] = copyOutputPlugin as JupyterFrontEndPlugin<any>;
