@@ -91,7 +91,7 @@ import {
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
-import { Menu, Panel, Widget } from '@lumino/widgets';
+import { Panel, Widget } from '@lumino/widgets';
 import { logNotebookOutput } from './nboutput';
 import { default as plugins } from '@jupyterlab/notebook-extension';
 
@@ -264,11 +264,6 @@ namespace CommandIDs {
  */
 const FACTORY = 'Notebook';
 
-/**
- * The excluded Export To ...
- * (returned from nbconvert's export list)
- */
-const FORMAT_EXCLUDE = ['notebook', 'python', 'custom'];
 
 /**
  * Setting Id storing the customized toolbar definition.
@@ -355,115 +350,6 @@ export const commandEditItem: JupyterFrontEndPlugin<void> = {
   }
 };
 
-/**
- * A plugin providing export commands in the main menu and command palette
- */
-export const exportPlugin: JupyterFrontEndPlugin<void> = {
-//FIXME: Change to dfnotebook?
-  id: '@dfnotebook/dfnotebook-extension:export',
-  autoStart: true,
-  requires: [ITranslator, INotebookTracker],
-  optional: [IMainMenu, ICommandPalette],
-  activate: (
-    app: JupyterFrontEnd,
-    translator: ITranslator,
-    tracker: INotebookTracker,
-    mainMenu: IMainMenu | null,
-    palette: ICommandPalette | null
-  ) => {
-    const trans = translator.load('jupyterlab');
-    const { commands, shell } = app;
-    const services = app.serviceManager;
-
-    const isEnabled = (): boolean => {
-      return Private.isEnabled(shell, tracker);
-    };
-
-    commands.addCommand(CommandIDs.exportToFormat, {
-      label: args => {
-        const formatLabel = args['label'] as string;
-        return args['isPalette']
-          ? trans.__('Save and Export Notebook: %1', formatLabel)
-          : formatLabel;
-      },
-      execute: args => {
-        const current = getCurrent(tracker, shell, args);
-
-        if (!current) {
-          return;
-        }
-
-        const url = PageConfig.getNBConvertURL({
-          format: args['format'] as string,
-          download: true,
-          path: current.context.path
-        });
-        const { context } = current;
-
-        if (context.model.dirty && !context.model.readOnly) {
-          return context.save().then(() => {
-            window.open(url, '_blank', 'noopener');
-          });
-        }
-
-        return new Promise<void>(resolve => {
-          window.open(url, '_blank', 'noopener');
-          resolve(undefined);
-        });
-      },
-      isEnabled
-    });
-
-    // Add a notebook group to the File menu.
-    let exportTo: Menu | null | undefined;
-    if (mainMenu) {
-      exportTo = mainMenu.fileMenu.items.find(
-        item =>
-          item.type === 'submenu' &&
-          item.submenu?.id === 'jp-mainmenu-file-notebookexport'
-      )?.submenu;
-    }
-
-    void services.nbconvert.getExportFormats().then(response => {
-      if (response) {
-        const formatLabels: any = Private.getFormatLabels(translator);
-
-        // Convert export list to palette and menu items.
-        const formatList = Object.keys(response);
-        formatList.forEach(function (key) {
-          const capCaseKey = trans.__(key[0].toUpperCase() + key.substr(1));
-          const labelStr = formatLabels[key] ? formatLabels[key] : capCaseKey;
-          let args = {
-            format: key,
-            label: labelStr,
-            isPalette: false
-          };
-          if (FORMAT_EXCLUDE.indexOf(key) === -1) {
-            if (exportTo) {
-              exportTo.addItem({
-                command: CommandIDs.exportToFormat,
-                args: args
-              });
-            }
-            if (palette) {
-              args = {
-                format: key,
-                label: labelStr,
-                isPalette: true
-              };
-              const category = trans.__('Notebook Operations');
-              palette.addItem({
-                command: CommandIDs.exportToFormat,
-                category,
-                args
-              });
-            }
-          }
-        });
-      }
-    });
-  }
-};
 
 /**
  * A plugin that adds a notebook trust status item to the status bar.
@@ -613,7 +499,6 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:export')] = exportPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:mode-status')] = commandEditItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:trust-status')] = notebookTrustItem as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
