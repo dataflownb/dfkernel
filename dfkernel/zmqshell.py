@@ -413,7 +413,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.set_custom_exc((DuplicateNameError,), duplicate_name_handler)
 
     def run_cell_as_execute_request(self, code, uuid, store_history=False, silent=False,
-                                    shell_futures=True, update_downstream_deps=False, cell_id=None):
+                                    shell_futures=True, update_downstream_deps=False):
         if (
             _asyncio_runner
             and self.loop_runner is _asyncio_runner
@@ -424,7 +424,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                 uuid=uuid,
                 silent=silent,
                 store_history=store_history,
-                cell_id=cell_id
             )
             if inspect.isawaitable(reply_content):
                 # make this synchronous here for now
