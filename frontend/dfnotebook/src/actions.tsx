@@ -2160,7 +2160,7 @@ Please wait for the complete rendering before invoking that action.`,
           const cellIdWidgetMap: { [key: string]: any } = {};
           const outputTags: { [key: string]: string[] } = {};
           const inputTags: { [key: string]: string } = {};
-	  if (notebook.model) {
+	        if (notebook.model) {
             each(notebook.model.cells, (c: ICodeCellModel, index) => {
               const child = notebook.widgets[index] as CodeCell;
               if (c.type === 'code') {
@@ -2182,7 +2182,6 @@ Please wait for the complete rendering before invoking that action.`,
                 outputTags[cId] = cellOutputTags;
               }
             });
-            break;
           }
           console.log('codeDict:', codeDict);
           console.log('cellIdWidgetMap:', cellIdWidgetMap);
