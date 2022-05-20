@@ -540,6 +540,16 @@ class DataflowNamespace(dict):
     def _is_external_link(self, k, uuid):
         return k in self.__links__ and self.__links__[k] != uuid
 
+    def clear(self):
+        super().clear()
+        self.__links__.clear()
+        self.__all_links__.clear()
+        self.__rev_links__.clear()
+        self.__do_not_link__.clear()
+        self.__local_vars__.clear()
+        self.__cur_uuid__ = None
+
+
     # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
     # FIXME: Changing get causes strange dependency issues
     #get = MutableMapping.get
@@ -549,6 +559,5 @@ class DataflowNamespace(dict):
     __eq__ = MutableMapping.__eq__
     pop = MutableMapping.pop
     popitem = MutableMapping.popitem
-    clear = MutableMapping.clear
     update = MutableMapping.update
     setdefault = MutableMapping.setdefault

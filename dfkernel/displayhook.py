@@ -105,7 +105,7 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
         self.shell.user_ns._reset_cell(result.__uuid__)
         for res_tag in result.keys():
             self.shell.user_ns._add_link(res_tag, result.__uuid__)
-
+    
     def finish_displayhook(self):
         """Finish up all displayhook activities."""
         sys.stdout.flush()
@@ -131,3 +131,17 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
         if result is not self.shell.user_ns['_oh']:
             if len(self.shell.user_ns['_oh']) >= self.cache_size and self.do_full_cache:
                 self.cull_cache()
+
+    def flush(self):
+        # without this, we get an error upon exit since the prompt_count is not an int
+        if not self.do_full_cache:
+            raise ValueError("You shouldn't have reached the cache flush "
+                             "if full caching is not enabled!")
+
+        self.shell.user_ns.clear()
+
+        import gc
+        # TODO: Is this really needed?
+        # IronPython blocks here forever
+        if sys.platform != "cli":
+            gc.collect()
