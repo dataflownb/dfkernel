@@ -337,22 +337,9 @@ const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
   autoStart: true
 };
 
-/**
- * A plugin to copy CodeCell outputs.
- */
-const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
-  id: '@dfnotebook/dfnotebook-extensions:copy-output',
-  activate: activateCopyOutput,
-  requires: [ITranslator, INotebookTracker],
-  autoStart: true
-};
-
-
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-//FIXME: Change to notebook-extension in 4.0
-plugins[indices.indexOf('@jupyterlab/notebook-extensions:copy-output')] = copyOutputPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:widget-factory')] = widgetFactoryPlugin as JupyterFrontEndPlugin<any>;
@@ -539,76 +526,6 @@ function activateClonedOutputs(
       });
     },
     isEnabled: isEnabledAndSingleSelected
-  });
-}
-
-/**
- * Activate the output copying extension
- */
-function activateCopyOutput(
-  app: JupyterFrontEnd,
-  translator: ITranslator,
-  tracker: INotebookTracker
-): void {
-  const trans = translator.load('jupyterlab');
-
-  /**
-   * Copy the contents of an HTMLElement to the system clipboard
-   */
-  function copyElement(e: HTMLElement): void {
-    const sel = window.getSelection();
-
-    if (sel == null) {
-      return;
-    }
-
-    // Save the current selection.
-    const savedRanges: Range[] = [];
-    for (let i = 0; i < sel.rangeCount; ++i) {
-      savedRanges[i] = sel.getRangeAt(i).cloneRange();
-    }
-
-    const range = document.createRange();
-    range.selectNodeContents(e);
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    document.execCommand('copy');
-
-    // Restore the saved selection.
-    sel.removeAllRanges();
-    savedRanges.forEach(r => sel.addRange(r));
-  }
-
-  app.commands.addCommand(CommandIDs.copyToClipboard, {
-    label: trans.__('Copy Output to Clipboard'),
-    execute: args => {
-      const cell = tracker.currentWidget?.content.activeCell as unknown as CodeCell;
-
-      if (cell == null) {
-        return;
-      }
-
-      const output = cell.outputArea.outputTracker.currentWidget;
-
-      if (output == null) {
-        return;
-      }
-
-      const outputAreaAreas = output.node.getElementsByClassName(
-        'jp-OutputArea-output'
-      );
-      if (outputAreaAreas.length > 0) {
-        const area = outputAreaAreas[0];
-        copyElement(area as HTMLElement);
-      }
-    }
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.copyToClipboard,
-    selector: '.jp-OutputArea-child',
-    rank: 0
   });
 }
 
