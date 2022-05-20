@@ -11,6 +11,7 @@ import asyncio
 import collections
 from functools import partial
 import inspect
+import nest_asyncio
 import sys
 import types
 from IPython.core import magic_arguments
@@ -419,18 +420,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             and self.loop_runner is _asyncio_runner
             and asyncio.get_event_loop().is_running()
         ):
-            reply_content = self.kernel.inner_execute_request(
+            res = self.kernel.inner_execute_request(
                 code=code,
                 uuid=uuid,
                 silent=silent,
                 store_history=store_history,
             )
-            if inspect.isawaitable(reply_content):
+            if inspect.isawaitable(res):
                 # make this synchronous here for now
-                asyncio.get_event_loop().run_until_complete(reply_content)
-            # unpack
-            reply_content, res = reply_content
-            return res
+                nest_asyncio.apply()
+                res = asyncio.get_event_loop().run_until_complete(res)
+            return res 
         else:
             raise Exception("FIXME asyncio not enabled")
 

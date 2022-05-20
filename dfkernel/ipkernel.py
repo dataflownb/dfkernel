@@ -120,8 +120,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     async def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
-
-        print("RUNNING EXECUTE_REQUEST")
         try:
             content = parent[u'content']
             code = py3compat.cast_unicode_py2(content[u'code'])
@@ -151,7 +149,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
 
-        print("CALLING INNER EXECUTE", file=sys.stderr)
         res = await self.inner_execute_request(
             code, dfkernel_data.get('uuid'), silent, store_history,
             user_expressions,
@@ -202,7 +199,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             pass
 
         cell_id = (parent.get("metadata") or {}).get("cellId")
-        print("CALLING DO_EXECUTE", file=sys.stderr)
         if _accepts_cell_id(self.do_execute):
             reply_content = self.do_execute(
                 code,
@@ -225,10 +221,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 allow_stdin,
             )
 
-        print("DONE WITH DO_EXECUTE", file=sys.stderr)
         if inspect.isawaitable(reply_content):
             reply_content = await reply_content
-        print("REPLY_CONTENT:", reply_content, file=sys.stderr)
 
         # need to unpack
         reply_content, res = reply_content
@@ -264,7 +258,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     async def do_execute(self, code, uuid, dfkernel_data, silent, store_history=True,
                    user_expressions=None, allow_stdin=False, *, cell_id=None):
-        print("CALLING DO_EXECUTE", file=sys.stderr)
         shell = self.shell # we'll need this a lot here
 
         self._forward_input(allow_stdin)
