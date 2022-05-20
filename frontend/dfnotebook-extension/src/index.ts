@@ -338,16 +338,6 @@ const clonedOutputsPlugin: JupyterFrontEndPlugin<void> = {
 };
 
 /**
- * A plugin for code consoles functionalities.
- */
-const codeConsolePlugin: JupyterFrontEndPlugin<void> = {
-  id: '@dfnotebook/dfnotebook-extension:code-console',
-  requires: [INotebookTracker, ITranslator],
-  activate: activateCodeConsole,
-  autoStart: true
-};
-
-/**
  * A plugin to copy CodeCell outputs.
  */
 const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
@@ -361,7 +351,6 @@ const copyOutputPlugin: JupyterFrontEndPlugin<void> = {
 
 let indices = plugins.map(plug => plug.id);
 console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:code-console')] = codeConsolePlugin as JupyterFrontEndPlugin<any>;
 //FIXME: Change to notebook-extension in 4.0
 plugins[indices.indexOf('@jupyterlab/notebook-extensions:copy-output')] = copyOutputPlugin as JupyterFrontEndPlugin<any>;
 plugins[indices.indexOf('@jupyterlab/notebook-extension:log-output')] = logNotebookOutput as JupyterFrontEndPlugin<any>;
@@ -550,159 +539,6 @@ function activateClonedOutputs(
       });
     },
     isEnabled: isEnabledAndSingleSelected
-  });
-}
-
-/**
- * Activate the plugin to add code console functionalities
- */
-function activateCodeConsole(
-  app: JupyterFrontEnd,
-  tracker: INotebookTracker,
-  translator: ITranslator
-): void {
-  const trans = translator.load('jupyterlab');
-  const { commands, shell } = app;
-
-  const isEnabled = (): boolean => Private.isEnabled(shell, tracker);
-
-  commands.addCommand(CommandIDs.createConsole, {
-    label: trans.__('New Console for Notebook'),
-    execute: args => {
-      const current = tracker.currentWidget;
-
-      if (!current) {
-        return;
-      }
-
-      return Private.createConsole(
-        commands,
-        current as unknown as NotebookPanel,
-        args['activate'] as boolean
-      );
-    },
-    isEnabled
-  });
-
-  commands.addCommand(CommandIDs.runInConsole, {
-    label: trans.__('Run Selected Text or Current Line in Console'),
-    execute: async args => {
-      // Default to not activating the notebook (thereby putting the notebook
-      // into command mode)
-      const current = tracker.currentWidget;
-
-      if (!current) {
-        return;
-      }
-
-      const { context, content } = current;
-
-      const cell = content.activeCell;
-      const metadata = cell?.model.metadata.toJSON();
-      const path = context.path;
-      // ignore action in non-code cell
-      if (!cell || cell.model.type !== 'code') {
-        return;
-      }
-
-      let code: string;
-      const editor = cell.editor;
-      const selection = editor.getSelection();
-      const { start, end } = selection;
-      const selected = start.column !== end.column || start.line !== end.line;
-
-      if (selected) {
-        // Get the selected code from the editor.
-        const start = editor.getOffsetAt(selection.start);
-        const end = editor.getOffsetAt(selection.end);
-        code = editor.model.value.text.substring(start, end);
-      } else {
-        // no selection, find the complete statement around the current line
-        const cursor = editor.getCursorPosition();
-        const srcLines = editor.model.value.text.split('\n');
-        let curLine = selection.start.line;
-        while (
-          curLine < editor.lineCount &&
-          !srcLines[curLine].replace(/\s/g, '').length
-        ) {
-          curLine += 1;
-        }
-        // if curLine > 0, we first do a search from beginning
-        let fromFirst = curLine > 0;
-        let firstLine = 0;
-        let lastLine = firstLine + 1;
-        // eslint-disable-next-line
-        while (true) {
-          code = srcLines.slice(firstLine, lastLine).join('\n');
-          const reply = await current.context.sessionContext.session?.kernel?.requestIsComplete(
-            {
-              // ipython needs an empty line at the end to correctly identify completeness of indented code
-              code: code + '\n\n'
-            }
-          );
-          if (reply?.content.status === 'complete') {
-            if (curLine < lastLine) {
-              // we find a block of complete statement containing the current line, great!
-              while (
-                lastLine < editor.lineCount &&
-                !srcLines[lastLine].replace(/\s/g, '').length
-              ) {
-                lastLine += 1;
-              }
-              editor.setCursorPosition({
-                line: lastLine,
-                column: cursor.column
-              });
-              break;
-            } else {
-              // discard the complete statement before the current line and continue
-              firstLine = lastLine;
-              lastLine = firstLine + 1;
-            }
-          } else if (lastLine < editor.lineCount) {
-            // if incomplete and there are more lines, add the line and check again
-            lastLine += 1;
-          } else if (fromFirst) {
-            // we search from the first line and failed, we search again from current line
-            firstLine = curLine;
-            lastLine = curLine + 1;
-            fromFirst = false;
-          } else {
-            // if we have searched both from first line and from current line and we
-            // cannot find anything, we submit the current line.
-            code = srcLines[curLine];
-            while (
-              curLine + 1 < editor.lineCount &&
-              !srcLines[curLine + 1].replace(/\s/g, '').length
-            ) {
-              curLine += 1;
-            }
-            editor.setCursorPosition({
-              line: curLine + 1,
-              column: cursor.column
-            });
-            break;
-          }
-        }
-      }
-
-      if (!code) {
-        return;
-      }
-
-      await commands.execute('console:open', {
-        activate: false,
-        insertMode: 'split-bottom',
-        path
-      });
-      await commands.execute('console:inject', {
-        activate: false,
-        code,
-        path,
-        metadata
-      });
-    },
-    isEnabled
   });
 }
 
