@@ -1194,8 +1194,6 @@ export namespace CodeCell {
       const msg = (await msgPromise)!;
       model.executionCount = msg.content.execution_count;
       console.log(msg);
-      console.log(DfGraph);
-      console.log("This has been changed");
       let content = (msg.content as any)
       var nodes = content.nodes;
       var uplinks = content.links;
@@ -1209,7 +1207,6 @@ export namespace CodeCell {
        if (content.update_downstreams) {
                     DfGraph.update_down_links(content.update_downstreams);
       }
-
 
       if (recordTiming) {
         const timingInfo = Object.assign(

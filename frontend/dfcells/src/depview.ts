@@ -4,16 +4,7 @@ import '@hpcc-js/wasm';
 import Writer from "graphlib-dot";
 import { graphviz, GraphvizOptions } from "d3-graphviz";
 import * as GraphLib from "graphlib";
-// import { NotebookTools } from '@dfnotebook/dfnotebook';
 
-// import {
-//   JupyterFrontEnd,
-//   JupyterFrontEndPlugin
-// } from '@jupyterlab/application';
-
-//import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
-
-//import { Widget } from '@lumino/widgets';
 
 //UUID length has been changed need to compensate for that
 const uuid_length = 8;
