@@ -335,13 +335,14 @@ export class DepView {
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
             graphviz('#svg-div').options(defaultOptions)
-                .width(Number($('#svg-div').width()))
-                .height(Number($('#svg-div').height()))
+                .width(500)
+                .height(500)
                 .fit(true)
                 .zoom(true)
                 .on('end',function(){
                     that.update_cell_lists();
                     $('#svg-div').height('100vh');
+                    $('#svg-div svg').height('100vh').width('100vw');
                     that.done_rendering = true;
                 })
             .renderDot(that.dotgraph);
