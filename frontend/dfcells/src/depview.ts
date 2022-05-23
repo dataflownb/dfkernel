@@ -476,13 +476,13 @@ export class DepView {
 
         that.cell_list.forEach(function(a:any){
             if(that.output_nodes[a.id]){
-                if(that.selected && a.level == 0){ g.setNode("Out["+a.id+"]", {label: that.cell_label + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode cellid',shape:'box'});}
-                else{g.setNode("Out["+a.id+"]", {label: that.cell_label + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode cellid',tooltip:' ',shape:'box'});}
+                if(that.selected && a.level == 0){ g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode cellid',shape:'box'});}
+                else{g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode cellid',tooltip:' ',shape:'box'});}
             }
         });
 
         Object.keys(that.output_nodes).forEach(function (a:any) {
-            var parent = 'Out['+a+']';
+            var parent = 'cluster_Out['+a+']';
             if(that.dataflow || that.selected){
                 var cell = a+'-Cell';
                 g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'box',id:cell});
@@ -492,7 +492,7 @@ export class DepView {
             that.output_nodes[a].forEach(function (t:string) {
                 //var uuid = t.substr(4,uuid_length);
                 //FIXME: Make this more robust so it uses uuid_length
-                if(/Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
+                if(/cluster_Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
                     g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
                 }
                 else{
@@ -506,7 +506,7 @@ export class DepView {
                 g.setEdge(a.source, a.target, {
                     class: a.source.substr(0, uuid_length) + a.target.substr(0, uuid_length) + ' viz-'+a.source,
                     id: 'viz-'+a.source + a.target,
-                    lhead: 'clusterOut[' + a.target.substr(0, uuid_length) + ']'
+                    lhead: 'cluster_Out[' + a.target.substr(0, uuid_length) + ']'
                 });
             }
         });
