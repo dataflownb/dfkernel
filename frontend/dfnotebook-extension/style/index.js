@@ -21,3 +21,4 @@ import '@jupyterlab/logconsole/style/index.js';
 import '@jupyterlab/mainmenu/style/index.js';
 import '@jupyterlab/notebook/style/index.js';
 import '@jupyterlab/property-inspector/style/index.js';
+import '@dfnotebook/dfcells/style/index.js';
