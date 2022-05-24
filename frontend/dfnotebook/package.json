@@ -11,7 +11,10 @@
     "url": "https://github.com/dataflownb/dfnotebook-extension.git"
   },
   "license": "BSD-3-Clause",
-  "author": "David Koop",
+    "author": {
+    "name":"Dataflow Notebook Development Team",
+    "email": "dataflownb@users.noreply.github.com"
+  },
   "sideEffects": [
     "style/**/*"
   ],
@@ -81,6 +84,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "schemaDir": "schema",
+    "outputDir": "dfnotebook/labextension"
   },
   "styleModule": "style/index.js"
 }
