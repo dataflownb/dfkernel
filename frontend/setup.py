@@ -10,49 +10,41 @@ import setuptools
 
 HERE = Path(__file__).parent.resolve()
 
-main_package_name = 'dfnotebook-extension'
+# main_package_name = 'dfnotebook-extension'
 # The name of the project
-names = ["dfoutputarea","dfcells","dfnotebook",main_package_name]
+# names = ["dfoutputarea","dfcells","dfnotebook",main_package_name]
 
 # Get the package info from package.json
-pkg_json = []
-for i in names:
-    with open(os.path.join(HERE,i,"package.json")) as f:
-        pkg_json.append(json.load(f))
+pkg_json = json.loads((HERE / "dfnotebook-extension" / "package.json").read_bytes())
+# pkg_json = []
+# for i in names:
+#     with open(os.path.join(HERE,i,"package.json")) as f:
+#         pkg_json.append(json.load(f))
 #print([json.loads((os.path.join(HERE,i,"package.json"))) for i in names])
 #pkg_json = [json.loads((os.path.join(HERE,i,"package.json"))).read_bytes() for i in names]
 
+name = "dfnotebook-extension"
 
-lab_paths = [Path(HERE / i / pkg["jupyterlab"]["outputDir"]) for (i,pkg) in zip(names,pkg_json)]
+lab_path = (HERE / pkg_json["jupyterlab"]["outputDir"])
 #print(lab_paths)
 
 # Representative files that should exist after a successful build
 ensured_targets = [
-    str(os.path.join(lab_paths[names.index(main_package_name)],"package.json")),
-    str(os.path.join(lab_paths[names.index(main_package_name)],"static/style.js"))
+    str(lab_path / "package.json"),
+    str(lab_path / "static/style.js")
 ]
 
-labext_names = [pkg["name"] for pkg in pkg_json]
+labext_name = pkg_json["name"]
 
-data_files_spec = []
-for lab_name,lab_path,name in zip(labext_names,lab_paths,names):
-    lab_path = Path(lab_path)
-    data_files_spec.append(("share/jupyter/labextensions/%s" % str(lab_name), str(lab_path.relative_to(Path(HERE / name))), "**"))
-#FIXME: Do we only need one install.json file?
-data_files_spec.append(("share/jupyter/labextensions/%s" % str(lab_name[names.index(main_package_name)]), str("."), "install.json"))
-
-# data_files_spec = [
-#     ("share/jupyter/labextensions/%s" % labext_name, str(lab_path.relative_to(HERE)), "**"),
-#     ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
-# ]
+data_files_spec = [
+    ("share/jupyter/labextensions/%s" % labext_name, str(lab_path.relative_to(HERE)), "**"),
+    ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
+]
 
 long_description = (HERE / "README.md").read_text()
 
-pkg_info = pkg_json[names.index(main_package_name)]
-
-
 version = (
-    pkg_info["version"]
+    pkg_json["version"]
     .replace("-alpha.", "a")
     .replace("-beta.", "b")
     .replace("-rc.", "rc")
@@ -61,11 +53,11 @@ version = (
 setup_args = dict(
     name=name,
     version=version,
-    url=pkg_info["homepage"],
-    author=pkg_info["author"]["name"],
-    author_email=pkg_info["author"]["email"],
-    description=pkg_info["description"],
-    license=pkg_info["license"],
+    url=pkg_json["homepage"],
+    author=pkg_json["author"]["name"],
+    author_email=pkg_json["author"]["email"],
+    description=pkg_json["description"],
+    license=pkg_json["license"],
     license_file="LICENSE",
     long_description=long_description,
     long_description_content_type="text/markdown",
