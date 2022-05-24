@@ -23,6 +23,7 @@
 @import url('~@jupyterlab/property-inspector/style/index.css');
 @import url('~@dfnotebook/dfnotebook/style/index.css');
 @import url('~@dfnotebook/dfcells/style/index.css');
+@import url('~@dfnotebook/dfoutputarea/style/index.css');
 
 /* FIXME not sure why this would have to be here */
 .CodeMirror {
