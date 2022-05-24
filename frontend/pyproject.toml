@@ -1,0 +1,17 @@
+[build-system]
+requires = ["jupyter_packaging~=0.10,<2", "jupyterlab~=3.4"]
+build-backend = "jupyter_packaging.build_api"
+
+[tool.jupyter-packaging.options]
+skip-if-exists = ["dfnotebook-extension/labextension/static/style.js"]
+ensured-targets = ["dfnotebook-extension/labextension/static/style.js", "dfnotebook_extension/labextension/package.json"]
+
+[tool.jupyter-packaging.builder]
+factory = "jupyter_packaging.npm_builder"
+
+[tool.jupyter-packaging.build-args]
+build_cmd = "build:all"
+npm = ["jlpm"]
+
+[tool.check-manifest]
+ignore = ["dfnotebook-extension/labextension/**", "yarn.lock", ".*", "package-lock.json"]
