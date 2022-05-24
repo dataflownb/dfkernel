@@ -74,6 +74,7 @@
     "@types/resize-observer-browser": "^0.1.7"
   },
   "devDependencies": {
+    "@jupyterlab/builder": "^3.4.2",
     "@jupyterlab/testutils": "^3.4.2",
     "@types/jest": "^26.0.10",
     "jest": "^26.4.2",

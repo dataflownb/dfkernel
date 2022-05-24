@@ -15,12 +15,6 @@
     "name":"Dataflow Notebook Development Team",
     "email": "dataflownb@users.noreply.github.com"
   },
-  "files": [
-    "lib/*.d.ts",
-    "lib/*.js.map",
-    "lib/*.js",
-    "style/*.css"
-  ],
   "sideEffects": [
     "style/*.css",
     "style/index.js"
@@ -92,6 +86,7 @@
     "@types/resize-observer-browser": "^0.1.7"
   },
   "devDependencies": {
+    "@jupyterlab/builder": "^3.4.2",
     "@jupyterlab/testutils": "^3.4.2",
     "@types/jest": "^26.0.10",
     "@types/marked": "^4.0.1",
