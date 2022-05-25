@@ -8,14 +8,24 @@ import os
 
 import setuptools
 
+name = "dfnotebook-extension"
+
 HERE = Path(__file__).parent.resolve()
+# print("HERE BEFORE:", HERE, os.listdir(HERE))
+# if (HERE / name).exists():
+#     HERE = HERE / name
+# print("HERE AFTER:", HERE)
 
 # main_package_name = 'dfnotebook-extension'
 # The name of the project
 # names = ["dfoutputarea","dfcells","dfnotebook",main_package_name]
 
 # Get the package info from package.json
-pkg_json = json.loads((HERE / "dfnotebook-extension" / "package.json").read_bytes())
+
+# print("**** FINDING:", HERE / name / "package.json")
+print("CHECKING", HERE, file=sys.stderr)
+print(os.listdir(HERE))
+pkg_json = json.loads((HERE / "package.json").read_bytes())
 # pkg_json = []
 # for i in names:
 #     with open(os.path.join(HERE,i,"package.json")) as f:
@@ -23,10 +33,8 @@ pkg_json = json.loads((HERE / "dfnotebook-extension" / "package.json").read_byte
 #print([json.loads((os.path.join(HERE,i,"package.json"))) for i in names])
 #pkg_json = [json.loads((os.path.join(HERE,i,"package.json"))).read_bytes() for i in names]
 
-name = "dfnotebook-extension"
-
 lab_path = (HERE / pkg_json["jupyterlab"]["outputDir"])
-#print(lab_paths)
+print("LAB PATH:", lab_path, lab_path.relative_to(HERE))
 
 # Representative files that should exist after a successful build
 ensured_targets = [
@@ -61,7 +69,7 @@ setup_args = dict(
     license_file="LICENSE",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(), # ['dfnotebook-extension'], # 
     #FIXME: Change this when ipy8 branch gets merged in
     install_requires=['dfkernel@git+https://github.com/dataflownb/dfkernel.git@9005725016811c44602c21ccc782d31e74a076b7'],
     zip_safe=False,
@@ -91,11 +99,22 @@ try:
         npm_builder,
         get_data_files
     )
+
+    # In develop mode, just run yarn
+    # builder = npm_builder(build_cmd="build", npm="jlpm") # , force=True)
     post_develop = npm_builder(
-        build_cmd="install:full", source_dir="src", build_dir=lab_path
+        build_cmd="install:extension", build_dir=lab_path
     )
-    setup_args["cmdclass"] = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
-    setup_args["data_files"] = get_data_files(data_files_spec)
+    cmdclass = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
+
+    setup_args['cmdclass'] = cmdclass
+    setup_args['data_files'] = get_data_files(data_files_spec)
+
+    # post_develop = npm_builder(
+    #     build_cmd="install:full", source_dir="src", build_dir=lab_path
+    # )
+    # setup_args["cmdclass"] = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
+    # setup_args["data_files"] = get_data_files(data_files_spec)
 except ImportError as e:
     import logging
     logging.basicConfig(format="%(levelname)s: %(message)s")

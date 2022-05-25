@@ -9,28 +9,28 @@
     "jupyterlab-extension"
   ],
   "author": {
-    "name":"Dataflow Notebook Development Team",
+    "name": "Dataflow Notebook Development Team",
     "email": "dataflownb@users.noreply.github.com"
   },
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "license": "BSD-3-Clause",
-  "workspaces": [
-    "dfoutputarea",
-    "dfcells",
-    "dfnotebook",
-    "dfnotebook-extension"
-  ],
   "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
   "scripts": {
+    "build": "lerna run build",
+    "build:prod": "lerna run build:prod",
+    "build:dev": "lerna run build:dev",
     "clean": "lerna run clean",
     "clean:slate": "python clean.py",
     "linkall": "jlpm link:outputarea && jlpm link:cells && jlpm link:notebook",
     "link:outputarea": "jupyter labextension link dfoutputarea --no-build",
     "link:cells": "jupyter labextension link dfcells --no-build",
     "link:notebook": "jupyter labextension link dfnotebook --no-build",
-    "install": "jupyter labextension install dfnotebook-extension",
-    "install:debug": "jupyter labextension install --debug dfnotebook-extension",
-    "install:full": "jlpm remove:jupyter && jlpm linkall && jlpm install",
+    "install:extension": "jlpm build",
     "remove:jupyter": "jupyter labextension uninstall @jupyterlab/notebook-extension --no-build",
     "watch": "run-p watch:cells watch:notebook watch:outputarea watch:extension",
     "watch:cells": "lerna exec --stream --scope \"@dfnotebook/dfcells\" jlpm watch",
@@ -62,7 +62,10 @@
     "shell-quote": "^1.7.2",
     "typescript": "~4.6.3"
   },
-    "jupyterlab": {
+  "publishConfig": {
+    "access": "public"
+  },
+  "jupyterlab": {
     "extension": true,
     "schemaDir": "schema",
     "outputDir": "dfnotebook-extension/labextension"

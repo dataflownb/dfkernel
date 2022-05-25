@@ -1,11 +1,19 @@
 {
-  "extends": "../tsconfigbase",
+  "extends": "../../tsconfigbase",
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
   },
   "include": ["src/*"],
   "references": [
+    {
+      "path": "../dfnotebook",
+      "composite": true
+    },
+    {
+      "path": "../dfcells",
+      "composite": true
+    },
     {
       "path": "../dfoutputarea",
       "composite": true
