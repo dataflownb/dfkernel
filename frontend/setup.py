@@ -11,30 +11,10 @@ import setuptools
 name = "dfnotebook-extension"
 
 HERE = Path(__file__).parent.resolve()
-# print("HERE BEFORE:", HERE, os.listdir(HERE))
-# if (HERE / name).exists():
-#     HERE = HERE / name
-# print("HERE AFTER:", HERE)
 
-# main_package_name = 'dfnotebook-extension'
-# The name of the project
-# names = ["dfoutputarea","dfcells","dfnotebook",main_package_name]
-
-# Get the package info from package.json
-
-# print("**** FINDING:", HERE / name / "package.json")
-print("CHECKING", HERE, file=sys.stderr)
-print(os.listdir(HERE))
 pkg_json = json.loads((HERE / "package.json").read_bytes())
-# pkg_json = []
-# for i in names:
-#     with open(os.path.join(HERE,i,"package.json")) as f:
-#         pkg_json.append(json.load(f))
-#print([json.loads((os.path.join(HERE,i,"package.json"))) for i in names])
-#pkg_json = [json.loads((os.path.join(HERE,i,"package.json"))).read_bytes() for i in names]
 
 lab_path = (HERE / pkg_json["jupyterlab"]["outputDir"])
-print("LAB PATH:", lab_path, lab_path.relative_to(HERE))
 
 # Representative files that should exist after a successful build
 ensured_targets = [
@@ -109,12 +89,6 @@ try:
 
     setup_args['cmdclass'] = cmdclass
     setup_args['data_files'] = get_data_files(data_files_spec)
-
-    # post_develop = npm_builder(
-    #     build_cmd="install:full", source_dir="src", build_dir=lab_path
-    # )
-    # setup_args["cmdclass"] = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
-    # setup_args["data_files"] = get_data_files(data_files_spec)
 except ImportError as e:
     import logging
     logging.basicConfig(format="%(levelname)s: %(message)s")
