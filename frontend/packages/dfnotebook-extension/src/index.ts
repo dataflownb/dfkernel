@@ -86,7 +86,7 @@ import {
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
 import { Panel, Widget } from '@lumino/widgets';
-import { default as plugins } from '@jupyterlab/notebook-extension';
+// import { default as plugins } from '@jupyterlab/notebook-extension';
 
 /**
  * The command IDs used by the notebook plugin.
@@ -388,15 +388,13 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
         }
     };
 
-let indices = plugins.map(plug => plug.id);
-console.log(plugins);
-plugins[indices.indexOf('@jupyterlab/notebook-extension:factory')] = factory as JupyterFrontEndPlugin<any>;
-plugins[indices.indexOf('@jupyterlab/notebook-extension:widget-factory')] = widgetFactoryPlugin as JupyterFrontEndPlugin<any>;
-plugins[indices.indexOf('@jupyterlab/notebook-extension:tracker')] = trackerPlugin as JupyterFrontEndPlugin<any>;
-plugins.push(DepViewer);
-console.log(plugins);
+const plugins: JupyterFrontEndPlugin<any>[] = [
+  factory,
+  widgetFactoryPlugin,
+  trackerPlugin,
+  DepViewer
+]
 export default plugins;
-
 
 /**
  * Activate the notebook widget factory.
