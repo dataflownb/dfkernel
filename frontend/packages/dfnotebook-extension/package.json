@@ -39,6 +39,7 @@
     "build:prod": "jlpm clean && jlpm build:lib && jlpm build:labextension",
     "build:labextension": "jupyter labextension build .",
     "build:labextension:dev": "jupyter labextension build --development True .",
+    "build:dev": "jlpm build:labextension:dev",
     "build:lib": "tsc",
     "clean": "jlpm clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
@@ -117,7 +118,7 @@
   "jupyterlab": {
     "extension": true,
     "schemaDir": "schema",
-    "outputDir": "labextension"
+    "outputDir": "../../dfnotebook-extension/labextension"
   },
   "styleModule": "style/index.js"
 }

@@ -1,12 +1,24 @@
+
 import json
-
-from ._paths import MAIN_PACKAGE_PATH
-
-_js_version = json.loads(
-    (MAIN_PACKAGE_PATH / "package.json").read_text(encoding="utf-8")
-)["version"]
+from pathlib import Path
 
 __all__ = ["__version__"]
-# value should conform to https://www.python.org/dev/peps/pep-0440/
-__release__ = ""
-__version__ = f"{_js_version}{__release__}"
+
+def _fetchVersion():
+    HERE = Path(__file__).parent.resolve()
+
+    for settings in HERE.rglob("package.json"): 
+        try:
+            with settings.open() as f:
+                version = json.load(f)["version"]
+                return (
+                    version.replace("-alpha.", "a")
+                    .replace("-beta.", "b")
+                    .replace("-rc.", "rc")
+                )
+        except FileNotFoundError:
+            pass
+
+    raise FileNotFoundError(f"Could not find package.json under dir {HERE!s}")
+
+__version__ = _fetchVersion()

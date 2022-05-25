@@ -1,19 +1,12 @@
 {
-  "extends": "../tsconfigbase",
+  "extends": "../../tsconfigbase",
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
+    "types": ["node","graphlib","d3-graphviz"]
   },
   "include": ["src/*"],
   "references": [
-    {
-      "path": "../dfnotebook",
-      "composite": true
-    },
-    {
-      "path": "../dfcells",
-      "composite": true
-    },
     {
       "path": "../dfoutputarea",
       "composite": true
