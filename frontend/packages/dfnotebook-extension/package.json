@@ -118,7 +118,8 @@
   "jupyterlab": {
     "extension": true,
     "schemaDir": "schema",
-    "outputDir": "../../dfnotebook-extension/labextension"
+    "outputDir": "../../dfnotebook-extension/labextension",
+    "disabledExtensions": ["@jupyterlab/notebook-extension"]
   },
   "styleModule": "style/index.js"
 }
