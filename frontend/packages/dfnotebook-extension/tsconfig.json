@@ -17,6 +17,10 @@
     {
       "path": "../dfoutputarea",
       "composite": true
+    },
+    {
+      "path": "../dfgraph",
+      "composite": true
     }
   ]
 }
