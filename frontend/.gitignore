@@ -117,3 +117,5 @@ dmypy.json
 dfnotebook-extension/labextension/static/
 
 dfnotebook-extension/labextension/
+
+package-lock.json
