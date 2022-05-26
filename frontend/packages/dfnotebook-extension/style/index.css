@@ -24,6 +24,7 @@
 @import url('~@dfnotebook/dfnotebook/style/index.css');
 @import url('~@dfnotebook/dfcells/style/index.css');
 @import url('~@dfnotebook/dfoutputarea/style/index.css');
+@import url('~@dfnotebook/dfgraph/style/index.css');
 
 /* FIXME not sure why this would have to be here */
 .CodeMirror {

@@ -23,3 +23,4 @@ import '@jupyterlab/notebook/style/index.js';
 import '@jupyterlab/property-inspector/style/index.js';
 import '@dfnotebook/dfcells/style/index.js';
 import '@dfnotebook/dfoutputarea/style/index.js';
+import '@dfnotebook/dfgraph/style/index.js';
