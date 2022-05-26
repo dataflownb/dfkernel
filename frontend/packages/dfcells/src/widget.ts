@@ -23,7 +23,8 @@ import {
   IOutputPrompt,
   IStdin,
   OutputArea,
-  OutputPrompt,
+  DataflowOutputArea,
+  DataflowOutputPrompt,
   SimplifiedOutputArea,
   Stdin
 } from '@dfnotebook/dfoutputarea';
@@ -684,7 +685,7 @@ export namespace Cell {
      * Create the output prompt for the widget.
      */
     createOutputPrompt(): IOutputPrompt {
-      return new OutputPrompt();
+      return new DataflowOutputPrompt();
     }
 
     /**
@@ -747,7 +748,7 @@ export class CodeCell extends Cell<ICodeCellModel> {
       outputWrapper.addClass(CELL_OUTPUT_WRAPPER_CLASS);
       const outputCollapser = new OutputCollapser();
       outputCollapser.addClass(CELL_OUTPUT_COLLAPSER_CLASS);
-      const output = (this._output = new OutputArea({
+      const output = (this._output = new DataflowOutputArea({
         model: model.outputs,
         rendermime,
         contentFactory: contentFactory,
@@ -1117,7 +1118,7 @@ export namespace CodeCell {
         >
       | undefined;
     try {
-      const msgPromise = OutputArea.execute(
+      const msgPromise = DataflowOutputArea.execute(
           code,
           cell.outputArea,
           sessionContext,
@@ -1178,6 +1179,7 @@ export namespace CodeCell {
         }
         return true;
       };
+      console.log("REGISTER:", cell, cell.outputArea, cell.outputArea.future);
       cell.outputArea.future.registerMessageHook(clearOutput);
 
 
