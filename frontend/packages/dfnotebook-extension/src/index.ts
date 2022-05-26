@@ -323,7 +323,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
 };
 
 
-
 /**
  * Initialization data for the Dfnb Depviewer extension.
  */
@@ -388,11 +387,97 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
         }
     };
 
+console.log("This file has been modified to work");
+
+/**
+ * Initialization data for the Minimap extension.
+ */
+const MiniMap: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-minimap',
+  autoStart: true,
+  requires: [ICommandPalette, INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
+
+      // Create a blank content widget inside of a MainAreaWidget
+      console.log("We reach here.");
+      const content = new Widget();
+      const widget = new MainAreaWidget({ content });
+      widget.id = 'dfnb-minimap';
+      widget.title.label = 'Notebook Minimap';
+      widget.title.closable = true;
+      // Add a div to the panel
+        let panel = document.createElement('div');
+        panel.setAttribute('id','minimap');
+        let svg = document.createElement('svg');
+        svg.setAttribute('id','minisvg');
+        svg.setAttribute('height','1000');
+        svg.setAttribute('width','500');
+        panel.appendChild(svg);
+        content.node.appendChild(panel);
+
+
+        nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+              session.ready.then(() => {
+                if(session.session?.kernel?.name == 'dfpython3'){
+
+                    const button = new ToolbarButton({
+                        className: 'open-mini-map',
+                        label: 'Open Minimap',
+                        onClick: openMinimap,
+                        tooltip: 'Opens the Minimap',
+                    });
+                    nbPanel.toolbar.insertItem(10, 'Open Minimap', button);
+                }
+              });
+           });
+
+          function openMinimap(){
+          console.log("Attaching right?");
+              if (!widget.isAttached) {
+              console.log("Attached right");
+                // Attach the widget to the right side work area if it's not there
+                //app.shell.add(widget, 'main');
+                app.shell.add(widget, 'main',{
+                    mode: 'split-right',
+                    activate: false
+                });//'right');
+                console.log(widget);
+                if(!DfGraph.minimap.is_open){
+                    DfGraph.minimap.startMinimapCreation();
+                }
+//                 if (!DfGraph.depview.is_created){
+//                   DfGraph.depview.create_dep_div();
+//                   console.log(DfGraph);
+//                   console.log("Widget added");
+//                 }
+
+
+              }
+              // Activate the widget
+              app.shell.activateById(widget.id);
+              //DfGraph.depview.startGraphCreation();
+            }
+
+          // Add an application command
+          const command: string = 'minimap:open';
+          app.commands.addCommand(command, {
+            label: 'Open Minimap',
+            execute: () => openMinimap,
+          });
+
+          // Add the command to the palette.
+          palette.addItem({ command, category: 'Tutorial' });
+        }
+    };
+
+
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
   widgetFactoryPlugin,
   trackerPlugin,
-  DepViewer
+  DepViewer,
+  MiniMap
 ]
 export default plugins;
 

@@ -1,4 +1,5 @@
-import { DepView } from './depview'
+import { DepView } from './depview';
+import { Minimap } from './minimap';
 
 //UUID length has been changed need to compensate for that
 const uuid_length = 8;
@@ -33,6 +34,7 @@ class Graph {
     internal_nodes: any;
     downstream_lists: any;
     depview: any;
+    minimap: any;
 
     /*
     * Create a graph to contain all inner cell dependencies
@@ -49,8 +51,7 @@ class Graph {
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
         this.depview = new DepView(this);
-        console.log("Lerna is active");
-        console.log("Lerna is active?");
+        this.minimap = new Minimap(this);
     }
 
 
