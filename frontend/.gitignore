@@ -111,3 +111,9 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/python
+
+*.ipynb
+
+dfnotebook-extension/labextension/static/
+
+dfnotebook-extension/labextension/
