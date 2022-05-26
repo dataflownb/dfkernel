@@ -83,6 +83,8 @@ import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
 import { ResizeHandle } from './resizeHandle';
 
+import { DfGraph } from './dfgraph';
+
 /**
  * The CSS class added to cell widgets.
  */
@@ -205,6 +207,8 @@ export class Cell<T extends ICellModel = ICellModel> extends Widget {
       options.contentFactory || Cell.defaultContentFactory);
     this.layout = new PanelLayout();
 
+    //this.dfgraph = DfGraph;
+    //this.dfgraph = new Graph();
     // Header
     const header = contentFactory.createCellHeader();
     header.addClass(CELL_HEADER_CLASS);
@@ -524,7 +528,7 @@ export class Cell<T extends ICellModel = ICellModel> extends Widget {
   protected onResize(msg: Widget.ResizeMessage): void {
     void this._resizeDebouncer.invoke();
   }
-  
+
   /**
    * Handle `update-request` messages.
    */
@@ -1186,6 +1190,21 @@ export namespace CodeCell {
       future = cell.outputArea.future;
       const msg = (await msgPromise)!;
       model.executionCount = msg.content.execution_count;
+      console.log(msg);
+      let content = (msg.content as any)
+      var nodes = content.nodes;
+      var uplinks = content.links;
+      var cells = content.cells;
+      var downlinks = content.imm_downstream_deps;
+      var all_ups = content.upstream_deps;
+      var internal_nodes = content.internal_nodes;
+      console.log(content.internal_nodes);
+      DfGraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+
+       if (content.update_downstreams) {
+                    DfGraph.update_down_links(content.update_downstreams);
+      }
+
       if (recordTiming) {
         const timingInfo = Object.assign(
           {},

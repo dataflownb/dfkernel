@@ -14,3 +14,4 @@ export * from './inputarea';
 export * from './model';
 export * from './placeholder';
 export * from './widget';
+export * from './dfgraph';

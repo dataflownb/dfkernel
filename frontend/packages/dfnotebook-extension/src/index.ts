@@ -17,11 +17,13 @@ import {
   InputDialog,
   ISessionContextDialogs,
   IToolbarWidgetRegistry,
+  MainAreaWidget,
   sessionContextDialogs,
   showDialog,
-  Toolbar
+  Toolbar,
+  ToolbarButton
 } from '@jupyterlab/apputils';
-import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
+import { Cell, CodeCell, ICellModel, MarkdownCell, DfGraph } from '@dfnotebook/dfcells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -83,7 +85,7 @@ import {
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
-import { Panel } from '@lumino/widgets';
+import { Panel, Widget } from '@lumino/widgets';
 
 /**
  * The command IDs used by the notebook plugin.
@@ -320,10 +322,76 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
 };
 
 
+
+/**
+ * Initialization data for the Dfnb Depviewer extension.
+ */
+const DepViewer: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-depview',
+  autoStart: true,
+  requires: [ICommandPalette, INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
+
+  // Create a blank content widget inside of a MainAreaWidget
+      const content = new Widget();
+      const widget = new MainAreaWidget({ content });
+      widget.id = 'dfnb-depview';
+      widget.title.label = 'Dependency Viewer';
+      widget.title.closable = true;
+      // Add a div to the panel
+        let panel = document.createElement('div');
+        panel.setAttribute('id','depview');
+        content.node.appendChild(panel);
+          function openDepViewer(){
+              if (!widget.isAttached) {
+                // Attach the widget to the main work area if it's not there
+                app.shell.add(widget, 'main');
+                if (!DfGraph.depview.is_created){
+                  DfGraph.depview.create_dep_div();
+                  console.log(DfGraph);
+                  console.log("Widget added");
+                }
+
+
+              }
+              // Activate the widget
+              app.shell.activateById(widget.id);
+              DfGraph.depview.startGraphCreation();
+            }
+
+          nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+              session.ready.then(() => {
+                if(session.session?.kernel?.name == 'dfpython3'){
+
+                    const button = new ToolbarButton({
+                        className: 'open-dep-view',
+                        label: 'Open Dependency Viewer',
+                        onClick: openDepViewer,
+                        tooltip: 'Opens the Dependency Viewer',
+                    });
+                    nbPanel.toolbar.insertItem(10, 'Open Dependency Viewer', button);
+                }
+              });
+           });
+
+          // Add an application command
+          const command: string = 'depview:open';
+          app.commands.addCommand(command, {
+            label: 'Open Dependency Viewer',
+            execute: () => openDepViewer,
+          });
+
+          // Add the command to the palette.
+          palette.addItem({ command, category: 'Tutorial' });
+        }
+    };
+
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
   widgetFactoryPlugin,
   trackerPlugin,
+  DepViewer
 ]
 export default plugins;
 
