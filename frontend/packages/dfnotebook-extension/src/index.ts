@@ -23,7 +23,8 @@ import {
   Toolbar,
   ToolbarButton
 } from '@jupyterlab/apputils';
-import { Cell, CodeCell, ICellModel, MarkdownCell, DfGraph } from '@dfnotebook/dfcells';
+import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
+import {  DfGraph } from '@dfnotebook/dfgraph';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';

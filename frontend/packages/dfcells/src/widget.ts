@@ -83,7 +83,7 @@ import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
 import { ResizeHandle } from './resizeHandle';
 
-import { DfGraph } from './dfgraph';
+import { DfGraph } from '@dfnotebook/dfgraph';
 
 /**
  * The CSS class added to cell widgets.
