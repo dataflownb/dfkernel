@@ -187,14 +187,25 @@ export class Minimap {
      })
     }
 
+
     /** @method starts minimap creation **/
-    public startMinimapCreation = function(){
-        this.svg = d3.select('#minisvg').append('g');
-        this.svg.attr('transform','translate(0,0)');
-        this.createMinimap();
-        this.mapEdges();
+    startMinimapCreation = function(svg:any){
+
+    (async() => {
+        while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
+            await new Promise(resolve => setTimeout(resolve, 100));
+            this.svg = d3.select('#minisvg');
+            this.svg = this.svg.append('g');
+            this.svg.attr('transform','translate(0,0)');
+            this.createMinimap();
+            this.mapEdges();
+    })();
+
+
         //FIXME: Add a flag similar to graph was changed
 //                 that.dfgraph.was_changed = false;
+    //})
+
     };
 
 
