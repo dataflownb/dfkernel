@@ -345,7 +345,10 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
           function openDepViewer(){
               if (!widget.isAttached) {
                 // Attach the widget to the main work area if it's not there
-                app.shell.add(widget, 'main');
+                app.shell.add(widget, 'main',{
+                    mode: 'split-right',
+                    activate: false
+                });
                 if (!DfGraph.depview.is_created){
                   DfGraph.depview.create_dep_div();
                   console.log(DfGraph);
