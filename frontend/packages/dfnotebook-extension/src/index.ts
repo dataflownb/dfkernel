@@ -398,8 +398,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
   requires: [ICommandPalette, INotebookTracker],
   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
-      // Create a blank content widget inside of a MainAreaWidget
-      console.log("We reach here.");
+
       const content = new Widget();
       const widget = new MainAreaWidget({ content });
       widget.id = 'dfnb-minimap';
@@ -408,10 +407,9 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
       // Add a div to the panel
         let panel = document.createElement('div');
         panel.setAttribute('id','minimap');
-        let svg = document.createElement('svg');
+        let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
         svg.setAttribute('id','minisvg');
-        svg.setAttribute('height','1000');
-        svg.setAttribute('width','500');
         panel.appendChild(svg);
         content.node.appendChild(panel);
 
@@ -438,25 +436,21 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
               console.log("Attached right");
                 // Attach the widget to the right side work area if it's not there
                 //app.shell.add(widget, 'main');
-                app.shell.add(widget, 'main',{
+                app.shell.add(widget, 'main'
+                ,{
                     mode: 'split-right',
-                    activate: false
-                });//'right');
-                console.log(widget);
-                if(!DfGraph.minimap.is_open){
-                    DfGraph.minimap.startMinimapCreation();
-                }
-//                 if (!DfGraph.depview.is_created){
-//                   DfGraph.depview.create_dep_div();
-//                   console.log(DfGraph);
-//                   console.log("Widget added");
-//                 }
+                    activate: true
+                });
+                //'right');
 
+                if(!DfGraph.minimap.is_open){
+
+                    // Activate the widget
+                    app.shell.activateById(widget.id);
+                    DfGraph.minimap.startMinimapCreation(svg);
+                }
 
               }
-              // Activate the widget
-              app.shell.activateById(widget.id);
-              //DfGraph.depview.startGraphCreation();
             }
 
           // Add an application command
