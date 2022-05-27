@@ -1,6 +1,20 @@
 #minimap {
    width: 500px;
-   height: 500px;
+   height: 100%;
+    z-index: -999;
+    background-color: rgba(255,255,255,.5);
+    overflow-x: hidden;
+    transition: 0.5s;
+}
+
+#minisvg {
+  display:block;
+  width: 500px;
+  height: 500px !important;
+}
+
+#minisvg circle,rect,path,text{
+    display:block;
 }
 
 #minimap .active_node{
