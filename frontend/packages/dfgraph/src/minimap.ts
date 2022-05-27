@@ -3,7 +3,7 @@
 //const uuid_length = 8;
 
 import * as d3 from "d3";
-
+import $ from "jquery";
 
 export class Minimap {
 
@@ -34,7 +34,7 @@ export class Minimap {
                     ccc:'c = a+b',
                     ddd:'print(c)',
                     lll:"Print('Im Done')"};
-            this.parentdiv = parentdiv || 'div#minimap';
+            this.parentdiv = parentdiv || '#minimap';
 
             //console.log('svg',this.svg);
             this.edges = [{'source':'aaa','destination':'bbb'},{'source':'bbb','destination':'ccc'},{'source':'aaa','destination':'ccc'},
@@ -63,6 +63,7 @@ export class Minimap {
    /** @method activates the paths based on click **/
     elementActivate = function(parent:any,node:any)
     {
+       let that = this;
        if(!node.classed('active_node'))
        {
         this.reset();
@@ -78,14 +79,14 @@ export class Minimap {
 
           let destination_node = d3.select('#'+destination).classed('move_left',true).classed('active',true);
           let dest = destination_node.select('circle');
-            this.makePaths(node,dest,true,parent);
+            that.makePaths(node,dest,parent,true);
 
             destination_node.selectAll('path.source').classed('hidden',true);
           }
           if(destination == active_id){
             let source_node = d3.select('#'+source).classed('move_right',true).classed('active',true);
             let src = source_node.select('circle');
-            this.makePaths(src,node,false,parent);
+            that.makePaths(src,node,parent,false);
 
             source_node.selectAll('path.destination').classed('hidden',true);
           }
@@ -94,9 +95,9 @@ export class Minimap {
     }
 
    /** @method activates the paths based on click **/
-    public createMinimap = function(parent:any,node:any)
+    createMinimap = function(parent:any,node:any)
     {
-
+        let that = this;
         let circles = this.svg.selectAll('circle');
         console.log(circles);
         let groups = circles
@@ -105,7 +106,7 @@ export class Minimap {
         .append('g')
         .attr('id',(a:string)=>a);
 
-        console.log('groups',groups);
+         console.log('groups',groups);
 
         groups.append('rect')
         .attr('x',0)
@@ -117,7 +118,7 @@ export class Minimap {
          {
             let parent = d3.select(this.parentNode);
             let node = parent.select('circle');
-            this.elementActivate(parent,node);
+            that.elementActivate(parent,node);
         });
 
         groups.append('circle')
@@ -143,7 +144,7 @@ export class Minimap {
             let id = d3.select(this).attr('id');
             let parent = d3.select('#'+id);
             let node = parent.select('circle');
-            this.elementActivate(parent,node);
+            that.elementActivate(parent,node);
         });
     }
 

@@ -18,4 +18,5 @@ import '@jupyterlab/outputarea/style/index.js';
 import './icon.css';
 import './mdb.css';
 import './depview.css';
+import './minimap.css';
 
