@@ -1,332 +1,81 @@
-/* -----------------------------------------------------------------------------
-| Copyright (c) Jupyter Development Team.
-| Distributed under the terms of the Modified BSD License.
-|----------------------------------------------------------------------------*/
+import { InputPrompt, ICellModel, InputArea, IInputPrompt } from "@jupyterlab/cells"
 
-import { PanelLayout } from '@lumino/widgets';
-
-import { Widget } from '@lumino/widgets';
-
-import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
-
-import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
-
-import { ICellModel } from './model';
-
-/**
- * The class name added to input area widgets.
- */
-const INPUT_AREA_CLASS = 'jp-InputArea';
-
-/**
- * The class name added to the prompt area of cell.
- */
-const INPUT_AREA_PROMPT_CLASS = 'jp-InputArea-prompt';
-
-/**
- * The class name added to OutputPrompt.
- */
-const INPUT_PROMPT_CLASS = 'jp-InputPrompt';
-
-/**
- * The class name added to the editor area of the cell.
- */
-const INPUT_AREA_EDITOR_CLASS = 'jp-InputArea-editor';
-
-/** ****************************************************************************
- * InputArea
- ******************************************************************************/
-
-/**
- * An input area widget, which hosts a prompt and an editor widget.
- */
-export class InputArea extends Widget {
-  /**
-   * Construct an input area widget.
-   */
-  constructor(options: InputArea.IOptions) {
-    super();
-    this.addClass(INPUT_AREA_CLASS);
-    const model = (this.model = options.model);
-    const contentFactory = (this.contentFactory =
-      options.contentFactory || InputArea.defaultContentFactory);
-
-    // Prompt
-    const prompt = (this._prompt = contentFactory.createInputPrompt(model));
-    prompt.addClass(INPUT_AREA_PROMPT_CLASS);
-
-    // Editor
-    const editorOptions = {
-      model,
-      factory: contentFactory.editorFactory,
-      updateOnShow: options.updateOnShow
-    };
-    const editor = (this._editor = new CodeEditorWrapper(editorOptions));
-    editor.addClass(INPUT_AREA_EDITOR_CLASS);
-
-    const layout = (this.layout = new PanelLayout());
-    layout.addWidget(prompt);
-    if (!options.placeholder) {
-      layout.addWidget(editor);
+export class DataflowInputArea extends InputArea {
+    // kind of annoying as model still needs to be set later
+    constructor(options: InputArea.IOptions) {
+        super({contentFactory: DataflowInputArea.defaultContentFactory, ...options});
     }
-  }
 
-  /**
-   * The model used by the widget.
-   */
-  readonly model: ICellModel;
-
-  /**
-   * The content factory used by the widget.
-   */
-  readonly contentFactory: InputArea.IContentFactory;
-
-  /**
-   * Get the CodeEditorWrapper used by the cell.
-   */
-  get editorWidget(): CodeEditorWrapper {
-    return this._editor;
-  }
-
-  /**
-   * Get the CodeEditor used by the cell.
-   */
-  get editor(): CodeEditor.IEditor {
-    return this._editor.editor;
-  }
-
-  /**
-   * Get the prompt node used by the cell.
-   */
-  get promptNode(): HTMLElement {
-    return this._prompt.node;
-  }
-
-  /**
-   * Get the rendered input area widget, if any.
-   */
-  get renderedInput(): Widget {
-    return this._rendered;
-  }
-
-  /**
-   * Render an input instead of the text editor.
-   */
-  renderInput(widget: Widget): void {
-    const layout = this.layout as PanelLayout;
-    if (this._rendered) {
-      this._rendered.parent = null;
+    get prompt() {
+        //@ts-ignore
+        return super._prompt;
     }
-    this._editor.hide();
-    this._rendered = widget;
-    layout.addWidget(widget);
-  }
 
-  /**
-   * Show the text editor.
-   */
-  showEditor(): void {
-    if (this._rendered) {
-      this._rendered.parent = null;
+    set prompt(value: IInputPrompt) {
+        //@ts-ignore
+        super._prompt = prompt
     }
-    this._editor.show();
-  }
-
-  /**
-   * Set the prompt of the input area.
-   */
-  setPrompt(value: string): void {
-    this._prompt.executionCount = value;
-  }
-
-  /**
-   * Dispose of the resources held by the widget.
-   */
-  dispose() {
-    // Do nothing if already disposed.
-    if (this.isDisposed) {
-      return;
-    }
-    this._prompt = null!;
-    this._editor = null!;
-    this._rendered = null!;
-    super.dispose();
-  }
-
-  private _prompt: IInputPrompt;
-  private _editor: CodeEditorWrapper;
-  private _rendered: Widget;
 }
 
-/**
- * A namespace for `InputArea` statics.
- */
-export namespace InputArea {
-  /**
-   * The options used to create an `InputArea`.
-   */
-  export interface IOptions {
-    /**
-     * The model used by the widget.
-     */
-    model: ICellModel;
+export namespace DataflowInputArea {
 
-    /**
-     * The content factory used by the widget to create children.
-     *
-     * Defaults to one that uses CodeMirror.
-     */
-    contentFactory?: IContentFactory;
-
-    /**
-     * Whether to send an update request to the editor when it is shown.
-     */
-    updateOnShow?: boolean;
-
-    /**
-     * Whether this input area is a placeholder for future rendering.
-     */
-    placeholder?: boolean;
-  }
-
-  /**
-   * An input area widget content factory.
-   *
-   * The content factory is used to create children in a way
-   * that can be customized.
-   */
-  export interface IContentFactory {
-    /**
-     * The editor factory we need to include in `CodeEditorWrapper.IOptions`.
-     *
-     * This is a separate readonly attribute rather than a factory method as we need
-     * to pass it around.
-     */
-    readonly editorFactory: CodeEditor.Factory;
-
-    /**
-     * Create an input prompt.
-     */
-    createInputPrompt(model: ICellModel): IInputPrompt;
-  }
-
-  /**
-   * Default implementation of `IContentFactory`.
-   *
-   * This defaults to using an `editorFactory` based on CodeMirror.
-   */
-  export class ContentFactory implements IContentFactory {
-    /**
-     * Construct a `ContentFactory`.
-     */
-    constructor(options: ContentFactory.IOptions = {}) {
-      this._editor = options.editorFactory || defaultEditorFactory;
+    export class DataflowContentFactory extends InputArea.ContentFactory {
+        /**
+         * Create an input prompt.
+         */
+        createDataflowInputPrompt(model: ICellModel | null): IInputPrompt {
+            return new DataflowInputPrompt(model);
+        }
     }
 
-    /**
-     * Return the `CodeEditor.Factory` being used.
-     */
-    get editorFactory(): CodeEditor.Factory {
-      return this._editor;
-    }
+    export const defaultContentFactory = new DataflowContentFactory({});
 
-    /**
-     * Create an input prompt.
-     */
-    createInputPrompt(model: ICellModel): IInputPrompt {
-      return new InputPrompt(model);
-    }
-
-    private _editor: CodeEditor.Factory;
-  }
-
-  /**
-   * A namespace for the input area content factory.
-   */
-  export namespace ContentFactory {
-    /**
-     * Options for the content factory.
-     */
-    export interface IOptions {
-      /**
-       * The editor factory used by the content factory.
-       *
-       * If this is not passed, a default CodeMirror editor factory
-       * will be used.
-       */
-      editorFactory?: CodeEditor.Factory;
-    }
-  }
-
-  /**
-   * A function to create the default CodeMirror editor factory.
-   */
-  function _createDefaultEditorFactory(): CodeEditor.Factory {
-    const editorServices = new CodeMirrorEditorFactory();
-    return editorServices.newInlineEditor;
-  }
-
-  /**
-   * The default editor factory singleton based on CodeMirror.
-   */
-  export const defaultEditorFactory: CodeEditor.Factory = _createDefaultEditorFactory();
-
-  /**
-   * The default `ContentFactory` instance.
-   */
-  export const defaultContentFactory = new ContentFactory({});
 }
 
-/** ****************************************************************************
- * InputPrompt
- ******************************************************************************/
 
-/**
- * The interface for the input prompt.
- */
-export interface IInputPrompt extends Widget {
-  /**
-   * The execution count of the prompt.
-   */
-  executionCount: string | null;
-}
-
-/**
- * The default input prompt implementation.
- */
-export class InputPrompt extends Widget implements IInputPrompt {
-  /*
-   * Create an output prompt widget.
-   */
-  constructor(model: ICellModel) {
-    super();
-    this.addClass(INPUT_PROMPT_CLASS);
-    this._model = model;
-    this.node.addEventListener('mouseup', event => {
-      event.stopPropagation();
-      const value = prompt("Tag this cell:", "");
-      this._model.metadata.set('tag', value);
-      this.node.textContent = `[${value || ' '}]:`;
-    })
-  }
-
-  /**
-   * The execution count for the prompt.
-   */
-  get executionCount(): string | null {
-    return this._executionCount;
-  }
-  set executionCount(value: string | null) {
-    this._executionCount = value;
-    if (this._model.metadata.get('tag')) {
-      this.node.textContent = `[${this._model.metadata.get('tag')}]`;
-    } else if (value === null) {
-      this.node.textContent = ' ';
-    } else {
-      this.node.textContent = `[${value || ' '}]:`;
+export class DataflowInputPrompt extends InputPrompt {
+    constructor(model: ICellModel | null=null) {
+        super();
+        this._model = model;
     }
-  }
 
-  private _executionCount: string | null = null;
-  private _model: ICellModel;
+    public updatePromptNode(value: string | null) {
+        if (this.model?.metadata.get('tag')) {
+            this.node.textContent = `[${this.model.metadata.get('tag')}]`;
+        } else if (value === null) {
+            this.node.textContent = ' ';
+        } else {
+            this.node.textContent = `[${value || ' '}]:`;
+        }
+    }
+
+    /**
+     * The execution count for the prompt.
+     */
+    get executionCount(): string | null {
+        return super.executionCount;
+    }
+    set executionCount(value: string | null) {
+        super.executionCount = value;
+        this.updatePromptNode(value);
+    }
+
+    get model(): ICellModel | null {
+        return this._model
+    }
+
+    set model(value: ICellModel | null) {
+        this._model = value;
+        if (this._model) {
+            this.node.addEventListener('mouseup', event => {
+                event.stopPropagation();
+                const value = prompt("Tag this cell:", "");
+                this._model?.metadata.set('tag', value);
+                this.node.textContent = `[${value || ' '}]:`;
+            })
+            this.updatePromptNode(this.executionCount);    
+        }
+    }
+
+    private _model: ICellModel | null;
 }
