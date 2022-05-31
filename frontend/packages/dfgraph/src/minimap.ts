@@ -194,6 +194,7 @@ export class Minimap {
         while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
             await new Promise(resolve => setTimeout(resolve, 100));
             this.svg = d3.select('#minisvg');
+            $('#minisvg').empty();
             this.svg = this.svg.append('g');
             this.svg.attr('transform','translate(0,0)');
             this.createMinimap();

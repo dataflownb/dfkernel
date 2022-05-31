@@ -75,7 +75,6 @@ export class DepView {
         this.svg = null;
         this.tabular = null;
         this.execute_panel = null;
-        //this.widget = DepViewer;
         //Label Styles should be set in text so that GraphViz can properly size the nodes
         this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
 
