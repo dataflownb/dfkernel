@@ -639,9 +639,10 @@ function activateNotebookHandler(
         kernelShutdown: factory.shutdownOnClose
       });
     });
-
   // Handle state restoration.
   if (restorer) {
+    //FIXME: This needs to get the kernel information from somewhere
+    (factory as NotebookWidgetFactory).kernel = "dfpython3";
     void restorer.restore(tracker, {
       command: 'docmanager:open',
       args: panel => ({ path: panel.context.path, factory: FACTORY }),
