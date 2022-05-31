@@ -7,6 +7,7 @@
 
 import {
   ILayoutRestorer,
+  ILabShell,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
@@ -24,7 +25,7 @@ import {
   ToolbarButton
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
-import {  DfGraph } from '@dfnotebook/dfgraph';
+import {  DfGraph, Manager as GraphManager } from '@dfnotebook/dfgraph';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -322,6 +323,52 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory>
   autoStart: true
 };
 
+/**
+ * Initialization for the Dfnb GraphManager for working with multiple graphs.
+ */
+const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-graph',
+  autoStart: true,
+  requires: [ICommandPalette,INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette,nbTrackers:INotebookTracker) => {
+   // Create a blank content widget inside of a MainAreaWidget
+      console.log("GraphManager is active");
+      let shell = app.shell as ILabShell;
+
+      nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+            session.ready.then(() =>
+            {
+                let sess_id = session.session?.id;
+//                 if(!sess_id in GraphManager){
+//                     GraphManager[sess_id] = new Graph();
+//                 }
+                console.log(sess_id);
+                //console.log(session.session?.id);
+            })
+      });
+
+
+      shell.currentChanged.connect((_, change) => {
+      //@ts-ignore
+        console.log(change['newValue']?.sessionContext?.session?.id);
+        console.log(GraphManager);
+        if(DfGraph.depview.is_open){
+            console.log("Updating dependency view");
+            //console.log(change['newValue']);
+            if(!(change['newValue']?.node?.id == 'dfnb-depview')){
+                //@ts-ignore
+                console.log(change['newValue']?.sessionContext?.session?.id);
+            }
+            console.log(change['newValue']?.node?.id);
+        }
+        // ...
+        });
+
+  }
+
+}
+
 
 /**
  * Initialization data for the Dfnb Depviewer extension.
@@ -359,6 +406,7 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
               }
               // Activate the widget
               app.shell.activateById(widget.id);
+              DfGraph.depview.is_open = true;
               DfGraph.depview.startGraphCreation();
             }
 
@@ -390,7 +438,6 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
         }
     };
 
-console.log("This file has been modified to work");
 
 /**
  * Initialization data for the Minimap extension.
@@ -474,7 +521,8 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   widgetFactoryPlugin,
   trackerPlugin,
   DepViewer,
-  MiniMap
+  MiniMap,
+  GraphManagerPlugin
 ]
 export default plugins;
 
@@ -608,7 +656,6 @@ function activateNotebookHandler(
             .composite as JSONObject;
           const rawConfig = settings.get('rawCellConfig')
             .composite as JSONObject;
-
           const anyToggled =
             codeConfig.autoClosingBrackets ||
             markdownConfig.autoClosingBrackets ||

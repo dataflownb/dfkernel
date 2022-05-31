@@ -178,6 +178,8 @@ export class Minimap {
     /** @method changes cell contents **/
     update_cells = function(code_dict:any){
         this.cells = code_dict;
+        //transition in the new data
+        //if this.is_open
     }
 
     /** @method updates the edges in the minimap */

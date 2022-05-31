@@ -21,12 +21,21 @@ const uuid_length = 8;
         }
     };
 
+class GraphManager {
 
+    graphs: {};
+
+    constructor(graphs?:{}){
+        this.graphs = graphs || {};
+
+    }
+
+
+}
 
 
 
 class Graph {
-
 
 
     upstream_list: {};
@@ -309,6 +318,7 @@ class Graph {
 
 //let DfGraph = new Graph();
 export const DfGraph = new Graph();
+export const Manager = new GraphManager();
 
 
 
