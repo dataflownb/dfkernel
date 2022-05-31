@@ -190,11 +190,10 @@ class Graph {
         var that:Graph = this;
         downupdates.forEach(function (t) {
             var uuid = t['key'].substr(0, uuid_length);
-            //FIXME: FIND Jupyter.notebook.has_id equivalent
             that.downlinks[uuid] = t['data'];
-            // if(Jupyter.notebook.has_id(uuid) && t.data){
-            //     that.downlinks[uuid] = t['data'];
-            // }
+            if(uuid in that.cell_contents && t.data){
+                that.downlinks[uuid] = t['data'];
+            }
         });
         that.downstream_lists = {};
     };

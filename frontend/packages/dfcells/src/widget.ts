@@ -1198,8 +1198,8 @@ export namespace CodeCell {
       var all_ups = content.upstream_deps;
       var internal_nodes = content.internal_nodes;
       console.log(content.internal_nodes);
-      DfGraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
       DfGraph.update_cell_contents(dfData?.code_dict);
+      DfGraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
        if (content.update_downstreams) {
                     DfGraph.update_down_links(content.update_downstreams);
       }
