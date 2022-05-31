@@ -207,8 +207,7 @@ export class Cell<T extends ICellModel = ICellModel> extends Widget {
       options.contentFactory || Cell.defaultContentFactory);
     this.layout = new PanelLayout();
 
-    //this.dfgraph = DfGraph;
-    //this.dfgraph = new Graph();
+
     // Header
     const header = contentFactory.createCellHeader();
     header.addClass(CELL_HEADER_CLASS);

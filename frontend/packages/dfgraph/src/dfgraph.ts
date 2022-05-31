@@ -21,6 +21,10 @@ const uuid_length = 8;
         }
     };
 
+
+
+
+
 class Graph {
 
 
@@ -35,17 +39,19 @@ class Graph {
     downstream_lists: any;
     depview: any;
     minimap: any;
+    cell_contents : any;
 
     /*
     * Create a graph to contain all inner cell dependencies
     */
-    constructor(cells?: never[], nodes?: never[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}) {
+    constructor(cells?: never[], nodes?: never[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}) {
         this.was_changed = false;
         this.cells = cells || [];
         this.nodes = nodes || [];
         this.uplinks = uplinks || {};
         this.downlinks = downlinks || {};
         this.internal_nodes = internal_nodes || {};
+        this.cell_contents = cell_contents || {};
 
         //Cache downstream lists
         this.downstream_lists = all_down || {};
@@ -191,6 +197,10 @@ class Graph {
         });
         that.downstream_lists = {};
     };
+
+    update_cell_contents(this:Graph,cell_contents:any){
+        this.cell_contents = cell_contents;
+    }
 
 
     /** @method update_dep_lists */
