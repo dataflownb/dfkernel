@@ -15,7 +15,6 @@ export class Minimap {
     text_offset : Number;
     cells : { [name:string]: string};
     edges : any;
-    //edges :  [{source:string,destination:string}]
     parentdiv : any;
     svg: any;
     is_open: boolean;
@@ -27,18 +26,9 @@ export class Minimap {
             this.svg_offset_x = 18;
             this.svg_offset_y = 50;
             this.text_offset = 40;
-            this.cells = {zzz:'print("Hello World")',
-                    aaa:'a = 3',
-                    bbb:'b=a+3',
-                    eee:"#I'm just going to write a comment",
-                    ccc:'c = a+b',
-                    ddd:'print(c)',
-                    lll:"Print('Im Done')"};
+            this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
-
-            //console.log('svg',this.svg);
-            this.edges = [{'source':'aaa','destination':'bbb'},{'source':'bbb','destination':'ccc'},{'source':'aaa','destination':'ccc'},
-            {'source':'ccc','destination':'ddd'}]
+            this.edges = [];
     }
 
     /** @method resets all paths **/
@@ -70,21 +60,21 @@ export class Minimap {
         node.classed('active_node',true);
         parent.classed('active',true);
         let active_id = parent.attr('id');
-        //FIXME: Use uplinks/downlinks here
+        active_id = active_id.substring(4,active_id.length);
         this.edges.map(function(edge:any)
         {
           let source = edge['source'];
           let destination = edge['destination'];
           if(source == active_id){
 
-          let destination_node = d3.select('#'+destination).classed('move_left',true).classed('active',true);
+          let destination_node = d3.select('#node'+destination).classed('move_left',true).classed('active',true);
           let dest = destination_node.select('circle');
             that.makePaths(node,dest,parent,true);
 
             destination_node.selectAll('path.source').classed('hidden',true);
           }
           if(destination == active_id){
-            let source_node = d3.select('#'+source).classed('move_right',true).classed('active',true);
+            let source_node = d3.select('#node'+source).classed('move_right',true).classed('active',true);
             let src = source_node.select('circle');
             that.makePaths(src,node,parent,false);
 
@@ -99,14 +89,13 @@ export class Minimap {
     {
         let that = this;
         let circles = this.svg.selectAll('circle');
-        console.log(circles);
         let groups = circles
         .data(Object.keys(this.cells))
         .enter()
         .append('g')
-        .attr('id',(a:string)=>a);
+        //Have to use a proper start pattern for ID rules in HTML4
+        .attr('id',(a:string)=>'node'+a);
 
-         console.log('groups',groups);
 
         groups.append('rect')
         .attr('x',0)
@@ -126,7 +115,6 @@ export class Minimap {
           .attr('cy',(a:string,b:number)=> 10+this.offset_x*b)
           .attr('r',this.radius);
 
-        console.log('circles',this.svg.selectAll('circle'))
 
         let values = Object.keys(this.cells)
         .map((a:string)=>[a,this.cells[a]]);
@@ -136,34 +124,34 @@ export class Minimap {
         .enter()
         .append('text')
         .text((a:Array<string>)=>a[1])
-        .attr('id',(a:Array<string>)=>a[0])
+        .attr('id',(a:Array<string>)=>'text'+a[0])
         .attr('x',this.text_offset+this.svg_offset_x)
         .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
         .on('click',function()
         {
             let id = d3.select(this).attr('id');
-            let parent = d3.select('#'+id);
+            id = id.substring(4,id.length);
+            console.log(id);
+            let parent = d3.select('#node'+id);
             let node = parent.select('circle');
             that.elementActivate(parent,node);
         });
+
     }
 
     /** @method maps edges to incoming and outgoing paths in the svg **/
     mapEdges = function(parent:any,node:any){
-        console.log('edges',this.edges);
         this.edges.map(function(edge:any){
-             let source_id = '#'+edge['source'];
-             let destination_id = '#'+edge['destination'];
+             let source_id = '#node'+edge['source'];
+             let destination_id = '#node'+edge['destination'];
              let source = d3.select(source_id).select('circle');
              let destination = d3.select(destination_id).select('circle');
-             console.log(source,destination);
              let source_x = source.attr('cx');
              let source_y = source.attr('cy');
-             console.log(source_x,source_y);
 
              d3.select(source_id).append('g')
              .attr('transform','translate(0,0)')
-             .attr('id',edge['source'])
+             .attr('id','edge'+edge['source'])
              .append('path')
              .classed('source',true)
              .attr('d','M'+ source_x +' ' + source_y + 'h 8')
@@ -175,7 +163,7 @@ export class Minimap {
 
              d3.select(destination_id).append('g')
              .attr('transform','translate(0,0)')
-             .attr('id',edge['source'])
+             .attr('id','edge'+edge['source'])
              .append('path')
              .classed('destination',true)
              .attr('d','M'+ destination_x +' ' + destination_y + 'h -8')
@@ -183,9 +171,19 @@ export class Minimap {
              .attr('fill','none')
              .attr('stroke',"black");
 
-//              let start = (source.attr('cx'),source.attr('cy'));
-//              let end = (destination.attr('cx'),source.attr('cy'));
      })
+    }
+
+
+    /** @method changes cell contents **/
+    update_cells = function(code_dict:any){
+        this.cells = code_dict;
+    }
+
+    /** @method updates the edges in the minimap */
+    update_edges = function(edges:any){
+        const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
+        this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}))
     }
 
 

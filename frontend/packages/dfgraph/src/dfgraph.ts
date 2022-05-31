@@ -78,6 +78,7 @@ class Graph {
         that.downlinks[uuid] = downlinks || [];
         that.internal_nodes[uuid] = internal_nodes;
         that.update_dep_lists(all_ups,uuid);
+        that.minimap.update_edges(this.downlinks);
         //celltoolbar.CellToolbar.rebuild_all();
     };
 
@@ -198,8 +199,11 @@ class Graph {
         that.downstream_lists = {};
     };
 
+    /** @method update_code_dict */
     update_cell_contents(this:Graph,cell_contents:any){
+        //var that:Graph = this;
         this.cell_contents = cell_contents;
+        this.minimap.update_cells(cell_contents);
     }
 
 
