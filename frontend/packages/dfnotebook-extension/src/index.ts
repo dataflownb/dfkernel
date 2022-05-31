@@ -25,7 +25,7 @@ import {
   ToolbarButton
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
-import {  DfGraph, Manager as GraphManager } from '@dfnotebook/dfgraph';
+import { Graph, Manager as GraphManager } from '@dfnotebook/dfgraph';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -339,10 +339,11 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             const session = nbPanel.sessionContext;
             session.ready.then(() =>
             {
-                let sess_id = session.session?.id;
-//                 if(!sess_id in GraphManager){
-//                     GraphManager[sess_id] = new Graph();
-//                 }
+                let sess_id = session?.session?.id || "None";
+                if(!(sess_id in Object.keys(GraphManager.graphs))){
+                    GraphManager.graphs[sess_id] = new Graph();
+                    GraphManager.current_graph = sess_id;
+                }
                 console.log(sess_id);
                 //console.log(session.session?.id);
             })
@@ -351,17 +352,25 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
 
       shell.currentChanged.connect((_, change) => {
       //@ts-ignore
+        let sess_id = change['newValue']?.sessionContext?.session?.id;
+        //@ts-ignore
         console.log(change['newValue']?.sessionContext?.session?.id);
-        console.log(GraphManager);
-        if(DfGraph.depview.is_open){
-            console.log("Updating dependency view");
-            //console.log(change['newValue']);
-            if(!(change['newValue']?.node?.id == 'dfnb-depview')){
-                //@ts-ignore
-                console.log(change['newValue']?.sessionContext?.session?.id);
-            }
-            console.log(change['newValue']?.node?.id);
+        //console.log(GraphManager.depview.is_open);
+        console.log(GraphManager.graphs);
+        if(sess_id in Object.keys(GraphManager.graphs)){
+            GraphManager.current_graph = sess_id;
+            console.log(GraphManager.graphs[GraphManager.current_graph]);
         }
+        //if(GraphManager.depview.is_open){
+        //    console.log("Updating dependency view");
+            //console.log(change['newValue']);
+
+        //    if(!(change['newValue']?.node?.id == 'dfnb-depview')){
+                //@ts-ignore
+        //        console.log(change['newValue']?.sessionContext?.session?.id);
+        //    }
+         //   console.log(change['newValue']?.node?.id);
+        //}
         // ...
         });
 
@@ -396,9 +405,9 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
                     mode: 'split-right',
                     activate: false
                 });
-                if (!DfGraph.depview.is_created){
-                  DfGraph.depview.create_dep_div();
-                  console.log(DfGraph);
+                if (!GraphManager.graphs[GraphManager.current_graph].depview.is_created){
+                  GraphManager.graphs[GraphManager.current_graph].depview.create_dep_div();
+                  console.log(GraphManager.graphs[GraphManager.current_graph]);
                   console.log("Widget added");
                 }
 
@@ -406,8 +415,8 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
               }
               // Activate the widget
               app.shell.activateById(widget.id);
-              DfGraph.depview.is_open = true;
-              DfGraph.depview.startGraphCreation();
+              GraphManager.graphs[GraphManager.current_graph].depview.is_open = true;
+              GraphManager.graphs[GraphManager.current_graph].depview.startGraphCreation();
             }
 
           nbTrackers.widgetAdded.connect((sender,nbPanel) => {
@@ -493,11 +502,11 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
                 });
                 //'right');
 
-                if(!DfGraph.minimap.is_open){
+                if(!GraphManager.graphs[GraphManager.current_graph].minimap.is_open){
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
-                    DfGraph.minimap.startMinimapCreation(svg);
+                    GraphManager.graphs[GraphManager.current_graph].minimap.startMinimapCreation(svg);
                 }
 
               }

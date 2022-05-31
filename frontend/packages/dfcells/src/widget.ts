@@ -83,7 +83,7 @@ import {IExecuteInputMsg} from "@jupyterlab/services/lib/kernel/messages";
 
 import { ResizeHandle } from './resizeHandle';
 
-import { DfGraph } from '@dfnotebook/dfgraph';
+import { Manager as GraphManager } from '@dfnotebook/dfgraph';
 
 /**
  * The CSS class added to cell widgets.
@@ -1198,11 +1198,12 @@ export namespace CodeCell {
       var all_ups = content.upstream_deps;
       var internal_nodes = content.internal_nodes;
       console.log(content.internal_nodes);
-      DfGraph.update_cell_contents(dfData?.code_dict);
+      let sess_id = sessionContext.session.id;
+      GraphManager.graphs[sess_id].update_cell_contents(dfData?.code_dict);
       console.log(sessionContext.session.id);
-      DfGraph.update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+      GraphManager.graphs[sess_id].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
        if (content.update_downstreams) {
-                    DfGraph.update_down_links(content.update_downstreams);
+                    GraphManager.graphs[sess_id].update_down_links(content.update_downstreams);
       }
 
       if (recordTiming) {

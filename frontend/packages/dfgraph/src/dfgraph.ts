@@ -23,11 +23,20 @@ const uuid_length = 8;
 
 class GraphManager {
 
-    graphs: {};
+    public graphs: {[index: string]:any} ;
+    current_graph: string;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
+        this.current_graph = "None";
+    }
 
+    getProperty = function(prop: string){
+    if (prop in this.graphs) {
+        // @ts-ignore
+        return this.graphs[prop]
+    }
+    return ''
     }
 
 
@@ -35,7 +44,7 @@ class GraphManager {
 
 
 
-class Graph {
+export class Graph {
 
 
     upstream_list: {};
@@ -317,7 +326,7 @@ class Graph {
 }
 
 //let DfGraph = new Graph();
-export const DfGraph = new Graph();
+//export const DfGraph = new Graph();
 export const Manager = new GraphManager();
 
 
