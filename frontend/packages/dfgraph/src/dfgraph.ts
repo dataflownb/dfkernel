@@ -59,7 +59,10 @@ class GraphManager {
     if(this.miniWidget.is_open){
       this.minimap.startMinimapCreation();
     }
-    //if
+    if(this.depWidget.is_open){
+      this.depview.startGraphCreation();
+    }
+    
     }
 //     update_dep_view() {
 //     var depview = this.depview;
