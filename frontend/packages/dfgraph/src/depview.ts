@@ -319,9 +319,9 @@ export class DepView {
             });
 
             that.dotgraph = Writer.write(g);
-            // var graphtran = d3.transition()
-            // .duration(750)
-            // .ease(d3.easeLinear);
+            var graphtran = d3.transition()
+            .duration(750)
+            .ease(d3.easeLinear);
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
             graphviz('#svg-div').options(defaultOptions)
@@ -335,9 +335,10 @@ export class DepView {
                     $('#svg-div svg').height('100vh').width('100vw');
                     that.done_rendering = true;
                 })
-            .renderDot(that.dotgraph);
-//                 FIXME: Add transition back in
-//                .transition(graphtran)
+            .renderDot(that.dotgraph)
+                //FIXME: Transition appears to be fine if you do a ts-ignore
+                //@ts-ignore
+               .transition(graphtran)
 
 
             var dotURL = URL.createObjectURL(new Blob([that.dotgraph], {type: "text/plain;charset=utf-8"}));
