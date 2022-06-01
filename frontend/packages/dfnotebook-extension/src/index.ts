@@ -25,7 +25,7 @@ import {
   ToolbarButton
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
-import { Graph, Manager as GraphManager } from '@dfnotebook/dfgraph';
+import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -87,7 +87,8 @@ import {
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
-import { Panel, Widget } from '@lumino/widgets';
+import { Panel} from '@lumino/widgets';
+
 
 /**
  * The command IDs used by the notebook plugin.
@@ -389,7 +390,7 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
   // Create a blank content widget inside of a MainAreaWidget
-      const content = new Widget();
+      const content = new ViewerWidget();
       const widget = new MainAreaWidget({ content });
       widget.id = 'dfnb-depview';
       widget.title.label = 'Dependency Viewer';
@@ -458,7 +459,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
 
-      const content = new Widget();
+      const content = new ViewerWidget();
       const widget = new MainAreaWidget({ content });
       widget.id = 'dfnb-minimap';
       widget.title.label = 'Notebook Minimap';

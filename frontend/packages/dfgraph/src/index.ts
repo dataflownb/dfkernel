@@ -8,3 +8,4 @@
  */
 
 export * from './dfgraph';
+export * from './viewer';
