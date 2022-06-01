@@ -17,7 +17,7 @@ export class Minimap {
     edges : any;
     parentdiv : any;
     svg: any;
-    graph: any;
+    dfgraph: any;
     is_open: boolean;
 
     constructor(dfgraph?: any, parentdiv?: any) {
@@ -30,7 +30,7 @@ export class Minimap {
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
             this.edges = [];
-            this.graph = dfgraph;
+            this.dfgraph = dfgraph;
             //this.widget =
     }
 
@@ -181,7 +181,7 @@ export class Minimap {
     /** @method changes cell contents **/
     // Always call before any updates to graph
     update_cells = function(){//code_dict:any){
-        this.cells = this.graph.cell_contents;
+        this.cells = this.dfgraph.cell_contents;
         //transition in the new data
         //if this.widget.is_open
     }
@@ -190,31 +190,42 @@ export class Minimap {
     //Always call before any updates to graph
     update_edges = function(){//}edges:any){
         const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
-        let edges = this.graph.downlinks;
+        let edges = this.dfgraph.downlinks;
         this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
     }
 
-
-    /** @method starts minimap creation **/
-    startMinimapCreation = function(svg:any){
-
-    (async() => {
-        while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
-            await new Promise(resolve => setTimeout(resolve, 100));
-            this.svg = d3.select('#minisvg');
-            $('#minisvg').empty();
-            this.svg = this.svg.append('g');
-            this.svg.attr('transform','translate(0,0)');
-            this.createMinimap();
-            this.mapEdges();
-    })();
+    /** @method creates the starting environment for first time setup*/
+    createMiniArea = function(svg:any){
+        (async() => {
+            while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
+                await new Promise(resolve => setTimeout(resolve, 100));
+                this.svg = d3.select('#minisvg');
+                this.svg = this.svg.append('g');
+                this.svg.attr('transform','translate(0,0)');
+                this.startMinimapCreation();
+        })();
+    };
 
 
-        //FIXME: Add a flag similar to graph was changed
-//                 that.dfgraph.was_changed = false;
-    //})
+    /** @method clear graph */
+    clearMinimap = function(){
+        $('#minisvg g').empty();
+    }
+
+    /** @method starts minimap creation, this is the process that's ran every time **/
+    startMinimapCreation = function(){
+        this.clearMinimap();
+        this.update_cells();
+        this.update_edges();
+        this.createMinimap();
+        this.mapEdges();
 
     };
+
+    /** @method set graph, sets the current activate graph to be visualized */
+    set_graph = function(graph:any){
+        this.dfgraph = graph;
+    }
 
 
 }

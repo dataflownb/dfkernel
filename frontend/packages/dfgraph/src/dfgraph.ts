@@ -219,9 +219,7 @@ export class Graph {
 
     /** @method update_code_dict */
     update_cell_contents(this:Graph,cell_contents:any){
-        //var that:Graph = this;
         this.cell_contents = cell_contents;
-        this.minimap.update_cells();
     }
 
 

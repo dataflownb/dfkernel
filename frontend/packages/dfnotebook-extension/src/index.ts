@@ -507,7 +507,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
-                    GraphManager.graphs[GraphManager.current_graph].minimap.startMinimapCreation(svg);
+                    GraphManager.graphs[GraphManager.current_graph].minimap.createMiniArea(svg);
                 }
 
               }

@@ -552,6 +552,11 @@ export class DepView {
                 this.create_graph(g);
                 that.dfgraph.was_changed = false;
     };
+
+    /** @method set graph, sets the current activate graph to be visualized */
+    set_graph = function(graph:any){
+        this.dfgraph = graph;
+    }
 //
 //
  }
