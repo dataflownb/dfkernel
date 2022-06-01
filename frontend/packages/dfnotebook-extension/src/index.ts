@@ -343,7 +343,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 let sess_id = session?.session?.id || "None";
                 if(!(sess_id in Object.keys(GraphManager.graphs))){
                     GraphManager.graphs[sess_id] = new Graph();
-                    GraphManager.current_graph = sess_id;
+                    GraphManager.update_graph(sess_id);
                 }
                 console.log(sess_id);
                 //console.log(session.session?.id);
@@ -359,7 +359,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
         //console.log(GraphManager.depview.is_open);
         console.log(GraphManager.graphs);
         if(sess_id in Object.keys(GraphManager.graphs)){
-            GraphManager.current_graph = sess_id;
+            GraphManager.update_graph(sess_id);
             console.log(GraphManager.graphs[GraphManager.current_graph]);
         }
         //if(GraphManager.depview.is_open){
@@ -406,8 +406,8 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
                     mode: 'split-right',
                     activate: false
                 });
-                if (!GraphManager.graphs[GraphManager.current_graph].depview.is_created){
-                  GraphManager.graphs[GraphManager.current_graph].depview.create_dep_div();
+                if (!GraphManager.depview.is_created){
+                  GraphManager.depview.create_dep_div();
                   console.log(GraphManager.graphs[GraphManager.current_graph]);
                   console.log("Widget added");
                 }
@@ -416,8 +416,8 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
               }
               // Activate the widget
               app.shell.activateById(widget.id);
-              GraphManager.graphs[GraphManager.current_graph].depview.is_open = true;
-              GraphManager.graphs[GraphManager.current_graph].depview.startGraphCreation();
+              GraphManager.depview.is_open = true;
+              GraphManager.depview.startGraphCreation();
             }
 
           nbTrackers.widgetAdded.connect((sender,nbPanel) => {
@@ -494,6 +494,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
           console.log("Attaching right?");
               if (!widget.isAttached) {
               console.log("Attached right");
+              console.log(content.is_open);
                 // Attach the widget to the right side work area if it's not there
                 //app.shell.add(widget, 'main');
                 app.shell.add(widget, 'main'
@@ -502,12 +503,13 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
                     activate: true
                 });
                 //'right');
-
-                if(!GraphManager.graphs[GraphManager.current_graph].minimap.is_open){
+                //FIXME: Above sets flag to open
+                if(content.is_open){
+                    console.log("Active Graph",GraphManager.graphs[GraphManager.current_graph])
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
-                    GraphManager.graphs[GraphManager.current_graph].minimap.createMiniArea(svg);
+                    GraphManager.minimap.createMiniArea(svg);
                 }
 
               }

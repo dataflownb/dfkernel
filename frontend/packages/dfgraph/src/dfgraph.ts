@@ -25,10 +25,14 @@ class GraphManager {
 
     public graphs: {[index: string]:any} ;
     current_graph: string;
+    depview: any;
+    minimap: any;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
         this.current_graph = "None";
+        this.depview = new DepView();
+        this.minimap = new Minimap();
     }
 
     getProperty = function(prop: string){
@@ -39,6 +43,20 @@ class GraphManager {
     return ''
     }
 
+    update_graph = function(graph:string){
+        this.current_graph = graph;
+        this.depview.dfgraph = this.graphs[graph];
+        this.minimap.dfgraph = this.graphs[graph];
+    }
+
+    /** @method update_graph */
+//     update_dep_view() {
+//     var depview = this.depview;
+//     if(depview.is_open){
+//         var g = depview.create_node_relations(depview.globaldf, depview.globalselect);
+//         depview.create_graph(g);
+//     }
+//     };
 
 }
 
@@ -74,17 +92,15 @@ export class Graph {
         //Cache downstream lists
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
-        this.depview = new DepView(this);
-        this.minimap = new Minimap(this);
     }
 
 
     /** @method update_graph */
     update_graph(this:Graph,cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, all_ups: any, internal_nodes: any){
         var that:Graph = this;
-        if(that.depview.is_open === false){
-            that.was_changed = true;
-        }
+//         if(that.depview.is_open === false){
+//             that.was_changed = true;
+//         }
         that.cells = cells;
         that.nodes[uuid] = nodes || [];
         if(uuid in that.uplinks){
@@ -97,7 +113,7 @@ export class Graph {
         that.internal_nodes[uuid] = internal_nodes;
         that.update_dep_lists(all_ups,uuid);
         //Shouldn't need the old way of referencing
-        that.minimap.update_edges();
+        //that.minimap.update_edges();
         //celltoolbar.CellToolbar.rebuild_all();
     };
 
@@ -143,17 +159,6 @@ export class Graph {
         this.internal_nodes[uuid] = internal_nodes;
     };
 
-
-
-
-    /** @method update_graph */
-    update_dep_view() {
-    var depview = this.depview;
-    if(depview.is_open){
-        var g = depview.create_node_relations(depview.globaldf, depview.globalselect);
-        depview.create_graph(g);
-    }
-    };
 
     /** @method recursively yield all downstream deps */
     all_downstream(this:Graph,uuid: string | number){

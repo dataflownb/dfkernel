@@ -30,7 +30,7 @@ export class Minimap {
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
             this.edges = [];
-            this.dfgraph = dfgraph;
+            this.dfgraph = dfgraph || null;
             //this.widget =
     }
 
