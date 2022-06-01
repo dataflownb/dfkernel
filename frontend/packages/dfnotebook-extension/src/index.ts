@@ -947,18 +947,6 @@ function addCommands(
 
   sessionDialogs = sessionDialogs ?? sessionContextDialogs;
 
-  // Get the current widget and activate unless the args specify otherwise.
-//   function getCurrent(args: ReadonlyPartialJSONObject): NotebookPanel | null {
-//     const widget = tracker.currentWidget;
-//     const activate = args['activate'] !== false;
-//
-//     if (activate && widget) {
-//       shell.activateById(widget.id);
-//     }
-//
-//     return widget;
-//   }
-
 
   const isEnabled = (): boolean => {
     return Private.isEnabled(shell, tracker as unknown as INotebookTracker);
@@ -968,24 +956,6 @@ function addCommands(
     return Private.isEnabledAndSingleSelected(shell, tracker as unknown as INotebookTracker);
   };
 
-  /**
-   * Whether there is an notebook active, with a single selected cell.
-   */
-//   function isEnabledAndSingleSelected(): boolean {
-//     if (!isEnabled()) {
-//       return false;
-//     }
-//     const { content } = tracker.currentWidget!;
-//     const index = content.activeCellIndex;
-//     // If there are selections that are not the active cell,
-//     // this command is confusing, so disable it.
-//     for (let i = 0; i < content.widgets.length; ++i) {
-//       if (content.isSelected(content.widgets[i]) && i !== index) {
-//         return false;
-//       }
-//     }
-//     return true;
-//   }
 
   const refreshCellCollapsed = (notebook: Notebook): void => {
     for (const cell of notebook.widgets) {
