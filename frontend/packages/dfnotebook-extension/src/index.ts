@@ -358,7 +358,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
         console.log(change['newValue']?.sessionContext?.session?.id);
         //console.log(GraphManager.depview.is_open);
         console.log(GraphManager.graphs);
-        if(sess_id in Object.keys(GraphManager.graphs)){
+        if(sess_id in GraphManager.graphs){
             GraphManager.update_graph(sess_id);
             console.log(GraphManager.graphs[GraphManager.current_graph]);
         }
@@ -391,6 +391,8 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
 
   // Create a blank content widget inside of a MainAreaWidget
       const content = new ViewerWidget();
+      //GraphManager uses flags from the ViewerWidget
+      GraphManager.depWidget = content;
       const widget = new MainAreaWidget({ content });
       widget.id = 'dfnb-depview';
       widget.title.label = 'Dependency Viewer';
@@ -408,8 +410,6 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
                 });
                 if (!GraphManager.depview.is_created){
                   GraphManager.depview.create_dep_div();
-                  console.log(GraphManager.graphs[GraphManager.current_graph]);
-                  console.log("Widget added");
                 }
 
 
@@ -460,6 +460,8 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
 
 
       const content = new ViewerWidget();
+      //Graph Manager maintains the flags on the widgets
+      GraphManager.miniWidget = content;
       const widget = new MainAreaWidget({ content });
       widget.id = 'dfnb-minimap';
       widget.title.label = 'Notebook Minimap';
@@ -500,16 +502,20 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
                 app.shell.add(widget, 'main'
                 ,{
                     mode: 'split-right',
-                    activate: true
+                    activate: false
                 });
                 //'right');
-                //FIXME: Above sets flag to open
-                if(content.is_open){
+
+                if(!GraphManager.minimap.was_created){
                     console.log("Active Graph",GraphManager.graphs[GraphManager.current_graph])
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
                     GraphManager.minimap.createMiniArea(svg);
+                    GraphManager.minimap.was_created = true;
+                }
+                else{
+                    GraphManager.minimap.startMinimapCreation();
                 }
 
               }

@@ -27,6 +27,8 @@ class GraphManager {
     current_graph: string;
     depview: any;
     minimap: any;
+    depWidget: any;
+    miniWidget: any;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
@@ -43,13 +45,22 @@ class GraphManager {
     return ''
     }
 
+    /** @method updates the activate graph and calls the update views method */
     update_graph = function(graph:string){
         this.current_graph = graph;
         this.depview.dfgraph = this.graphs[graph];
         this.minimap.dfgraph = this.graphs[graph];
+        this.update_dep_views();
     }
 
-    /** @method update_graph */
+    /** @method updates all viewers based on if they're open or not */
+    update_dep_views = function(){
+    console.log(this.miniWidget.is_open);
+    if(this.miniWidget.is_open){
+      this.minimap.startMinimapCreation();
+    }
+    //if
+    }
 //     update_dep_view() {
 //     var depview = this.depview;
 //     if(depview.is_open){

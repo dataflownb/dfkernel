@@ -18,10 +18,10 @@ export class Minimap {
     parentdiv : any;
     svg: any;
     dfgraph: any;
-    is_open: boolean;
+    was_created: boolean;
 
     constructor(dfgraph?: any, parentdiv?: any) {
-            this.is_open = false;
+            this.was_created = false;
             this.radius = 3;
             this.offset_x = 15;
             this.svg_offset_x = 18;
