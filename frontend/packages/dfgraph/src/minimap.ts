@@ -17,6 +17,7 @@ export class Minimap {
     edges : any;
     parentdiv : any;
     svg: any;
+    graph: any;
     is_open: boolean;
 
     constructor(dfgraph?: any, parentdiv?: any) {
@@ -29,6 +30,8 @@ export class Minimap {
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
             this.edges = [];
+            this.graph = dfgraph;
+            //this.widget =
     }
 
     /** @method resets all paths **/
@@ -176,16 +179,19 @@ export class Minimap {
 
 
     /** @method changes cell contents **/
-    update_cells = function(code_dict:any){
-        this.cells = code_dict;
+    // Always call before any updates to graph
+    update_cells = function(){//code_dict:any){
+        this.cells = this.graph.cell_contents;
         //transition in the new data
-        //if this.is_open
+        //if this.widget.is_open
     }
 
     /** @method updates the edges in the minimap */
-    update_edges = function(edges:any){
+    //Always call before any updates to graph
+    update_edges = function(){//}edges:any){
         const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
-        this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}))
+        let edges = this.graph.downlinks;
+        this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
     }
 
 

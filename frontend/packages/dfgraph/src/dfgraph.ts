@@ -96,7 +96,8 @@ export class Graph {
         that.downlinks[uuid] = downlinks || [];
         that.internal_nodes[uuid] = internal_nodes;
         that.update_dep_lists(all_ups,uuid);
-        that.minimap.update_edges(this.downlinks);
+        //Shouldn't need the old way of referencing
+        that.minimap.update_edges();
         //celltoolbar.CellToolbar.rebuild_all();
     };
 
@@ -220,7 +221,7 @@ export class Graph {
     update_cell_contents(this:Graph,cell_contents:any){
         //var that:Graph = this;
         this.cell_contents = cell_contents;
-        this.minimap.update_cells(cell_contents);
+        this.minimap.update_cells();
     }
 
 
