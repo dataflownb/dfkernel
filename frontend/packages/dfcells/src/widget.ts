@@ -1202,6 +1202,7 @@ export namespace CodeCell {
       GraphManager.graphs[sess_id].update_cell_contents(dfData?.code_dict);
       console.log(sessionContext.session.id);
       GraphManager.graphs[sess_id].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+      GraphManager.update_dep_views(false);
        if (content.update_downstreams) {
                     GraphManager.graphs[sess_id].update_down_links(content.update_downstreams);
       }

@@ -47,30 +47,40 @@ class GraphManager {
 
     /** @method updates the activate graph and calls the update views method */
     update_graph = function(graph:string){
-        this.current_graph = graph;
-        this.depview.dfgraph = this.graphs[graph];
-        this.minimap.dfgraph = this.graphs[graph];
-        this.update_dep_views();
+        if(graph != this.current_graph){
+            this.current_graph = graph;
+            this.depview.dfgraph = this.graphs[graph];
+            this.minimap.dfgraph = this.graphs[graph];
+            this.update_dep_views(true);
+        }
     }
 
     /** @method updates all viewers based on if they're open or not */
-    update_dep_views = function(){
+    // view flag is based on if it's a new view or the same view
+    update_dep_views = function(newView:boolean){
     console.log(this.miniWidget.is_open);
     if(this.miniWidget.is_open){
+//      Add transition code here
+//       if(!newView){
+//
+//       }
       this.minimap.startMinimapCreation();
     }
     if(this.depWidget.is_open){
-      this.depview.startGraphCreation();
+      if(newView){
+        this.depview.startGraphCreation();
+      }
+      else{
+        let g = this.depview.create_node_relations(this.depview.globaldf, this.depview.globalselect);
+        this.depview.create_graph(g);
+      }
     }
-    
+
+
+
+
     }
-//     update_dep_view() {
-//     var depview = this.depview;
-//     if(depview.is_open){
-//         var g = depview.create_node_relations(depview.globaldf, depview.globalselect);
-//         depview.create_graph(g);
-//     }
-//     };
+
 
 }
 
