@@ -91,6 +91,12 @@ export class Minimap {
     createMinimap = function(parent:any,node:any)
     {
         let that = this;
+
+        let minitran = d3.transition()
+            .duration(750)
+            .ease(d3.easeLinear)
+            .end();
+
         let circles = this.svg.selectAll('circle');
         let groups = circles
         .data(Object.keys(this.cells))
@@ -114,6 +120,8 @@ export class Minimap {
         });
 
         groups.append('circle')
+          .transition(minitran)
+          .on('end',() => that.mapEdges(that))
           .attr('cx', this.svg_offset_x)
           .attr('cy',(a:string,b:number)=> 10+this.offset_x*b)
           .attr('r',this.radius);
@@ -136,6 +144,7 @@ export class Minimap {
         .on('click',textclick)
         .enter()
         .append('text')
+        .transition(minitran)
         .text((a:Array<string>)=>a[1])
         .attr('id',(a:Array<string>)=>'text'+a[0])
         .attr('x',this.text_offset+this.svg_offset_x)
@@ -194,6 +203,7 @@ export class Minimap {
         this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
     }
 
+
     /** @method creates the starting environment for first time setup*/
     createMiniArea = function(svg:any){
         (async() => {
@@ -214,11 +224,9 @@ export class Minimap {
 
     /** @method starts minimap creation, this is the process that's ran every time **/
     startMinimapCreation = function(){
-        this.clearMinimap();
         this.update_cells();
         this.update_edges();
         this.createMinimap();
-        this.mapEdges();
 
     };
 

@@ -61,10 +61,11 @@ class GraphManager {
     console.log(this.miniWidget.is_open);
     if(this.miniWidget.is_open){
 //      Add transition code here
-//       if(!newView){
-//
-//       }
+      if(newView){
+        this.minimap.clearMinimap();
+      }
       this.minimap.startMinimapCreation();
+
     }
     if(this.depWidget.is_open){
       if(newView){
