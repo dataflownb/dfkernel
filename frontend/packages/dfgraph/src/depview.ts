@@ -147,7 +147,7 @@ export class DepView {
     create_dep_div = function() {
 
 
-        var that = this;
+        let that = this;
 
 
         this.depdiv = document.createElement('div');
@@ -159,11 +159,11 @@ export class DepView {
         this.tabular = this.side_panel.append("div").attr('id', 'table').classed('card', true);
         this.tabular.append('h3').text("Graph Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
 
-        var newdiv = this.tabular.append('div').classed('table-div',true);
+        let newdiv = this.tabular.append('div').classed('table-div',true);
         newdiv.append('h4').text('New Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
         newdiv.append('div').classed('card-body', true).attr('id', 'newlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
 
-        var changediv = this.tabular.append('div').classed('table-div',true);
+        let changediv = this.tabular.append('div').classed('table-div',true);
         changediv.append('h4').text('Changed Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
         changediv.append('div').classed('card-body', true).attr('id', 'changedlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
 
@@ -187,7 +187,7 @@ export class DepView {
         this.nodespanel.append('h4').text("Cell Local Variables:").classed('card-title', true);
         this.nodespanel.data(["None"]).append('span').text('None').classed('badge-pill', true).classed('badge-danger', true);
 
-        var executeactions = this.executepanel.append('div').attr('id','exec-actions');
+        let executeactions = this.executepanel.append('div').attr('id','exec-actions');
         //FIME:FIX THIS
         // executeactions.append('a').text("  Execute Cell").classed('btnviz', true).classed('btnviz-primary', true).attr('id', 'exec-button').classed('fa-step-forward', true).classed('fa', true).on('click',function(){
         //     var cell = Jupyter.notebook.get_selected_cell();
@@ -203,15 +203,15 @@ export class DepView {
 
         /** @method upon a new cell selection will change the details of the viewer **/
         set_details = function(cellid:string){
-            var that = this;
+            let that = this;
             $('#'+that.active_cell+'cluster').find('polygon').toggleClass('selected',false);
             that.active_cell = cellid;
             d3.select('#select-identifier').remove();
             if(that.dfgraph.get_cells().indexOf(that.active_cell) > -1) {
                 // @ts-ignore
-                var rect_points = $('#' + that.active_cell + 'cluster').find('polygon').attr('points').split(' ');
-                var rect_top = rect_points[1].split(',') as any;
-                var height = Math.abs(rect_top[1]-Number(rect_points[0].split(',')[1]));
+                let rect_points = $('#' + that.active_cell + 'cluster').find('polygon').attr('points').split(' ');
+                let rect_top = rect_points[1].split(',') as any;
+                let height = Math.abs(rect_top[1]-Number(rect_points[0].split(',')[1]));
                 d3.select('#svg-div svg g').insert('g', '#a_graph0 + *').attr('id', 'select-identifier').append('rect').attr('x', parseInt(rect_top[0])-3).attr('y', parseInt(rect_top[1])).attr('height', height).attr('width', '3px');
             }
             //FIXME: Find equivalent in Lab
@@ -220,13 +220,13 @@ export class DepView {
             //Jupyter.notebook.scroll_to_cell_id(that.active_cell);
             $('#'+cellid+'cluster').find('polygon').toggleClass('selected',true);
             d3.select('#nodes-panel').selectAll('span').remove();
-            var int_nodes = that.dfgraph.get_internal_nodes(cellid);
+            let int_nodes = that.dfgraph.get_internal_nodes(cellid);
             if(int_nodes.length < 1){
                 int_nodes = ['None'];
             }
             d3.select('#nodes-panel').selectAll('span')
                 .data(int_nodes).enter().append('span').text(function(d:any){return d;}).attr('class',function (d:any) {
-            var baseclasses = "badge badge-pill ";
+            let baseclasses = "badge badge-pill ";
                 if(d === "None"){
                     return baseclasses + 'badge-danger';
                 }
@@ -236,9 +236,9 @@ export class DepView {
 
         /** @method updates the new and changed cell lists **/
         update_cell_lists = function(){
-            var that = this;
+            let that = this;
             let new_cells: string[] = [];
-            var changed_cells: string[] = [];
+            let changed_cells: string[] = [];
 
             //Goes with code below
             //var cells = that.dfgraph.get_cells();
@@ -258,7 +258,7 @@ export class DepView {
             // });
 
 
-            var new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
+            let new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
 
             new_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
             .html(function(d){return 'In['+d+']';}).enter()
@@ -267,7 +267,7 @@ export class DepView {
 
             new_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
 
-            var changed_list = d3.select('#changedlist').select('ul').selectAll('li').data(changed_cells);
+            let changed_list = d3.select('#changedlist').select('ul').selectAll('li').data(changed_cells);
 
             changed_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
             .html(function(d){return 'In['+d+']';}).enter()
@@ -311,15 +311,15 @@ export class DepView {
         /** @method this creates and renders the actual visual graph **/
         create_graph = function(g:any){
 
-            var that = this;
+            let that = this;
             g.nodes().forEach(function(v:any) {
-                var node = g.node(v);
+                let node = g.node(v);
                 // Round the corners of the nodes
                 node.rx = node.ry = 5;
             });
 
             that.dotgraph = Writer.write(g);
-            var graphtran = d3.transition()
+            let graphtran = d3.transition()
             .duration(1500)
             .ease(d3.easeLinear);
 
@@ -339,12 +339,12 @@ export class DepView {
                .transition(graphtran)
 
 
-            var dotURL = URL.createObjectURL(new Blob([that.dotgraph], {type: "text/plain;charset=utf-8"}));
+            let dotURL = URL.createObjectURL(new Blob([that.dotgraph], {type: "text/plain;charset=utf-8"}));
             $('#dot-dl').attr("href",dotURL).attr("download", "graph.dot");
 
             $("g.parentnode.cluster").each(function () {
                 $(this).mouseover(function(){
-                var node = $(this),
+                let node = $(this),
                     cellid = node.find('text').text().substr(that.cell_label.length,uuid_length);
 
                 that.set_details(cellid);
@@ -397,7 +397,7 @@ export class DepView {
 
     /** @method this creates the graphlib data structure that is used to create the visualization **/
     create_node_relations = function(){
-        var that = this;
+        let that = this;
         that.cell_links = [];
         that.cell_list = [];
         that.cell_child_nums = [];
@@ -457,7 +457,7 @@ export class DepView {
 
         that.cell_list.forEach(function(a:any) {that.cell_child_nums[a.id] = 0;});
         that.cell_links.forEach(function(a:any){ that.cell_child_nums[a.source] += 1;});
-        var g = new GraphLib.Graph({compound:true}).setGraph({ranksep:2,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
+        let g = new GraphLib.Graph({compound:true}).setGraph({ranksep:2,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
             return {};
         });
 
@@ -471,9 +471,9 @@ export class DepView {
         });
 
         Object.keys(that.output_nodes).forEach(function (a:any) {
-            var parent = 'cluster_Out['+a+']';
+            let parent = 'cluster_Out['+a+']';
             if(that.dataflow || that.selected){
-                var cell = a+'-Cell';
+                let cell = a+'-Cell';
                 g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'box',id:cell});
                 g.setParent(cell,parent);
 
@@ -516,7 +516,7 @@ export class DepView {
     /** @method this opens and closes the depviewer **/
     toggle_dep_view = function() {
 
-        var that = this;
+        let that = this;
         if(this.is_open){
             that.close_div();
         }
@@ -546,8 +546,8 @@ export class DepView {
 
     /** @method starts graph creation **/
     startGraphCreation = function(){
-        var that = this;
-        var g = this.create_node_relations();
+        let that = this;
+        let g = this.create_node_relations();
                 this.create_graph(g);
                 that.dfgraph.was_changed = false;
     };

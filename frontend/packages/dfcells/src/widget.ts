@@ -1191,16 +1191,15 @@ export namespace CodeCell {
       model.executionCount = msg.content.execution_count;
       console.log(msg);
       let content = (msg.content as any)
-      var nodes = content.nodes;
-      var uplinks = content.links;
-      var cells = content.cells;
-      var downlinks = content.imm_downstream_deps;
-      var all_ups = content.upstream_deps;
-      var internal_nodes = content.internal_nodes;
-      console.log(content.internal_nodes);
+      let nodes = content.nodes;
+      let uplinks = content.links;
+      let cells = content.cells;
+      let downlinks = content.imm_downstream_deps;
+      let all_ups = content.upstream_deps;
+      let internal_nodes = content.internal_nodes;
       let sess_id = sessionContext.session.id;
+      //Set information about the graph based on sessionid
       GraphManager.graphs[sess_id].update_cell_contents(dfData?.code_dict);
-      console.log(sessionContext.session.id);
       GraphManager.graphs[sess_id].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
       GraphManager.update_dep_views(false);
        if (content.update_downstreams) {

@@ -180,15 +180,13 @@ export class Minimap {
 
     /** @method changes cell contents **/
     // Always call before any updates to graph
-    update_cells = function(){//code_dict:any){
+    update_cells = function(){
         this.cells = this.dfgraph.cell_contents;
-        //transition in the new data
-        //if this.widget.is_open
     }
 
     /** @method updates the edges in the minimap */
     //Always call before any updates to graph
-    update_edges = function(){//}edges:any){
+    update_edges = function(){
         const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
         let edges = this.dfgraph.downlinks;
         this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
