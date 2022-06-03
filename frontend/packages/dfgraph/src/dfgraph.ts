@@ -15,7 +15,7 @@ const uuid_length = 8;
         /** @method this is a set addition method for dependencies */
     // @ts-ignore
     Array.prototype.setadd = function (item) {
-        var that = this;
+        let that = this;
         if(that.indexOf(item) < 0){
             that.push(item);
         }
@@ -77,8 +77,6 @@ class GraphManager {
     }
 
 
-
-
     }
 
 
@@ -121,7 +119,7 @@ export class Graph {
 
     /** @method update_graph */
     update_graph(this:Graph,cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, all_ups: any, internal_nodes: any){
-        var that:Graph = this;
+        let that:Graph = this;
 //         if(that.depview.is_open === false){
 //             that.was_changed = true;
 //         }
@@ -143,8 +141,8 @@ export class Graph {
 
     /** @method removes a cell entirely from the graph **/
     remove_cell = function(this:Graph,uuid: string){
-        var that:Graph = this;
-        var cell_index = that.cells.indexOf(uuid);
+        let that:Graph = this;
+        let cell_index = that.cells.indexOf(uuid);
         if(cell_index > -1){
           that.cells.splice(cell_index,1);
           delete that.nodes[uuid];
@@ -157,16 +155,16 @@ export class Graph {
           });
           delete that.downlinks[uuid];
           if(uuid in that.uplinks) {
-              var uplinks = Object.keys(that.uplinks[uuid]);
+              let uplinks = Object.keys(that.uplinks[uuid]);
                   uplinks.forEach(function (up : any) {
-                      var idx = that.downlinks[up].indexOf(uuid);
+                      let idx = that.downlinks[up].indexOf(uuid);
                       that.downlinks[up].splice(idx,1);
                   });
           }
           delete that.uplinks[uuid];
           if(uuid in that.upstream_list){
               // @ts-ignore
-              var all_ups = that.upstream_list[uuid].slice(0);
+              let all_ups = that.upstream_list[uuid].slice(0);
               // @ts-ignore
               delete that.upstream_list[uuid];
               all_ups.forEach(function (up : any) {
@@ -186,12 +184,12 @@ export class Graph {
 
     /** @method recursively yield all downstream deps */
     all_downstream(this:Graph,uuid: string | number){
-        var that:Graph = this;
+        let that:Graph = this;
         let visited = new Array();// Array<string> = [];
-        var res = new Array();//: Array<string> = [];
-        var downlinks = (this.downlinks[uuid] || []).slice(0);
+        let res = new Array();//: Array<string> = [];
+        let downlinks = (this.downlinks[uuid] || []).slice(0);
         while(downlinks.length > 0){
-            var cid = downlinks.pop();
+            let cid = downlinks.pop();
             visited.setadd(cid);
             res.setadd(cid);
             if(cid in that.downstream_lists)
@@ -210,7 +208,7 @@ export class Graph {
                     })
                 }
                 else{
-                    var idx = res.indexOf(cid);
+                    let idx = res.indexOf(cid);
                     res.splice(idx,1);
                 }
             }
@@ -221,11 +219,10 @@ export class Graph {
 
 
     all_upstream_cell_ids(cid: any) {
-        //var that = this;
-        var uplinks = this.get_imm_upstreams(cid);
-        var all_cids = new Array();
+        let uplinks = this.get_imm_upstreams(cid);
+        let all_cids = new Array();
         while (uplinks.length > 0) {
-            var up_cid = uplinks.pop();
+            let up_cid = uplinks.pop();
             all_cids.setadd(up_cid);
             uplinks = uplinks.concat(this.get_imm_upstreams(up_cid));
         }
@@ -235,9 +232,9 @@ export class Graph {
 
      /** @method updates all downstream links with downstream updates passed from kernel */
     update_down_links(this:Graph,downupdates: any[]) {
-        var that:Graph = this;
+        let that:Graph = this;
         downupdates.forEach(function (t) {
-            var uuid = t['key'].substr(0, uuid_length);
+            let uuid = t['key'].substr(0, uuid_length);
             that.downlinks[uuid] = t['data'];
             if(uuid in that.cell_contents && t.data){
                 that.downlinks[uuid] = t['data'];
@@ -254,8 +251,8 @@ export class Graph {
 
     /** @method update_dep_lists */
     update_dep_lists(this:Graph,all_ups: string | any[], uuid: string | number){
-        var that:Graph = this;
-    //     var cell = Jupyter.notebook.get_code_cell(uuid);
+        let that:Graph = this;
+    //     let cell = Jupyter.notebook.get_code_cell(uuid);
     //
     //     if(cell.last_msg_id){
     //         cell.clear_df_info();
@@ -280,9 +277,9 @@ export class Graph {
 
     /** @method returns upstreams for a cell with a given uuid */
     get_upstreams(this:Graph,uuid: string | number){
-        var that:Graph = this;
+        let that:Graph = this;
         return Object.keys(that.uplinks[uuid] || []).reduce(function (arr,uplink) {
-           var links = that.uplinks[uuid][uplink].map(function (item: string){
+           let links = that.uplinks[uuid][uplink].map(function (item: string){
                return uplink === item ? item : uplink+item;}) || [];
             return arr.concat(links);
         },[]);
@@ -301,8 +298,8 @@ export class Graph {
     };
 
     get_imm_upstream_names(this:Graph,uuid: string | number | undefined) {
-        var arr: never[] = [];
-        var that:Graph = this;
+        let arr: never[] = [];
+        let that:Graph = this;
         // @ts-ignore
         this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
             // @ts-ignore
@@ -312,8 +309,8 @@ export class Graph {
     };
 
     get_imm_upstream_pairs(uuid: string | number | undefined) {
-        var arr: never[] = [];
-        var that:Graph = this;
+        let arr: never[] = [];
+        let that:Graph = this;
         // @ts-ignore
         this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
             // @ts-ignore
@@ -335,11 +332,9 @@ export class Graph {
 
     /** @method returns all nodes for a cell*/
     get_nodes(this:Graph,uuid: string){
-        var that:Graph = this;
-        console.log(uuid);
+        let that:Graph = this;
         if (uuid in that.nodes) {
             if ((that.nodes[uuid] || []).length > 0) {
-                console.log(that.nodes[uuid]);
                 return that.nodes[uuid];
             }
         }
@@ -353,8 +348,6 @@ export class Graph {
 
 }
 
-//let DfGraph = new Graph();
-//export const DfGraph = new Graph();
 export const Manager = new GraphManager();
 
 
