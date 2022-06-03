@@ -122,23 +122,25 @@ export class Minimap {
         let values = Object.keys(this.cells)
         .map((a:string)=>[a,this.cells[a]]);
 
+        let textclick = function(){
+            let id = d3.select(this).attr('id');
+            id = id.substring(4,id.length);
+            let parent = d3.select('#node'+id);
+            let node = parent.select('circle');
+            that.elementActivate(parent,node);
+        }
+
         this.svg.selectAll('text')
         .data(values)
+        .text((a:Array<string>)=>a[1])
+        .on('click',textclick)
         .enter()
         .append('text')
         .text((a:Array<string>)=>a[1])
         .attr('id',(a:Array<string>)=>'text'+a[0])
         .attr('x',this.text_offset+this.svg_offset_x)
         .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
-        .on('click',function()
-        {
-            let id = d3.select(this).attr('id');
-            id = id.substring(4,id.length);
-            console.log(id);
-            let parent = d3.select('#node'+id);
-            let node = parent.select('circle');
-            that.elementActivate(parent,node);
-        });
+        .on('click',textclick);
 
     }
 
