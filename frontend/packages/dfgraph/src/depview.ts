@@ -320,7 +320,7 @@ export class DepView {
 
             that.dotgraph = Writer.write(g);
             var graphtran = d3.transition()
-            .duration(750)
+            .duration(1500)
             .ease(d3.easeLinear);
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
@@ -331,8 +331,6 @@ export class DepView {
                 .zoom(true)
                 .on('end',function(){
                     that.update_cell_lists();
-                    $('#svg-div').height('100vh');
-                    $('#svg-div svg').height('100vh').width('100vw');
                     that.done_rendering = true;
                 })
             .renderDot(that.dotgraph)
