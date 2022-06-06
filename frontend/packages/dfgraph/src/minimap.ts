@@ -19,6 +19,7 @@ export class Minimap {
     svg: any;
     dfgraph: any;
     was_created: boolean;
+    output_tags : {[name:string]:[]}
 
     constructor(dfgraph?: any, parentdiv?: any) {
             this.was_created = false;
@@ -30,6 +31,7 @@ export class Minimap {
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
             this.edges = [];
+            this.output_tags = {};
             this.dfgraph = dfgraph || null;
             //this.widget =
     }
@@ -64,6 +66,7 @@ export class Minimap {
         parent.classed('active',true);
         let active_id = parent.attr('id');
         active_id = active_id.substring(4,active_id.length);
+        d3.select('#text'+active_id).classed('active',true);
         this.edges.map(function(edge:any)
         {
           let source = edge['source'];
@@ -106,7 +109,7 @@ export class Minimap {
 
         let circles = this.svg.selectAll('circle');
         let groups = circles
-        .data(Object.keys(this.cells))
+        .data(Object.keys(this.cells),(a:string)=>a)
         .enter()
         .append('g')
         //Have to use a proper start pattern for ID rules in HTML4
@@ -133,9 +136,29 @@ export class Minimap {
           .attr('cy',(a:string,b:number)=> 10+this.offset_x*b)
           .attr('r',this.radius);
 
+        let grab_out_tags = function(id:string,text:string){
+            if(id in that.output_tags){
+                return that.output_tags[id].reduce((textobj:string,output_tag:string)=>{
+                    //FIXME: Make this smarter
+                    let exp = new RegExp(output_tag);
+                    return textobj.replace(exp,'OUTTAGSTARTSHERE'+output_tag+'OUTTAGSTARTSHERE');
+                },text);
+            }
+                return text;
+        }
+
 
         let values = Object.keys(this.cells)
-        .map((a:string)=>[a,this.cells[a]]);
+        .map((a:string)=>[a,
+            grab_out_tags(a,this.cells[a])
+            .split("OUTTAGSTARTSHERE")
+            .map(
+            (text:string)=>{
+            return [text,(that.output_tags[a] || []).includes(text)]
+            }
+            )
+        ]);
+
 
         let textclick = function(){
             let id = d3.select(this).attr('id');
@@ -146,17 +169,37 @@ export class Minimap {
         }
 
         this.svg.selectAll('text')
-        .data(values)
-        .text((a:Array<string>)=>a[1])
+        .data(values, function(a:any){return a[0]})
+        .each(function(a:any){
+            //For existing ones clear all text
+            //FIXME: This is a biproduct of not having full access to tags on load
+            $(this).empty();
+            d3.select(this)
+            .selectAll('tspan')
+            .data(a[1])
+            .enter()
+            .append('tspan')
+            .text((a:any)=>a[0])
+            .classed('outtag',(a:any)=>a[1]);
+        })
         .on('click',textclick)
         .enter()
         .append('text')
-        .transition(minitran)
-        .text((a:Array<string>)=>a[1])
+        .on('click',textclick)
         .attr('id',(a:Array<string>)=>'text'+a[0])
         .attr('x',this.text_offset+this.svg_offset_x)
         .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
-        .on('click',textclick);
+        .on('click',textclick)
+        .each(function(a:any){
+            d3.select(this)
+            .selectAll('tspan')
+            .data(a[1])
+            .enter()
+            .append('tspan')
+            .text((a:any)=>a[0])
+            .classed('outtag',(a:any)=>a[1]);
+        })
+
 
     }
 
@@ -199,7 +242,13 @@ export class Minimap {
     /** @method changes cell contents **/
     // Always call before any updates to graph
     update_cells = function(){
-        this.cells = this.dfgraph.cell_contents;
+        let that = this;
+        that.cells = Object.keys(this.dfgraph.cell_contents).reduce(function(a:any,b:string)
+        {
+          let split_cell = that.dfgraph.cell_contents[b].split('\n');
+          a[b] = split_cell[split_cell.length - 1];
+          return a;
+          },{})
     }
 
     /** @method updates the edges in the minimap */
@@ -229,9 +278,18 @@ export class Minimap {
         $('#minisvg g').empty();
     }
 
+    /** @method updates the list of output_tags on the graph */
+    update_output_tags = function(){
+        let that = this;
+        that.dfgraph.get_cells().forEach(function(uuid:string){
+            that.output_tags[uuid] = that.dfgraph.get_nodes(uuid);
+        });
+    }
+
     /** @method starts minimap creation, this is the process that's ran every time **/
     startMinimapCreation = function(){
         this.update_cells();
+        this.update_output_tags();
         this.update_edges();
         this.createMinimap();
     };

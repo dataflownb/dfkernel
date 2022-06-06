@@ -46,4 +46,19 @@
   display:none;
 }
 
-#minimap text { font-family: monospace; }
+#minimap tspan {
+  stroke: #c4c4c4;
+  color: #c4c4c4;
+  font-family: monospace;
+}
+
+
+#minimap tspan.outtag{
+  stroke: #000;
+  color: #000;
+}
+
+#minimap text.active > tspan.outtag{
+  stroke: #3b5fc0;
+  color: #3b5fc0;
+}
