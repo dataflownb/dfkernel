@@ -87,6 +87,13 @@ export class Minimap {
        }
     }
 
+    /** @method takes in a string id input and activates based on that ID*/
+    updateActiveByID = function(activeid:string){
+            let source_node = d3.select('#node'+activeid).classed('move_right',true).classed('active',true);
+            let src = source_node.select('circle');
+            this.elementActivate(source_node,src);
+    }
+
    /** @method activates the paths based on click **/
     createMinimap = function(parent:any,node:any)
     {
@@ -227,13 +234,11 @@ export class Minimap {
         this.update_cells();
         this.update_edges();
         this.createMinimap();
-
     };
 
     /** @method set graph, sets the current activate graph to be visualized */
     set_graph = function(graph:any){
         this.dfgraph = graph;
     }
-
 
 }

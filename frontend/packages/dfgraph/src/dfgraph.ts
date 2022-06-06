@@ -29,6 +29,7 @@ class GraphManager {
     minimap: any;
     depWidget: any;
     miniWidget: any;
+    activeID: string;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
@@ -52,6 +53,17 @@ class GraphManager {
             this.depview.dfgraph = this.graphs[graph];
             this.minimap.dfgraph = this.graphs[graph];
             this.update_dep_views(true);
+        }
+    }
+
+    update_active = function(activeid?:string){
+        this.activeID = activeid || "none";
+        //FIXME: Add depviewer active cell code
+        //         if(this.depWidget.is_open){
+        //             console.log("Update dep viewer here");
+        //         }
+        if(this.miniWidget.is_open){
+            this.minimap.updateActiveByID(activeid);
         }
     }
 

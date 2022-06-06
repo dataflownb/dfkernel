@@ -346,8 +346,13 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                     GraphManager.update_graph(sess_id);
                 }
                 console.log(sess_id);
-                //console.log(session.session?.id);
             })
+            nbPanel.content.activeCellChanged.connect(() =>{
+                //Have to get this off the model the same way that actions.tsx does
+                let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
+                console.log("Active Cell ID: ",activeId);
+                GraphManager.update_active(activeId);
+            });
       });
 
 
