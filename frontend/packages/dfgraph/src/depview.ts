@@ -481,7 +481,7 @@ export class DepView {
             that.output_nodes[a].forEach(function (t:string) {
                 //var uuid = t.substr(4,uuid_length);
                 //FIXME: Make this more robust so it uses uuid_length
-                if(/cluster_Out\_[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/.test(t)){
+                if(/cluster_Out\_[a-f0-9]{8}/.test(t)){
                     g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
                 }
                 else{

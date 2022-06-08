@@ -355,7 +355,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
                 let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]=[];return dict;},{});;
                 Object.keys(cell_contents).map(function(cell_id){
-                    let regex = /\w+\$[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/g
+                    let regex = /\w+\$[a-f0-9]{8}/g
                     let references = (cell_contents[cell_id].match(regex)) || [];
                     references.map(function(reference:string){
                        let ref = reference.split('$');
