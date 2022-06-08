@@ -340,9 +340,39 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             const session = nbPanel.sessionContext;
             session.ready.then(() =>
             {
+                let output_tags: {[index: string]:any}  = {};
+                let cell_contents: {[index: string]:any} = {};
+                (nbPanel.content as any)._cellsArray.map((cell:any)=>
+                {
+                let cell_id = cell.model?.id.replace(/-/g, '').substr(0, 8) as string;
+                cell_contents[cell_id] = cell._input._prompt._model._executedCode;
+                output_tags[cell_id] =
+                (cell.model.outputs.list._array).map(
+                    (output:any)=>output._rawMetadata.output_tag)
+                }
+                );
+                let cells = Object.keys(output_tags);
+                let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
+                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]=[];return dict;},{});;
+                Object.keys(cell_contents).map(function(cell_id){
+                    let regex = /\w+\$[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]/g
+                    let references = (cell_contents[cell_id].match(regex)) || [];
+                    references.map(function(reference:string){
+                       let ref = reference.split('$');
+                       if (ref[1] in uplinks[cell_id]){
+                         uplinks[cell_id][ref[1]].push(ref[0]);
+                       }
+                       else{
+                         uplinks[cell_id][ref[1]] = [ref[0]]
+                       }
+                       downlinks[ref[1]].push(cell_id);
+                    });
+                })
                 let sess_id = session?.session?.id || "None";
                 if(!(sess_id in Object.keys(GraphManager.graphs))){
-                    GraphManager.graphs[sess_id] = new Graph();
+                    //GraphManager.graphs[sess_id] = new Graph({});
+                    //@ts-ignore
+                    GraphManager.graphs[sess_id] = new Graph({'cells':cells,'nodes':output_tags,'internal_nodes':output_tags,'uplinks':uplinks,'downlinks':downlinks,'cell_contents':cell_contents});
                     GraphManager.update_graph(sess_id);
                 }
                 console.log(sess_id);

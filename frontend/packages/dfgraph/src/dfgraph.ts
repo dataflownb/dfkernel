@@ -115,7 +115,7 @@ export class Graph {
     /*
     * Create a graph to contain all inner cell dependencies
     */
-    constructor(cells?: never[], nodes?: never[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}) {
+    constructor({cells = [],nodes = [],uplinks={},downlinks={}, internal_nodes= {}, all_down= {}, cell_contents= {}}:{cells?: string[], nodes?: string[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}} = {}) {
         this.was_changed = false;
         this.cells = cells || [];
         this.nodes = nodes || [];
