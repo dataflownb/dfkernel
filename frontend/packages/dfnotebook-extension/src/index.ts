@@ -420,6 +420,10 @@ export default plugins;
 //   return factory;
 // }
 
+// FIXME if we set the model factory on the docRegistry first
+// we can prevent the setting in activateNotebookHandler
+// also need a way to modify the app commands for run...
+// then may be able to get rid of all this code...
 /**
  * Activate the notebook handler extension.
  */
