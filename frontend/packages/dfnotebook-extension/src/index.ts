@@ -21,7 +21,7 @@ import {
   showDialog,
   Toolbar
 } from '@jupyterlab/apputils';
-import { Cell, CodeCell, ICellModel, MarkdownCell } from '@dfnotebook/dfcells';
+import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -38,21 +38,25 @@ import {
   IViewMenu
 } from '@jupyterlab/mainmenu';
 import * as nbformat from '@jupyterlab/nbformat';
+
+
+import {
+  DataflowNotebookModelFactory,
+  DataflowNotebookPanel,
+} from '@dfnotebook/dfnotebook';
 import {
   ExecutionIndicator,
   INotebookTracker,
   INotebookWidgetFactory,
   Notebook,
-  ToolbarItems
-} from '@jupyterlab/notebook'
-
-import {
-  NotebookActions,
-  NotebookModelFactory,
   NotebookPanel,
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
+  ToolbarItems
+} from '@jupyterlab/notebook'
+import {
+  NotebookActions,
 } from '@dfnotebook/dfnotebook';
 import {
   IObservableList,
@@ -296,125 +300,125 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
   autoStart: true,
   activate: (app: JupyterFrontEnd, editorServices: IEditorServices) => {
     const editorFactory = editorServices.factoryService.newInlineEditor;
-    return new NotebookPanel.ContentFactory({ editorFactory });
+    return new DataflowNotebookPanel.ContentFactory({ editorFactory });
   }
 };
 
-/**
- * The notebook widget factory provider.
- */
-const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
-  id: '@dfnotebook/dfnotebook-extension:widget-factory',
-  provides: INotebookWidgetFactory,
-  requires: [
-    NotebookPanel.IContentFactory,
-    IEditorServices,
-    IRenderMimeRegistry,
-    ISessionContextDialogs,
-    IToolbarWidgetRegistry,
-    ITranslator
-  ],
-  optional: [ISettingRegistry],
-  activate: activateWidgetFactory,
-  autoStart: true
-};
+// /**
+//  * The notebook widget factory provider.
+//  */
+// const widgetFactoryPlugin: JupyterFrontEndPlugin<NotebookWidgetFactory.IFactory> = {
+//   id: '@dfnotebook/dfnotebook-extension:widget-factory',
+//   provides: INotebookWidgetFactory,
+//   requires: [
+//     NotebookPanel.IContentFactory,
+//     IEditorServices,
+//     IRenderMimeRegistry,
+//     ISessionContextDialogs,
+//     IToolbarWidgetRegistry,
+//     ITranslator
+//   ],
+//   optional: [ISettingRegistry],
+//   activate: activateWidgetFactory,
+//   autoStart: true
+// };
 
 
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
-  widgetFactoryPlugin,
+  // widgetFactoryPlugin,
   trackerPlugin,
 ]
 export default plugins;
 
-/**
- * Activate the notebook widget factory.
- */
-function activateWidgetFactory(
-  app: JupyterFrontEnd,
-  contentFactory: NotebookPanel.IContentFactory,
-  editorServices: IEditorServices,
-  rendermime: IRenderMimeRegistry,
-  sessionContextDialogs: ISessionContextDialogs,
-  toolbarRegistry: IToolbarWidgetRegistry,
-  translator: ITranslator,
-  settingRegistry: ISettingRegistry | null
-): NotebookWidgetFactory.IFactory {
-  const preferKernelOption = PageConfig.getOption('notebookStartsKernel');
+// /**
+//  * Activate the notebook widget factory.
+//  */
+// function activateWidgetFactory(
+//   app: JupyterFrontEnd,
+//   contentFactory: NotebookPanel.IContentFactory,
+//   editorServices: IEditorServices,
+//   rendermime: IRenderMimeRegistry,
+//   sessionContextDialogs: ISessionContextDialogs,
+//   toolbarRegistry: IToolbarWidgetRegistry,
+//   translator: ITranslator,
+//   settingRegistry: ISettingRegistry | null
+// ): NotebookWidgetFactory.IFactory {
+//   const preferKernelOption = PageConfig.getOption('notebookStartsKernel');
 
-  // If the option is not set, assume `true`
-  const preferKernelValue =
-    preferKernelOption === '' || preferKernelOption.toLowerCase() === 'true';
+//   // If the option is not set, assume `true`
+//   const preferKernelValue =
+//     preferKernelOption === '' || preferKernelOption.toLowerCase() === 'true';
 
-  const { commands } = app;
-  let toolbarFactory:
-    | ((
-        widget: NotebookPanel
-      ) =>
-        | DocumentRegistry.IToolbarItem[]
-        | IObservableList<DocumentRegistry.IToolbarItem>)
-    | undefined;
+//   const { commands } = app;
+//   let toolbarFactory:
+//     | ((
+//         widget: NotebookPanel
+//       ) =>
+//         | DocumentRegistry.IToolbarItem[]
+//         | IObservableList<DocumentRegistry.IToolbarItem>)
+//     | undefined;
 
-  // Register notebook toolbar widgets
-  toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'save', panel =>
-    DocToolbarItems.createSaveButton(commands, panel.context.fileChanged)
-  );
-  toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'cellType', panel => {
-    // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
-    return ToolbarItems.createCellTypeItem(panel as unknown as NotebookPanel, translator);
-    }
-  );
-  toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'kernelName', panel =>
-    Toolbar.createKernelNameItem(
-      panel.sessionContext,
-      sessionContextDialogs,
-      translator
-    )
-  );
+//   // Register notebook toolbar widgets
+//   toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'save', panel =>
+//     DocToolbarItems.createSaveButton(commands, panel.context.fileChanged)
+//   );
+//   toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'cellType', panel => {
+//     // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
+//     return ToolbarItems.createCellTypeItem(panel as unknown as NotebookPanel, translator);
+//     }
+//   );
+//   toolbarRegistry.registerFactory<NotebookPanel>(FACTORY, 'kernelName', panel =>
+//     Toolbar.createKernelNameItem(
+//       panel.sessionContext,
+//       sessionContextDialogs,
+//       translator
+//     )
+//   );
 
-  toolbarRegistry.registerFactory<NotebookPanel>(
-    FACTORY,
-    'executionProgress',
-    panel => {
-      return ExecutionIndicator.createExecutionIndicatorItem(
-        // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
-        panel as unknown as NotebookPanel,
-        translator,
-        settingRegistry?.load(trackerPlugin.id)
-      );
-    }
-  );
+//   toolbarRegistry.registerFactory<NotebookPanel>(
+//     FACTORY,
+//     'executionProgress',
+//     panel => {
+//       return ExecutionIndicator.createExecutionIndicatorItem(
+//         // @ts-ignore FIXME: Notebook Panel has a private attribute that doesn't allow cooercion
+//         panel as unknown as NotebookPanel,
+//         translator,
+//         settingRegistry?.load(trackerPlugin.id)
+//       );
+//     }
+//   );
 
-  if (settingRegistry) {
-    // Create the factory
-    toolbarFactory = createToolbarFactory(
-      toolbarRegistry,
-      settingRegistry,
-      FACTORY,
-      PANEL_SETTINGS,
-      translator
-    );
-  }
+//   if (settingRegistry) {
+//     // Create the factory
+//     toolbarFactory = createToolbarFactory(
+//       toolbarRegistry,
+//       settingRegistry,
+//       FACTORY,
+//       PANEL_SETTINGS,
+//       translator
+//     );
+//   }
 
-  const factory = new NotebookWidgetFactory({
-    name: FACTORY,
-    fileTypes: ['notebook'],
-    modelName: 'notebook',
-    defaultFor: ['notebook'],
-    preferKernel: preferKernelValue,
-    canStartKernel: true,
-    rendermime,
-    contentFactory,
-    editorConfig: StaticNotebook.defaultEditorConfig,
-    notebookConfig: StaticNotebook.defaultNotebookConfig,
-    mimeTypeService: editorServices.mimeTypeService,
-    sessionDialogs: sessionContextDialogs,
-    toolbarFactory,
-    translator: translator
-  });
-  app.docRegistry.addWidgetFactory(factory);
-  return factory;
-}
+//   const factory = new NotebookWidgetFactory({
+//     name: FACTORY,
+//     fileTypes: ['notebook'],
+//     modelName: 'notebook',
+//     defaultFor: ['notebook'],
+//     preferKernel: preferKernelValue,
+//     canStartKernel: true,
+//     rendermime,
+//     contentFactory,
+//     editorConfig: StaticNotebook.defaultEditorConfig,
+//     notebookConfig: StaticNotebook.defaultNotebookConfig,
+//     mimeTypeService: editorServices.mimeTypeService,
+//     sessionDialogs: sessionContextDialogs,
+//     toolbarFactory,
+//     translator: translator
+//   });
+//   app.docRegistry.addWidgetFactory(factory);
+//   return factory;
+// }
 
 /**
  * Activate the notebook handler extension.
@@ -500,7 +504,7 @@ function activateNotebookHandler(
   }
 
   const registry = app.docRegistry;
-  const modelFactory = new NotebookModelFactory({
+  const modelFactory = new DataflowNotebookModelFactory({
     disableDocumentWideUndoRedo:
       factory.notebookConfig.disableDocumentWideUndoRedo
   });
@@ -624,7 +628,8 @@ function activateNotebookHandler(
 
   // Utility function to create a new notebook.
   const createNew = (cwd: string, kernelName?: string) => {
-    (factory as NotebookWidgetFactory).kernel = kernelName || "none";
+    // FIXME bring this back
+    // (factory as NotebookWidgetFactory).kernel = kernelName || "none";
     return commands
       .execute('docmanager:new-untitled', { path: cwd, type: 'notebook' })
       .then(model => {
