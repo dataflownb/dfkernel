@@ -4,7 +4,7 @@ import { ISessionContext } from '@jupyterlab/apputils';
 import { Kernel, KernelMessage } from "@jupyterlab/services";
 import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
-import { Widget } from "@lumino/widgets";
+import { Panel, Widget } from "@lumino/widgets";
 
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions) {
@@ -76,11 +76,10 @@ export class DataflowOutputArea extends OutputArea {
   };  
 
   protected createOutputItem(model: IOutputModel): Widget | null {
-    const panel = super.createOutputItem(model);
+    const panel = super.createOutputItem(model) as Panel;
     if (panel) {
       if (model.metadata['output_tag']) {
-        //@ts-ignore
-        const prompt = panel.widgets[0];
+        const prompt = panel.widgets[0] as DataflowOutputPrompt;
         prompt.outputTag = model.metadata['output_tag'] as string;
       }
     }
