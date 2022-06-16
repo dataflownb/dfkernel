@@ -7,8 +7,9 @@ import { JSONObject } from '@lumino/coreutils';
 import { Panel, Widget } from "@lumino/widgets";
 
 export class DataflowOutputArea extends OutputArea {
-  constructor(options: OutputArea.IOptions) {
+  constructor(options: OutputArea.IOptions, cellId: string) {
     super({contentFactory: DataflowOutputArea.defaultContentFactory, ...options});
+    this.cellId = cellId;
   }
 
   /**
@@ -51,11 +52,13 @@ export class DataflowOutputArea extends OutputArea {
         output = { ...msg.content, output_type: msgType };
         if (output.execution_count) {
           const cellId = output.execution_count.toString(16).padStart(8, '0');
+          console.log("Output Cell IDS:", {cellId, myCellId: this.cellId});
           if(msgType === 'stream') {
             delete output.execution_count;
           }
           if (cellId !== this.cellId) {
             if (DataflowOutputArea.cellIdWidgetMap) {
+              console.log("Calling other onIOPub")
               const cellWidget = DataflowOutputArea.cellIdWidgetMap[cellId];
               //@ts-ignore
               const outputArea = cellWidget._output;
@@ -165,7 +168,7 @@ export namespace DataflowOutputArea {
   /**
    * The default implementation of `IContentFactory`.
    */
-   export class DataflowContentFactory extends OutputArea.ContentFactory {
+   export class ContentFactory extends OutputArea.ContentFactory {
     /**
      * Create the output prompt for the widget.
      */
@@ -174,5 +177,5 @@ export namespace DataflowOutputArea {
     }
   }
 
-  export const defaultContentFactory = new DataflowContentFactory();
+  export const defaultContentFactory = new ContentFactory();
 }

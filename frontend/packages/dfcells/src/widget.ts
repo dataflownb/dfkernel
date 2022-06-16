@@ -1,25 +1,95 @@
 import { Kernel, KernelMessage } from "@jupyterlab/services";
 import { Cell, CodeCell, MarkdownCell, AttachmentsCell, RawCell, ICellModel, IAttachmentsCellModel, IInputPrompt } from "@jupyterlab/cells";
-import { DataflowInputPrompt } from "./inputarea";
+import { DataflowInputArea, DataflowInputPrompt } from "./inputarea";
 import { IOutputPrompt } from "@jupyterlab/outputarea";
 import { DataflowOutputArea, DataflowOutputPrompt } from "@dfnotebook/dfoutputarea";
 import { IChangedArgs } from "@jupyterlab/coreutils";
 import { ISessionContext } from "@jupyterlab/apputils";
 import { JSONObject } from "@lumino/coreutils";
+import { Panel } from "@lumino/widgets";
 
-// FIXME need base cell to redo it's input prompt to match dataflow
-// does not use content factory :(
+/**
+ * The CSS class added to the cell input area.
+ */
+const CELL_INPUT_AREA_CLASS = 'jp-Cell-inputArea';
 
-function setPromptModel(cell: Cell) {
+ /**
+ * The CSS class added to the cell output area.
+ */
+const CELL_OUTPUT_AREA_CLASS = 'jp-Cell-outputArea';
+
+function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Cell.IOptions<T>) {
+  console.log("CALLING SET INPUT AREA");
+  // FIXME may be able to get panel via (this.layout as PanelLayout).widgets?
+  //@ts-expect-error
+  const panel = cell._inputWrapper as Panel;
+  const input = cell.inputArea;
+
+  // find the input area widget
+  const { id } = input;
+  let input_idx = -1;
+  panel.widgets.forEach((widget, idx) => {
+    if (widget.id === id) { input_idx = idx; }
+  });
+
+  const dfInput = new DataflowInputArea({
+    model: cell.model,
+    contentFactory: cell.contentFactory,
+    updateOnShow: options.updateEditorOnShow,
+    placeholder: options.placeholder
+  })
+  dfInput.addClass(CELL_INPUT_AREA_CLASS);
+
+  panel.insertWidget(input_idx, dfInput);
+  input.dispose()
+  //@ts-expect-error
+  cell._input = dfInput;
+  console.log("DONE SETTING INPUT AREA");
+}
+
+function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
+  //@ts-expect-error
+  const panel = cell._outputWrapper as Panel;
+  const output = cell.outputArea;
+
+  // find the output area widget
+  const { id } = output;
+  let output_idx = -1;
+  panel.widgets.forEach((widget, idx) => {
+    if (widget.id === id) { output_idx = idx; }
+  });
+
+  const dfOutput = new DataflowOutputArea({
+    model: cell.model.outputs,
+    rendermime: options.rendermime,
+    contentFactory: cell.contentFactory,
+    maxNumberOutputs: options.maxNumberOutputs
+  }, 
+  // FIXME move this to a function to unify with the code below and in dfnotebook/actions.tsx  
+  cell.model.id.replace(/-/g, '').substring(0, 8));
+
+  dfOutput.addClass(CELL_OUTPUT_AREA_CLASS);
+
+  output.outputLengthChanged.disconnect(
     //@ts-expect-error
-    (cell._input.prompt as DataflowInputPrompt).model = cell.model;
+    cell._outputLengthHandler,
+    cell
+  );
+  //@ts-expect-error
+  dfOutput.outputLengthChanged.connect(cell._outputLengthHandler, cell);  
+
+  panel.insertWidget(output_idx, dfOutput);
+  output.dispose();
+  //@ts-expect-error
+  cell._output = dfOutput;
 }
 
 export class DataflowCell<T extends ICellModel = ICellModel> extends Cell<T> {
     constructor(options: Cell.IOptions<T>) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setPromptModel(this);
+        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
+
 }
 
 export namespace DataflowCell {
@@ -43,33 +113,35 @@ export namespace DataflowCell {
 export class DataflowMarkdownCell extends MarkdownCell {
     constructor(options: MarkdownCell.IOptions) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setPromptModel(this);
+        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
 }
 
 export class DataflowRawCell extends RawCell {
     constructor(options: RawCell.IOptions) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setPromptModel(this);
+        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
 }
 
 export abstract class DataflowAttachmentsCell<T extends IAttachmentsCellModel> extends AttachmentsCell<T> {
     constructor(options: Cell.IOptions<T>) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setPromptModel(this);
+        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
 }
 
 export class DataflowCodeCell extends CodeCell {
     constructor(options: CodeCell.IOptions) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setPromptModel(this);
-        (this.outputArea as DataflowOutputArea).cellId = this.model.id.replace(/-/g, '').substring(0, 8);
+        console.log("CREATING DATAFLOW CODE CELL", {contentFactory: DataflowCell.defaultContentFactory, ...options})
+        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+        setOutputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
 
     public setPromptToId() {
-        this.setPrompt(`${this.model.id.substring(0, 8) || ''}`);
+      // FIXME move this to a function to unify with the code in dfnotebook/actions.tsx
+      this.setPrompt(`${this.model.id.replace(/-/g, '').substring(0, 8) || ''}`);
     }
 
     initializeState(): this {

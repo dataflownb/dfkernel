@@ -11,21 +11,15 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 import {
-  createToolbarFactory,
   Dialog,
   ICommandPalette,
   InputDialog,
   ISessionContextDialogs,
-  IToolbarWidgetRegistry,
   sessionContextDialogs,
   showDialog,
-  Toolbar
 } from '@jupyterlab/apputils';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
-import { PageConfig } from '@jupyterlab/coreutils';
-import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import {
@@ -38,14 +32,7 @@ import {
   IViewMenu
 } from '@jupyterlab/mainmenu';
 import * as nbformat from '@jupyterlab/nbformat';
-
-
 import {
-  DataflowNotebookModelFactory,
-  DataflowNotebookPanel,
-} from '@dfnotebook/dfnotebook';
-import {
-  ExecutionIndicator,
   INotebookTracker,
   INotebookWidgetFactory,
   Notebook,
@@ -53,16 +40,12 @@ import {
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  ToolbarItems
-} from '@jupyterlab/notebook'
-import {
-  NotebookActions,
-} from '@dfnotebook/dfnotebook';
+  NotebookActions
+} from '@jupyterlab/notebook';
 import {
   IObservableList,
   IObservableUndoableList
 } from '@jupyterlab/observables';
-import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 //import { ServiceManager } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
@@ -88,6 +71,12 @@ import {
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
 import { Panel } from '@lumino/widgets';
+
+import {
+  DataflowNotebookModelFactory,
+  DataflowNotebookPanel,
+  DataflowNotebookActions
+} from '@dfnotebook/dfnotebook';
 
 /**
  * The command IDs used by the notebook plugin.
@@ -259,11 +248,11 @@ namespace CommandIDs {
 const FACTORY = 'Notebook';
 
 
-/**
- * Setting Id storing the customized toolbar definition.
- */
-//FIXME: Change to dfnotebook?
-const PANEL_SETTINGS = '@dfnotebook/dfnotebook-extension:panel';
+// /**
+//  * Setting Id storing the customized toolbar definition.
+//  */
+// //FIXME: Change to dfnotebook?
+// const PANEL_SETTINGS = '@dfnotebook/dfnotebook-extension:panel';
 
 /**
  * The id to use on the style tag for the side by side margins.
@@ -300,6 +289,7 @@ const factory: JupyterFrontEndPlugin<NotebookPanel.IContentFactory> = {
   autoStart: true,
   activate: (app: JupyterFrontEnd, editorServices: IEditorServices) => {
     const editorFactory = editorServices.factoryService.newInlineEditor;
+    console.log("CREATING DATAFLOW PANEL FACTORY");
     return new DataflowNotebookPanel.ContentFactory({ editorFactory });
   }
 };
@@ -513,6 +503,7 @@ function activateNotebookHandler(
       factory.notebookConfig.disableDocumentWideUndoRedo
   });
   registry.addModelFactory(modelFactory);
+  console.log("Notebook model factory:", registry.getModelFactory('notebook'));
 
   addCommands(app, tracker, translator, sessionDialogs);
 
@@ -728,7 +719,7 @@ function getCurrent(
   if (activate && widget) {
     shell.activateById(widget.id);
   }
-  return widget as unknown as NotebookPanel;
+  return widget;
   // FIXME as unknown
   //return tracker as unknown as INotebookTracker;
 }
@@ -761,11 +752,11 @@ function addCommands(
 
 
   const isEnabled = (): boolean => {
-    return Private.isEnabled(shell, tracker as unknown as INotebookTracker);
+    return Private.isEnabled(shell, tracker);
   };
 
   const isEnabledAndSingleSelected = (): boolean => {
-    return Private.isEnabledAndSingleSelected(shell, tracker as unknown as INotebookTracker);
+    return Private.isEnabledAndSingleSelected(shell, tracker);
   };
 
   /**
@@ -789,12 +780,11 @@ function addCommands(
 
   const refreshCellCollapsed = (notebook: Notebook): void => {
     for (const cell of notebook.widgets) {
-      if (cell instanceof MarkdownCell && (cell as unknown as MarkdownCell).headingCollapsed) {
-        NotebookActions.setHeadingCollapse(cell as unknown as MarkdownCell, true, notebook as unknown as StaticNotebook);
+      if (cell instanceof MarkdownCell && (cell as MarkdownCell).headingCollapsed) {
+        NotebookActions.setHeadingCollapse(cell as MarkdownCell, true, notebook as unknown as StaticNotebook);
       }
       if (cell.model.id === notebook.activeCell?.model?.id) {
-      // @ts-ignore
-        NotebookActions.expandParent(cell as unknown as ICellModel, notebook);
+        NotebookActions.expandParent(cell, notebook);
       }
     }
   };
@@ -832,12 +822,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.runAndAdvance, {
     label: trans.__('Run Selected Cells'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.runAndAdvance(content, context.sessionContext);
+        return DataflowNotebookActions.runAndAdvance(content, context.sessionContext);
       }
     },
     isEnabled
@@ -845,12 +835,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.run, {
     label: trans.__("Run Selected Cells and Don't Advance"),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.run(content, context.sessionContext);
+        return DataflowNotebookActions.run(content, context.sessionContext);
       }
     },
     isEnabled
@@ -858,12 +848,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.runAndInsert, {
     label: trans.__('Run Selected Cells and Insert Below'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.runAndInsert(content, context.sessionContext);
+        return DataflowNotebookActions.runAndInsert(content, context.sessionContext);
       }
     },
     isEnabled
@@ -871,12 +861,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.runAll, {
     label: trans.__('Run All Cells'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.runAll(content, context.sessionContext);
+        return DataflowNotebookActions.runAll(content, context.sessionContext);
       }
     },
     isEnabled
@@ -884,12 +874,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.runAllAbove, {
     label: trans.__('Run All Above Selected Cell'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.runAllAbove(content, context.sessionContext);
+        return DataflowNotebookActions.runAllAbove(content, context.sessionContext);
       }
     },
     isEnabled: () => {
@@ -904,12 +894,12 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.runAllBelow, {
     label: trans.__('Run Selected Cell and All Below'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content } = current;
 
-        return NotebookActions.runAllBelow(content, context.sessionContext);
+        return DataflowNotebookActions.runAllBelow(content, context.sessionContext);
       }
     },
     isEnabled: () => {
@@ -925,10 +915,10 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.renderAllMarkdown, {
     label: trans.__('Render All Markdown Cells'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
       if (current) {
         const { context, content } = current;
-        return NotebookActions.renderAllMarkdown(
+        return DataflowNotebookActions.renderAllMarkdown(
           content,
           context.sessionContext
         );
@@ -1001,19 +991,19 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.restartAndRunToSelected, {
     label: trans.__('Restart Kernel and Run up to Selected Cell…'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
       if (current) {
         const { context, content } = current;
         return sessionDialogs!
           .restart(current.sessionContext, translator)
           .then(restarted => {
             if (restarted) {
-              void NotebookActions.runAllAbove(
+              void DataflowNotebookActions.runAllAbove(
                 content,
                 context.sessionContext
               ).then(executed => {
                 if (executed || content.activeCellIndex === 0) {
-                  void NotebookActions.run(content, context.sessionContext);
+                  void DataflowNotebookActions.run(content, context.sessionContext);
                 }
               });
             }
@@ -1025,7 +1015,7 @@ const isEnabledAndHeadingSelected = (): boolean => {
   commands.addCommand(CommandIDs.restartRunAll, {
     label: trans.__('Restart Kernel and Run All Cells…'),
     execute: args => {
-      const current = getCurrent(tracker as unknown as INotebookTracker, shell, args);
+      const current = getCurrent(tracker, shell, args);
 
       if (current) {
         const { context, content, sessionContext } = current;
@@ -1034,7 +1024,7 @@ const isEnabledAndHeadingSelected = (): boolean => {
           .restart(sessionContext, translator)
           .then(restarted => {
             if (restarted) {
-              void NotebookActions.runAll(content, context.sessionContext);
+              void DataflowNotebookActions.runAll(content, context.sessionContext);
             }
             return restarted;
           });

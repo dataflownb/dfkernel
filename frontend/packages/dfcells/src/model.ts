@@ -1,5 +1,6 @@
 import { CellModel, AttachmentsCellModel, RawCellModel, MarkdownCellModel, CodeCellModel } from "@jupyterlab/cells";
-import { JSONObject } from "@lumino/coreutils";
+// import { IOutputAreaModel } from "@jupyterlab/outputarea";
+// import { JSONObject } from "@lumino/coreutils";
 
 // type GConstructor<T = {}> = new (...args: any[]) => T;
 // //type GConstructor<T = {}> = new (options: CellModel.IOptions) => T;
@@ -21,9 +22,11 @@ import { JSONObject } from "@lumino/coreutils";
 // export { DataflowCellModel, DataflowCodeCellModel};
 
 function setId(model: CellModel) {
-    const metadata = model.modelDB.getValue('metadata') as JSONObject;
-    metadata['dfnotebook'] = {};
-    metadata['dfnotebook']['id'] = model.id;
+    // FIXME don't need this???
+    //
+    // const metadata = model.modelDB.getValue('metadata') as JSONObject;
+    // metadata['dfnotebook'] = {};
+    // metadata['dfnotebook']['id'] = model.id;
 }
 
 export class DataflowCellModel extends CellModel {
@@ -60,3 +63,22 @@ export class DataflowCodeCellModel extends CodeCellModel {
         setId(this);
     }
 }
+
+// export namespace DataflowCodeCellModel {
+//   /**
+//    * The default implementation of an `IContentFactory`.
+//    */
+//    export class ContentFactory extends CodeCellModel.ContentFactory {
+//     /**
+//      * Create an output area.
+//      */
+//     createOutputArea(options: IOutputAreaModel.IOptions): IOutputAreaModel {
+//       return new OutputAreaModel(options);
+//     }
+//   }
+
+//   /**
+//    * The shared `ContentFactory` instance.
+//    */
+//   export const defaultContentFactory = new ContentFactory();
+// }

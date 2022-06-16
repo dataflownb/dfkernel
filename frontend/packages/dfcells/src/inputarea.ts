@@ -19,7 +19,7 @@ export class DataflowInputArea extends InputArea {
 
 export namespace DataflowInputArea {
 
-    export class DataflowContentFactory extends InputArea.ContentFactory {
+    export class ContentFactory extends InputArea.ContentFactory {
         /**
          * Create an input prompt.
          */
@@ -28,7 +28,7 @@ export namespace DataflowInputArea {
         }
     }
 
-    export const defaultContentFactory = new DataflowContentFactory({});
+    export const defaultContentFactory = new ContentFactory({});
 
 }
 

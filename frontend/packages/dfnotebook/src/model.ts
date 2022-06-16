@@ -17,11 +17,13 @@ import {
   DataflowRawCellModel,
   DataflowMarkdownCellModel
 } from '@dfnotebook/dfcells';
+import { IModelDB } from '@jupyterlab/observables';
 
 
 export class DataflowNotebookModel extends NotebookModel {
   constructor(options: NotebookModel.IOptions = {}) {
-    super({contentFactory: DataflowNotebookModel.defaultContentFactory, ...options})
+    super({contentFactory: DataflowNotebookModel.defaultContentFactory, ...options});
+    console.log("CREATING DATAFLOW NOTEBOOK MODEL:", this.contentFactory);
   }
 }
 
@@ -36,7 +38,10 @@ export namespace DataflowNotebookModel {
     /*
      * FIXME: Add codeCellContentFactory default to DataflowCodeCellContentFactory??
      */
-
+    constructor(options: NotebookModel.ContentFactory.IOptions) {
+      super(options);
+      console.log("INITED DATAFLOW NOTEBOOK MODEL CONTENT FACTORY");
+    }
 
     /**
      * Create a new code cell.
@@ -58,6 +63,7 @@ export namespace DataflowNotebookModel {
         }
         options.modelDB = this.modelDB.view(options.id);
       }
+      console.log("CREATING CODE CELL MODEL", options);
       return new DataflowCodeCellModel(options);
     }
 
@@ -95,6 +101,16 @@ export namespace DataflowNotebookModel {
         options.modelDB = this.modelDB.view(options.id);
       }
       return new DataflowRawCellModel(options);
+    }
+
+    /**
+     * Clone the content factory with a new IModelDB.
+     */
+     clone(modelDB: IModelDB): ContentFactory {
+      return new ContentFactory({
+        modelDB: modelDB,
+        codeCellContentFactory: this.codeCellContentFactory
+      });
     }
   }
 

@@ -10,13 +10,13 @@ export namespace DataflowNotebookPanel {
   /**
    * The default implementation of an `IContentFactory`.
    */
-  export class ContentFactory
-    extends Notebook.ContentFactory
-    implements NotebookPanel.IContentFactory {
+  export class ContentFactory extends DataflowNotebook.ContentFactory implements NotebookPanel.IContentFactory
+{
     /**
      * Create a new content area for the panel.
      */
-    createNotebook(options: Notebook.IOptions): Notebook {
+    createNotebook(options: Notebook.IOptions): Notebook {  
+      console.log("CALLING CREATE DATAFLOW NOTEBOOK!", options);
       return new DataflowNotebook(options);
     }
   }

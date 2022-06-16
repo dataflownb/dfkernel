@@ -2,7 +2,6 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  Cell,
   CodeCell,
   MarkdownCell,
   RawCell,
@@ -10,11 +9,11 @@ import {
 import { StaticNotebook, Notebook } from '@jupyterlab/notebook';
 
 import {
+  DataflowCell,
   DataflowCodeCell,
   DataflowMarkdownCell,
   DataflowRawCell
 } from '@dfnotebook/dfcells';
-
 
 /**
  * The namespace for the `StaticNotebook` class statics.
@@ -24,9 +23,7 @@ export namespace DataflowStaticNotebook {
   /**
    * The default implementation of an `IContentFactory`.
    */
-  export class ContentFactory
-    extends Cell.ContentFactory
-    implements StaticNotebook.IContentFactory {
+   export class ContentFactory extends DataflowCell.ContentFactory implements StaticNotebook.IContentFactory {
     /**
      * Create a new code cell widget.
      *
@@ -41,6 +38,7 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
+      console.log("CREATING CODE CELL");
       return new DataflowCodeCell(options).initializeState();
     }
 
@@ -58,6 +56,7 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
+      console.log("CREATING MARKDOWN CELL");
       return new DataflowMarkdownCell(options).initializeState();
     }
 
@@ -72,6 +71,7 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
+      console.log("CREATING RAW CELL");
       return new DataflowRawCell(options).initializeState();
     }
   }
@@ -85,6 +85,8 @@ export namespace DataflowStaticNotebook {
 export class DataflowNotebook extends Notebook {
   constructor(options: Notebook.IOptions) {
     super({contentFactory: DataflowNotebook.defaultContentFactory, ...options});
+    console.log("CREATING DATAFLOW NOTEBOOK", options);
+    console.log("CONTENT FACTORY AFTER SUPER:", this.contentFactory);
   }
 }
 
