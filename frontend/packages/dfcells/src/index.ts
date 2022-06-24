@@ -10,4 +10,3 @@
 export * from './inputarea';
 export * from './model';
 export * from './widget';
-export * from "@jupyterlab/cells";

@@ -5,5 +5,4 @@
  * @module dfoutputarea
  */
 
-export { DataflowOutputArea, DataflowOutputPrompt } from './widget';
-export * from "@jupyterlab/outputarea";
+export * from './widget';

@@ -6,11 +6,9 @@
  */
 
 export * from './actions';
-// export * from './default-toolbar';
 export * from './model';
 export * from './modelfactory';
 export * from './panel';
 export * from './widget';
 export * from './tokens';
 export * from './widgetfactory';
-// export * from "@jupyterlab/notebook";
