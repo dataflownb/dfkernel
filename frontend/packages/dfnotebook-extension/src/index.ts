@@ -742,9 +742,10 @@ function activateNotebookHandler(
   const tracker = new NotebookTracker({ namespace: 'notebook' });
 
   // Fetch settings if possible.
+  const jlabTrackerId = '@jupyterlab/notebook-extension:tracker';
   const fetchSettings = settingRegistry
-    ? settingRegistry.load(trackerPlugin.id)
-    : Promise.reject(new Error(`No setting registry for ${trackerPlugin.id}`));
+    ? settingRegistry.load(jlabTrackerId)
+    : Promise.reject(new Error(`No setting registry for ${jlabTrackerId}`));
 
   fetchSettings
     .then(settings => {
