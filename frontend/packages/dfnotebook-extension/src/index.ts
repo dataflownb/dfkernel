@@ -1159,8 +1159,11 @@ const isEnabledAndHeadingSelected = (): boolean => {
 
       if (current) {
         const { context, content } = current;
-
-        return DataflowNotebookActions.runAll(content, context.sessionContext);
+        if (content instanceof DataflowNotebook) {
+          return DataflowNotebookActions.runAll(content, context.sessionContext);
+        } else {
+          return NotebookActions.runAll(content, context.sessionContext);
+        }
       }
     },
     isEnabled
@@ -2301,16 +2304,29 @@ function populateMenus(
       trans.__('Restart the kernel, then re-run the whole notebook'),
     run: current => {
       const { context, content } = current;
-      return NotebookActions.runAndAdvance(
-        content,
-        context.sessionContext
-      ).then(() => void 0);
+      if (content instanceof DataflowNotebook) {
+        return DataflowNotebookActions.runAndAdvance(
+          content,
+          context.sessionContext
+        ).then(() => void 0);
+      } else {
+        return NotebookActions.runAndAdvance(
+          content,
+          context.sessionContext
+        ).then(() => void 0);
+      }
     },
     runAll: current => {
       const { context, content } = current;
-      return NotebookActions.runAll(content, context.sessionContext).then(
-        () => void 0
-      );
+      if (content instanceof DataflowNotebook) {
+        return DataflowNotebookActions.runAll(content, context.sessionContext).then(
+          () => void 0
+        );
+      } else {
+        return NotebookActions.runAll(content, context.sessionContext).then(
+          () => void 0
+        );
+      }
     },
     restartAndRunAll: current => {
       const { context, content } = current;
@@ -2318,7 +2334,11 @@ function populateMenus(
         .restart(context.sessionContext, translator)
         .then(restarted => {
           if (restarted) {
-            void NotebookActions.runAll(content, context.sessionContext);
+            if (content instanceof DataflowNotebook) {
+              void DataflowNotebookActions.runAll(content, context.sessionContext);
+            } else {
+              void NotebookActions.runAll(content, context.sessionContext);
+            }
           }
           return restarted;
         });
