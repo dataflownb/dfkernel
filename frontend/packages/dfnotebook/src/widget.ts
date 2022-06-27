@@ -11,8 +11,11 @@ import { StaticNotebook, Notebook } from '@jupyterlab/notebook';
 import {
   DataflowCell,
   DataflowCodeCell,
+  DataflowCodeCellModel,
   DataflowMarkdownCell,
-  DataflowRawCell
+  DataflowMarkdownCellModel,
+  DataflowRawCell,
+  DataflowRawCellModel  
 } from '@dfnotebook/dfcells';
 
 /**
@@ -35,6 +38,11 @@ export namespace DataflowStaticNotebook {
       options: CodeCell.IOptions,
       parent: StaticNotebook
     ): CodeCell {
+      if (! (options.model instanceof DataflowCodeCellModel)) {
+        options.contentFactory = StaticNotebook.defaultContentFactory;
+        return new CodeCell(options).initializeState();
+      }
+      
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
@@ -52,6 +60,11 @@ export namespace DataflowStaticNotebook {
       options: MarkdownCell.IOptions,
       parent: StaticNotebook
     ): MarkdownCell {
+      if (! (options.model instanceof DataflowMarkdownCellModel)) {
+        options.contentFactory = StaticNotebook.defaultContentFactory;
+        return new MarkdownCell(options).initializeState()
+      }
+
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
@@ -66,6 +79,11 @@ export namespace DataflowStaticNotebook {
      * notebook content factory is used.
      */
     createRawCell(options: RawCell.IOptions, parent: StaticNotebook): RawCell {
+      if (! (options.model instanceof DataflowRawCellModel)) {
+        options.contentFactory = StaticNotebook.defaultContentFactory;
+        return new RawCell(options).initializeState()
+      }
+
       if (!options.contentFactory) {
         options.contentFactory = this;
       }

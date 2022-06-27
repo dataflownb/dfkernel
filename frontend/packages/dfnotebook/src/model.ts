@@ -9,7 +9,7 @@ import {
   IRawCellModel
 } from '@jupyterlab/cells';
 import { NotebookModel } from '@jupyterlab/notebook';
-// import * as nbformat from '@jupyterlab/nbformat';
+import * as nbformat from '@jupyterlab/nbformat';
 import { UUID } from '@lumino/coreutils';
 
 import {
@@ -31,6 +31,18 @@ export class DataflowNotebookModel extends NotebookModel {
    get name(): string {
     return 'dfnotebook';
   }
+
+  fromJSON(value: nbformat.INotebookContent): void {
+    let isDataflow = true;
+    if (value.metadata?.kernelspec?.name && value.metadata.kernelspec.name != 'dfpython3') {
+      //@ts-expect-error
+      this.contentFactory = NotebookModel.defaultContentFactory;
+      isDataflow = false;
+    }
+    super.fromJSON(value);
+    this.metadata.set('dfnotebook', isDataflow);
+  }
+
 }
 
 /**
