@@ -1,0 +1,25 @@
+{
+  "jupyter.lab.setting-icon": "ui-components:notebook",
+  "jupyter.lab.setting-icon-label": "Notebook",
+  "jupyter.lab.menus": {
+    "main": [
+      {
+        "id": "jp-mainmenu-edit",
+        "items": [
+          {"command": "notebook:tag-cell",
+            "rank": 9
+          }
+        ]
+      }
+    ],
+    "context": [
+      {
+        "command": "notebook:tag-cell",
+        "selector": ".jp-Notebook .jp-Cell",
+        "rank": 7
+      }
+    ]
+  },
+  "additionalProperties": false,
+  "type": "object"
+}

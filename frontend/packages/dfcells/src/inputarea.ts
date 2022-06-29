@@ -4,16 +4,23 @@ export class DataflowInputArea extends InputArea {
     // kind of annoying as model still needs to be set later
     constructor(options: InputArea.IOptions) {
         super({contentFactory: DataflowInputArea.defaultContentFactory, ...options});
+        (this.prompt as DataflowInputPrompt).model = this.model;
     }
 
-    get prompt() {
+    get prompt() : DataflowInputPrompt {
         //@ts-ignore
-        return super._prompt;
+        return this._prompt;
     }
 
-    set prompt(value: IInputPrompt) {
+    set prompt(value: DataflowInputPrompt) {
+        (value as DataflowInputPrompt).model = this.model;
         //@ts-ignore
-        super._prompt = prompt
+        this._prompt = value
+    }
+
+    public addTag(value: string | null) {
+        this.model?.metadata.set('tag', value);
+        this.prompt.updatePromptNode(this.prompt.executionCount);
     }
 }
 
@@ -23,8 +30,8 @@ export namespace DataflowInputArea {
         /**
          * Create an input prompt.
          */
-        createDataflowInputPrompt(model: ICellModel | null): IInputPrompt {
-            return new DataflowInputPrompt(model);
+        createInputPrompt(): IInputPrompt {
+            return new DataflowInputPrompt();
         }
     }
 
@@ -32,16 +39,15 @@ export namespace DataflowInputArea {
 
 }
 
-
 export class DataflowInputPrompt extends InputPrompt {
     constructor(model: ICellModel | null=null) {
         super();
-        this._model = model;
+        this.model = model;
     }
 
     public updatePromptNode(value: string | null) {
         if (this.model?.metadata.get('tag')) {
-            this.node.textContent = `[${this.model.metadata.get('tag')}]`;
+            this.node.textContent = `[${this.model.metadata.get('tag')}]:`;
         } else if (value === null) {
             this.node.textContent = ' ';
         } else {
@@ -67,12 +73,6 @@ export class DataflowInputPrompt extends InputPrompt {
     set model(value: ICellModel | null) {
         this._model = value;
         if (this._model) {
-            this.node.addEventListener('mouseup', event => {
-                event.stopPropagation();
-                const value = prompt("Tag this cell:", "");
-                this._model?.metadata.set('tag', value);
-                this.node.textContent = `[${value || ' '}]:`;
-            })
             this.updatePromptNode(this.executionCount);    
         }
     }
