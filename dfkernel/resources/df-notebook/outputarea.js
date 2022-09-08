@@ -1,7 +1,8 @@
 define(['jquery',
+        'base/js/namespace',
         'notebook/js/outputarea',
         'base/js/utils'
-], function($, outputarea, utils) {
+], function($, Jupyter,outputarea, utils) {
     "use strict";
 
     var OutputArea = outputarea.OutputArea;
@@ -48,6 +49,42 @@ define(['jquery',
     // only change is to pass the metadata to the prompt function!
     OutputArea.prototype.append_execute_result = function (json) {
         var n = json.execution_count || ' ';
+        var codecell = Jupyter.notebook.get_code_cell(json.execution_count.toString(16));
+        if(codecell !== null && this != codecell.output_area){
+            codecell.set_icon_status('success');
+            var replace = null;
+            codecell.output_area.outputs.map(function (out,idx){
+                if (out.metadata.output_tag == json.metadata.output_tag){
+                    replace = idx;
+            }
+            });
+            if(replace !== null) {
+                var toinsert = codecell.output_area.create_output_area();
+                codecell.output_area._record_display_id(json, toinsert);
+                if (codecell.output_area.prompt_area) {
+                    toinsert.find('div.prompt')
+                            .addClass('output_prompt')
+                            .empty()
+                            .append(OutputArea.output_prompt_function(n, json.metadata));
+                }
+                var inserted = codecell.output_area.append_mime_type(json, toinsert);
+                if (inserted) {
+                    inserted.addClass('output_result');
+                }
+                codecell.output_area._safe_append(json,codecell.output_area.elements[replace]);
+
+                // If we just output latex, typeset it.
+                if ((json.data[MIME_LATEX] !== undefined) ||
+                    (json.data[MIME_HTML] !== undefined) ||
+                    (json.data[MIME_MARKDOWN] !== undefined)) {
+                    codecell.output_area.typeset();
+                }
+            }
+            else {
+                codecell.output_area.append_execute_result(json);
+            }
+            return;
+        }
         var toinsert = this.create_output_area();
         this._record_display_id(json, toinsert);
         if (this.prompt_area) {
