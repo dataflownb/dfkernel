@@ -50,7 +50,7 @@ define(['jquery',
     OutputArea.prototype.append_execute_result = function (json) {
         var n = json.execution_count || ' ';
         var codecell = Jupyter.notebook.get_code_cell(json.execution_count.toString(16));
-        if(codecell !== null && this != codecell.output_area){
+        if(codecell !== null){
             codecell.set_icon_status('success');
             var replace = null;
             codecell.output_area.outputs.map(function (out,idx){
@@ -79,12 +79,17 @@ define(['jquery',
                     (json.data[MIME_MARKDOWN] !== undefined)) {
                     codecell.output_area.typeset();
                 }
+                return;
             }
             else {
-                codecell.output_area.append_execute_result(json);
+                if(this != codecell.output_area)
+                {
+                    codecell.output_area.append_execute_result(json);
+                    return;
+                }
             }
-            return;
         }
+        this.clear_output();
         var toinsert = this.create_output_area();
         this._record_display_id(json, toinsert);
         if (this.prompt_area) {
@@ -97,7 +102,7 @@ define(['jquery',
         if (inserted) {
             inserted.addClass('output_result');
         }
-        this._safe_append(toinsert);
+        this._safe_append(toinsert)
         // If we just output latex, typeset it.
         if ((json.data[MIME_LATEX] !== undefined) ||
             (json.data[MIME_HTML] !== undefined) ||
