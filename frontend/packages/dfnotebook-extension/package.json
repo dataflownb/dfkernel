@@ -65,7 +65,7 @@
     "@dfnotebook/dfnotebook": "^0.1.0-beta",
     "@jupyterlab/application": "^3.4.2",
     "@jupyterlab/apputils": "^3.4.2",
-    "@jupyterlab/cell-toolbar": "^3.4.2",
+    "@jupyterlab/cell-toolbar": "3.4.2",
     "@jupyterlab/cells": "^3.4.2",
     "@jupyterlab/codeeditor": "^3.4.2",
     "@jupyterlab/coreutils": "^5.4.2",
