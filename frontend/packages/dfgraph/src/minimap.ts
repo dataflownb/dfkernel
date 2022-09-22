@@ -25,7 +25,7 @@ export class Minimap {
             this.was_created = false;
             this.radius = 3;
             this.offset_x = 15;
-            this.svg_offset_x = 18;
+            this.svg_offset_x = 28;
             this.svg_offset_y = 50;
             this.text_offset = 40;
             this.cells = {};
@@ -39,10 +39,12 @@ export class Minimap {
     /** @method resets all paths **/
     reset = function(){
         this.svg.selectAll('.active').classed('active',false);
+        this.svg.selectAll('.imm').classed('imm',false);
         this.svg.selectAll('.active_node').classed('active_node',false);
         this.svg.selectAll('.move_left').classed('move_left',false);
         this.svg.selectAll('.move_right').classed('move_right',false);
         this.svg.selectAll('.hidden').classed('hidden',false);
+        this.svg.selectAll('.gray').classed('gray',false);
         this.svg.selectAll('.joining').remove();
    }
 
@@ -55,10 +57,47 @@ export class Minimap {
         parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source.attr('cy') + 'v '+y_val).attr('stroke-width',2);
     }
 
+    /** @method generates dependencies that aren't intermediates **/
+     genDeps = function(immups:any,immdowns:any){
+      console.log(immups,immdowns);
+      let that = this;
+      let ups:any = [];
+      let downs:any = [];
+      let currups = immups;
+      let currdowns = immdowns;
+      while(currups.length > 0 || currdowns.length > 0){
+        let newups:any = [];
+        let newdowns:any = [];
+        that.edges.map(function(edge:any){
+                  console.log(edge);
+                  if(currups.includes(edge['destination'])){
+                    newups.push(edge['source']);
+                    ups.push(edge['source']);
+                  }
+                  if(currdowns.includes(edge['source'])){
+                    newdowns.push(edge['destination']);
+                    downs.push(edge['destination']);
+                  }
+
+                  });
+        currups = newups;
+        currdowns = newdowns;
+      }
+      ups.map(function(up:any){
+        d3.select('#node'+up).classed('move_right',true).classed('active',true).classed('gray',true);
+      })
+      downs.map(function(down:any){
+       d3.select('#node'+down).classed('move_left',true).classed('active',true).classed('gray',true);
+      })
+    }
+
+
    /** @method activates the paths based on click **/
     elementActivate = function(parent:any,node:any)
     {
        let that = this;
+       let ups:any = [];
+       let downs:any = [];
        if(!node.classed('active_node'))
        {
         this.reset();
@@ -67,20 +106,22 @@ export class Minimap {
         let active_id = parent.attr('id');
         active_id = active_id.substring(4,active_id.length);
         d3.select('#text'+active_id).classed('active',true);
+
         this.edges.map(function(edge:any)
         {
           let source = edge['source'];
           let destination = edge['destination'];
           if(source == active_id){
-
-          let destination_node = d3.select('#node'+destination).classed('move_left',true).classed('active',true);
+            downs.push(destination);
+          let destination_node = d3.select('#node'+destination).classed('move_left',true).classed('active',true).classed('imm',true);
           let dest = destination_node.select('circle');
             that.makePaths(node,dest,parent,true);
 
             destination_node.selectAll('path.source').classed('hidden',true);
           }
           if(destination == active_id){
-            let source_node = d3.select('#node'+source).classed('move_right',true).classed('active',true);
+              ups.push(source);
+            let source_node = d3.select('#node'+source).classed('move_right',true).classed('active',true).classed('imm',true);
             let src = source_node.select('circle');
             that.makePaths(src,node,parent,false);
 
@@ -88,6 +129,8 @@ export class Minimap {
           }
         })
        }
+       that.genDeps(ups,downs);
+       this.svg.selectAll('g').filter(function(a:any){ return (!(this.classList.contains('active')) && this.parentElement.nodeName == "svg");}).selectAll('path').classed('hidden',true);
     }
 
     /** @method takes in a string id input and activates based on that ID*/
@@ -258,6 +301,7 @@ export class Minimap {
         let edges = this.dfgraph.downlinks;
         this.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
     }
+
 
 
     /** @method creates the starting environment for first time setup*/
