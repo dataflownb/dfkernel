@@ -1,7 +1,5 @@
 """Base class for notebook tests."""
 
-from __future__ import print_function
-
 from binascii import hexlify
 from contextlib import contextmanager
 import errno
@@ -13,10 +11,7 @@ from unittest import TestCase
 
 pjoin = os.path.join
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch #py2
+from unittest.mock import patch
 
 import requests
 from tornado.ioloop import IOLoop
@@ -24,7 +19,7 @@ import zmq
 
 import jupyter_core.paths
 from traitlets.config import Config
-from notebook.notebookapp import NotebookApp
+from notebook.notebookapp import NotebookApp, urlencode_unix_socket
 from notebook.utils import url_path_join
 from ipython_genutils.tempdir import TemporaryDirectory
 
@@ -38,7 +33,6 @@ class TimeoutError(Exception):
 
 class NotebookTestBase(TestCase):
     """A base class for tests that need a running notebook.
-
     This create some empty config and runtime directories
     and then starts the notebook server with them.
     """
@@ -55,10 +49,13 @@ class NotebookTestBase(TestCase):
         url = cls.base_url() + 'api/contents'
         for _ in range(int(MAX_WAITTIME/POLL_INTERVAL)):
             try:
-                requests.get(url)
+                cls.fetch_url(url)
+            except ModuleNotFoundError as error:
+                # Errors that should be immediately thrown back to caller
+                raise error
             except Exception as e:
                 if not cls.notebook_thread.is_alive():
-                    raise RuntimeError("The notebook server failed to start")
+                    raise RuntimeError("The notebook server failed to start") from e
                 time.sleep(POLL_INTERVAL)
             else:
                 return
@@ -71,7 +68,7 @@ class NotebookTestBase(TestCase):
         cls.notebook_thread.join(timeout=MAX_WAITTIME)
         if cls.notebook_thread.is_alive():
             raise TimeoutError("Undead notebook server")
-    
+
     @classmethod
     def auth_headers(cls):
         headers = {}
@@ -79,10 +76,14 @@ class NotebookTestBase(TestCase):
             headers['Authorization'] = 'token %s' % cls.token
         return headers
 
+    @staticmethod
+    def fetch_url(url):
+        return requests.get(url)
+
     @classmethod
     def request(cls, verb, path, **kwargs):
         """Send a request to my server
-        
+
         with authentication and everything.
         """
         headers = kwargs.setdefault('headers', {})
@@ -91,7 +92,27 @@ class NotebookTestBase(TestCase):
             url_path_join(cls.base_url(), path),
             **kwargs)
         return response
-    
+
+    @classmethod
+    def get_patch_env(cls):
+        return {
+            'HOME': cls.home_dir,
+            'PYTHONPATH': os.pathsep.join(sys.path),
+            'IPYTHONDIR': pjoin(cls.home_dir, '.ipython'),
+            'JUPYTER_NO_CONFIG': '1', # needed in the future
+            'JUPYTER_CONFIG_DIR' : cls.config_dir,
+            'JUPYTER_DATA_DIR' : cls.data_dir,
+            'JUPYTER_RUNTIME_DIR': cls.runtime_dir,
+        }
+
+    @classmethod
+    def get_argv(cls):
+        return []
+
+    @classmethod
+    def get_bind_args(cls):
+        return dict(port=cls.port)
+
     @classmethod
     def setup_class(cls):
         cls.tmp_dir = TemporaryDirectory()
@@ -103,28 +124,23 @@ class NotebookTestBase(TestCase):
                 if e.errno != errno.EEXIST:
                     raise
             return path
-        
+
         cls.home_dir = tmp('home')
         data_dir = cls.data_dir = tmp('data')
         config_dir = cls.config_dir = tmp('config')
         runtime_dir = cls.runtime_dir = tmp('runtime')
         cls.notebook_dir = tmp('notebooks')
-        cls.env_patch = patch.dict('os.environ', {
-            'HOME': cls.home_dir,
-            'PYTHONPATH': os.pathsep.join(sys.path),
-            'IPYTHONDIR': pjoin(cls.home_dir, '.dfpython'),
-            'JUPYTER_NO_CONFIG': '1', # needed in the future
-            'JUPYTER_CONFIG_DIR' : config_dir,
-            'JUPYTER_DATA_DIR' : data_dir,
-            'JUPYTER_RUNTIME_DIR': runtime_dir,
-        })
+        cls.env_patch = patch.dict('os.environ', cls.get_patch_env())
         cls.env_patch.start()
+        # Patch systemwide & user-wide data & config directories, to isolate
+        # the tests from oddities of the local setup. But leave Python env
+        # locations alone, so data files for e.g. nbconvert are accessible.
+        # If this isolation isn't sufficient, you may need to run the tests in
+        # a virtualenv or conda env.
         cls.path_patch = patch.multiple(
             jupyter_core.paths,
             SYSTEM_JUPYTER_PATH=[tmp('share', 'jupyter')],
-            ENV_JUPYTER_PATH=[tmp('env', 'share', 'jupyter')],
             SYSTEM_CONFIG_PATH=[tmp('etc', 'jupyter')],
-            ENV_CONFIG_PATH=[tmp('env', 'etc', 'jupyter')],
         )
         cls.path_patch.start()
 
@@ -135,34 +151,36 @@ class NotebookTestBase(TestCase):
 
         started = Event()
         def start_thread():
-            if 'asyncio' in sys.modules:
-                import asyncio
-                asyncio.set_event_loop(asyncio.new_event_loop())
-            app = cls.notebook = NotebookApp(
-                port=cls.port,
-                port_retries=0,
-                open_browser=False,
-                config_dir=cls.config_dir,
-                data_dir=cls.data_dir,
-                runtime_dir=cls.runtime_dir,
-                notebook_dir=cls.notebook_dir,
-                base_url=cls.url_prefix,
-                config=config,
-                allow_root=True,
-                token=cls.token,
-            )
-            # don't register signal handler during tests
-            app.init_signal = lambda : None
-            # clear log handlers and propagate to root for nose to capture it
-            # needs to be redone after initialize, which reconfigures logging
-            app.log.propagate = True
-            app.log.handlers = []
-            app.initialize(argv=[])
-            app.log.propagate = True
-            app.log.handlers = []
-            loop = IOLoop.current()
-            loop.add_callback(started.set)
             try:
+                bind_args = cls.get_bind_args()
+                app = cls.notebook = NotebookApp(
+                    port_retries=0,
+                    open_browser=False,
+                    config_dir=cls.config_dir,
+                    data_dir=cls.data_dir,
+                    runtime_dir=cls.runtime_dir,
+                    notebook_dir=cls.notebook_dir,
+                    base_url=cls.url_prefix,
+                    config=config,
+                    allow_root=True,
+                    token=cls.token,
+                    **bind_args
+                )
+                if 'asyncio' in sys.modules:
+                          app._init_asyncio_patch()
+                          import asyncio
+                          asyncio.set_event_loop(asyncio.new_event_loop())
+                # don't register signal handler during tests
+                app.init_signal = lambda : None
+                # clear log handlers and propagate to root for nose to capture it
+                # needs to be redone after initialize, which reconfigures logging
+                app.log.propagate = True
+                app.log.handlers = []
+                app.initialize(argv=cls.get_argv())
+                app.log.propagate = True
+                app.log.handlers = []
+                loop = IOLoop.current()
+                loop.add_callback(started.set)
                 app.start()
             finally:
                 # set the event, so failure to start doesn't cause a hang
@@ -195,6 +213,28 @@ class NotebookTestBase(TestCase):
     @classmethod
     def base_url(cls):
         return 'http://localhost:%i%s' % (cls.port, cls.url_prefix)
+
+
+class UNIXSocketNotebookTestBase(NotebookTestBase):
+    # Rely on `/tmp` to avoid any Linux socket length max buffer
+    # issues. Key on PID for process-wise concurrency.
+    sock = '/tmp/.notebook.%i.sock' % os.getpid()
+
+    @classmethod
+    def get_bind_args(cls):
+        return dict(sock=cls.sock)
+
+    @classmethod
+    def base_url(cls):
+        return '%s%s' % (urlencode_unix_socket(cls.sock), cls.url_prefix)
+
+    @staticmethod
+    def fetch_url(url):
+        # Lazily import so it is not required at the module level
+        if os.name != 'nt':
+            import requests_unixsocket
+        with requests_unixsocket.monkeypatch():
+            return requests.get(url)
 
 
 @contextmanager

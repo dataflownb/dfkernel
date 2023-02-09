@@ -5,22 +5,17 @@
 
 import atexit
 import os
+import sys
+from time import time
 
 from contextlib import contextmanager
+from queue import Empty
 from subprocess import PIPE, STDOUT
-try:
-    from queue import Empty  # Py 3
-except ImportError:
-    from Queue import Empty  # Py 2
 
 import nose
-import nose.tools as nt
 
 from jupyter_client import manager
 
-#-------------------------------------------------------------------------------
-# Globals
-#-------------------------------------------------------------------------------
 
 STARTUP_TIMEOUT = 60
 TIMEOUT = 15
@@ -28,20 +23,18 @@ TIMEOUT = 15
 KM = None
 KC = None
 
-#-------------------------------------------------------------------------------
-# code
-#-------------------------------------------------------------------------------
+
 def start_new_kernel(**kwargs):
     """start a new kernel, and return its Manager and Client
-
     Integrates with our output capturing for tests.
     """
+    kwargs['stderr'] = STDOUT
     try:
-        stdout = nose.iptest_stdstreams_fileno()
+        kwargs['stdout'] = nose.iptest_stdstreams_fileno()
     except AttributeError:
-        stdout = open(os.devnull)
-    kwargs.update(dict(stdout=stdout, stderr=STDOUT))
+        pass
     return manager.start_new_kernel(startup_timeout=STARTUP_TIMEOUT, **kwargs)
+
 
 def flush_channels(kc=None):
     """flush any messages waiting on the queue"""
@@ -59,22 +52,40 @@ def flush_channels(kc=None):
                 validate_message(msg)
 
 
+def get_reply(kc, msg_id, timeout):
+    timeout = TIMEOUT
+    t0 = time()
+    while True:
+        reply = kc.get_shell_msg(timeout=timeout)
+        if reply['parent_header']['msg_id'] == msg_id:
+            break
+        t1 = time()
+        timeout -= t1 - t0
+        t0 = t1
+    return reply
+
+
 def execute(code='', kc=None, **kwargs):
     """wrapper for doing common steps for validating an execution request"""
     from .test_message_spec import validate_message
     if kc is None:
         kc = KC
     msg_id = kc.execute(code=code, **kwargs)
-    reply = kc.get_shell_msg(timeout=TIMEOUT)
+    reply = get_reply(kc, msg_id, TIMEOUT)
     validate_message(reply, 'execute_reply', msg_id)
     busy = kc.get_iopub_msg(timeout=TIMEOUT)
     validate_message(busy, 'status', msg_id)
-    nt.assert_equal(busy['content']['execution_state'], 'busy')
+    assert busy['content']['execution_state'] == 'busy'
 
     if not kwargs.get('silent'):
         execute_input = kc.get_iopub_msg(timeout=TIMEOUT)
         validate_message(execute_input, 'execute_input', msg_id)
-        nt.assert_equal(execute_input['content']['code'], code)
+        assert execute_input['content']['code'] == code
+
+    # show tracebacks if present for debugging
+    if reply['content'].get('traceback'):
+        print('\n'.join(reply['content']['traceback']), file=sys.stderr)
+
 
     return msg_id, reply['content']
 
@@ -91,9 +102,7 @@ def start_global_kernel():
 @contextmanager
 def kernel():
     """Context manager for the global kernel instance
-
     Should be used for most kernel tests
-
     Returns
     -------
     kernel_client: connected KernelClient instance
@@ -121,15 +130,16 @@ def stop_global_kernel():
 
 def new_kernel(argv=None):
     """Context manager for a new kernel in a subprocess
-
     Should only be used for tests where the kernel must not be re-used.
-
     Returns
     -------
     kernel_client: connected KernelClient instance
     """
-    stdout = getattr(nose, 'iptest_stdstreams_fileno', open(os.devnull))
-    kwargs = dict(stdout=stdout, stderr=STDOUT)
+    kwargs = {'stderr': STDOUT}
+    try:
+        kwargs['stdout'] = nose.iptest_stdstreams_fileno()
+    except AttributeError:
+        pass
     if argv is not None:
         kwargs['extra_arguments'] = argv
     return manager.run_kernel(**kwargs)
