@@ -76,7 +76,7 @@ export class DepView {
         this.tabular = null;
         this.execute_panel = null;
         //Label Styles should be set in text so that GraphViz can properly size the nodes
-        this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.3em;';
+        this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.2em;';
 
         //Divs are created and defined in here
         //this.create_dep_div();
@@ -457,7 +457,7 @@ export class DepView {
 
         that.cell_list.forEach(function(a:any) {that.cell_child_nums[a.id] = 0;});
         that.cell_links.forEach(function(a:any){ that.cell_child_nums[a.source] += 1;});
-        let g = new GraphLib.Graph({compound:true}).setGraph({ranksep:2,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
+        let g = new GraphLib.Graph({compound:true}).setGraph({compound:true,ranksep:1,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
             return {};
         });
 
@@ -474,7 +474,7 @@ export class DepView {
             let parent = 'cluster_Out['+a+']';
             if(that.dataflow || that.selected){
                 let cell = a+'-Cell';
-                g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'box',id:cell});
+                g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'point',id:cell});
                 g.setParent(cell,parent);
 
             }
