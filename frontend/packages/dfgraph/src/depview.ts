@@ -157,18 +157,18 @@ export class DepView {
         this.side_panel = d3.select('div.dep-div').append('div').attr('id','side-panel');
 
         this.tabular = this.side_panel.append("div").attr('id', 'table').classed('card', true);
-        this.tabular.append('h3').text("Graph Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
+//        this.tabular.append('h3').text("Graph Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
 
-        let newdiv = this.tabular.append('div').classed('table-div',true);
-        newdiv.append('h4').text('New Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
-        newdiv.append('div').classed('card-body', true).attr('id', 'newlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
+//         let newdiv = this.tabular.append('div').classed('table-div',true);
+//         newdiv.append('h4').text('New Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
+//         newdiv.append('div').classed('card-body', true).attr('id', 'newlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
+//
+//         let changediv = this.tabular.append('div').classed('table-div',true);
+//         changediv.append('h4').text('Changed Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
+//         changediv.append('div').classed('card-body', true).attr('id', 'changedlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
 
-        let changediv = this.tabular.append('div').classed('table-div',true);
-        changediv.append('h4').text('Changed Cells').classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true);
-        changediv.append('div').classed('card-body', true).attr('id', 'changedlist').append('ul').classed('list-group', true).classed('list-group-flush', true);
 
-
-        this.tabular.append('a').text('Download Dot').attr('id', 'dot-dl').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true)//.classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true);
+        this.tabular.append('a').text('⤓ Dot').attr('id', 'dot-dl').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true)//.classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true);
 
         this.tabular.append('a').text('Toggle Sink Cells').attr('id', 'out-toggle').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true)//.classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true)
          .on('click',function () {
@@ -180,20 +180,22 @@ export class DepView {
         //this.tabular.append('a').text('Show Graph Summary').attr('id', 'graphsum').classed('btnviz', true).classed('btnviz-outline-primary', true).classed('btnviz-rounded waves-effect', true);
 
 
-        this.executepanel = this.side_panel.append('div').attr('id', 'cell-detail').classed('card', true).style('background-color', 'white');
-        this.executepanel.append('h3').text("Cell Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
+//        this.executepanel = this.side_panel.append('div').attr('id', 'cell-detail').classed('card', true).style('background-color', 'white');
+//        this.executepanel.append('h3').text("Cell Overview").classed('card-header', true).classed('primary-color', true).classed('white-text', true).classed('cell-list-header', true).attr('id', 'overview-header');
 
-        this.nodespanel = this.executepanel.append('div').attr('id', 'nodes-panel');
-        this.nodespanel.append('h4').text("Cell Local Variables:").classed('card-title', true);
-        this.nodespanel.data(["None"]).append('span').text('None').classed('badge-pill', true).classed('badge-danger', true);
+        this.tabular.append('span').text("Cell Local Variables:").classed("locals",true);//.classed('card-title', true);
+        this.tabular.data(["None"]).append('span').text('None').classed('badge-pill', true).classed('badge-danger', true);
+//         this.nodespanel = this.executepanel.append('div').attr('id', 'nodes-panel');
+//         this.nodespanel.append('h4').text("Cell Local Variables:").classed('card-title', true);
+//         this.nodespanel.data(["None"]).append('span').text('None').classed('badge-pill', true).classed('badge-danger', true);
 
-        let executeactions = this.executepanel.append('div').attr('id','exec-actions');
+        //let executeactions = this.executepanel.append('div').attr('id','exec-actions');
         //FIME:FIX THIS
         // executeactions.append('a').text("  Execute Cell").classed('btnviz', true).classed('btnviz-primary', true).attr('id', 'exec-button').classed('fa-step-forward', true).classed('fa', true).on('click',function(){
         //     var cell = Jupyter.notebook.get_selected_cell();
         //     cell.execute();
         // });
-        executeactions.append('a').text("Close and Go to Cell").attr('id', 'close-scroll').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true).on('click', function () {that.close_and_scroll();});
+        //executeactions.append('a').text("Close and Go to Cell").attr('id', 'close-scroll').classed('btnviz', true).classed('btnviz-primary', true).classed('fa', true).on('click', function () {that.close_and_scroll();});
 
         this.svg = d3.select("div.dep-div").append('div').attr('id', 'svg-div').on('contextmenu', function () {
                 return false;
@@ -216,15 +218,18 @@ export class DepView {
             }
             //FIXME: Find equivalent in Lab
             //console.log(NotebookTools);
+            //const cell = panel.content.widgets[index];
+            //cell.node.scrollIntoView();
+
             //Jupyter.notebook.select_by_id(that.active_cell);
             //Jupyter.notebook.scroll_to_cell_id(that.active_cell);
             $('#'+cellid+'cluster').find('polygon').toggleClass('selected',true);
-            d3.select('#nodes-panel').selectAll('span').remove();
+            d3.select('#table').selectAll('.badge-pill').remove();
             let int_nodes = that.dfgraph.get_internal_nodes(cellid);
             if(int_nodes.length < 1){
                 int_nodes = ['None'];
             }
-            d3.select('#nodes-panel').selectAll('span')
+            d3.select('#table').selectAll('span.badge')
                 .data(int_nodes).enter().append('span').text(function(d:any){return d;}).attr('class',function (d:any) {
             let baseclasses = "badge badge-pill ";
                 if(d === "None"){
@@ -237,8 +242,8 @@ export class DepView {
         /** @method updates the new and changed cell lists **/
         update_cell_lists = function(){
             let that = this;
-            let new_cells: string[] = [];
-            let changed_cells: string[] = [];
+            //let new_cells: string[] = [];
+            //let changed_cells: string[] = [];
 
             //Goes with code below
             //var cells = that.dfgraph.get_cells();
@@ -257,30 +262,30 @@ export class DepView {
             //     }
             // });
 
-
-            let new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
-
-            new_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
-            .html(function(d){return 'In['+d+']';}).enter()
-            .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
-            .html(function(d){return 'In['+d+']';});
-
-            new_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
-
-            let changed_list = d3.select('#changedlist').select('ul').selectAll('li').data(changed_cells);
-
-            changed_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
-            .html(function(d){return 'In['+d+']';}).enter()
-            .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
-            .html(function(d){return 'In['+d+']';});
-
-            changed_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
+            // TODO: REMOVE THIS FUNCTIONALITY, REVISIT AT SOME POINT?
+//             let new_list = d3.select('#newlist').select('ul').selectAll('li').data(new_cells);
+//
+//             new_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
+//             .html(function(d){return 'In['+d+']';}).enter()
+//             .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
+//             .html(function(d){return 'In['+d+']';});
+//
+//             new_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
+//
+//             let changed_list = d3.select('#changedlist').select('ul').selectAll('li').data(changed_cells);
+//
+//             changed_list.attr('id',function(d){return 'viz-'+d;}).classed('cellid',true)
+//             .html(function(d){return 'In['+d+']';}).enter()
+//             .append('li').classed('list-group-item',true).append('a').classed('cellid',true).attr('id',function(d){return 'viz-'+d;})
+//             .html(function(d){return 'In['+d+']';});
+//
+//             changed_list.exit().attr('opacity',1).transition().delay(500).attr('opacity',0).remove();
 
             d3.select('#table').selectAll('.cellid').on('click',function (d) {
                 that.set_details(d);
             });
 
-            that.decorate_cells(changed_cells,'changed-cell',true);
+            //that.decorate_cells(changed_cells,'changed-cell',true);
 
 
         };

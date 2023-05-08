@@ -128,8 +128,9 @@ polygon.selected{
 }
 
 #dot-dl, #out-toggle, #graphsum, #exec-button, #close-scroll{
-    font-size:1rem;
-    padding: 0.6rem .8rem
+    float:left;
+    font-size:.7rem;
+    padding: 0.3rem .5rem
 }
 
 #nodes-panel{
@@ -139,6 +140,19 @@ polygon.selected{
 .was-changed {
     stroke-dasharray: 10,10;
     stroke-width: 4px;
+}
+
+.locals {
+    float:left;
+    font-size:.7rem;
+    padding: .7rem 5px;
+}
+
+#table .badge-pill {
+    float:left;
+    margin-top:.5rem;
+    
+
 }
 
 path.downstream {
@@ -184,8 +198,7 @@ span.cellid{
 
 #side-panel{
     display:inline-block;
-    width:22%;
-    margin-right:10px;
+    width:100%;
     height:100%;
     float:right;
 }
