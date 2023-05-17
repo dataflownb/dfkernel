@@ -839,7 +839,8 @@ function activateNotebookHandler(
         .composite as string,
       sideBySideRightMarginOverride: settings.get(
         'sideBySideRightMarginOverride'
-      ).composite as string
+      ).composite as string,
+      sideBySideOutputRatio: settings.get('sideBySideOutputRatio').composite as number,
     };
     const sideBySideMarginStyle = `.jp-mod-sideBySide.jp-Notebook .jp-Notebook-cell { 
       margin-left: ${factory.notebookConfig.sideBySideLeftMarginOverride} !important;
