@@ -6,6 +6,20 @@ requires = [
 ]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+source = "nodejs"
+
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls"]
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["dfnotebook-extension/labextension"]
+exclude = [".github"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"dfnotbook-extension/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
+"install.json" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension/install.json"
+
 [tool.hatch.build.hooks.version]
 path = "dfnotebook-extension/_version.py"
 
@@ -35,16 +49,6 @@ npm = [
     "jlpm",
 ]
 
-[tool.hatch.build.targets.sdist]
-artifacts = ["dfnotebook-extension/labextension"]
-exclude = [".github"]
-
-[tool.hatch.version]
-source = "nodejs"
-
-[tool.hatch.metadata.hooks.nodejs]
-fields = ["description", "authors", "urls"]
-
 [tool.tbump]
 field = [
     { name = "channel", default = "" },
@@ -64,7 +68,7 @@ src = "pyproject.toml"
 version_template = "version = \"{major}.{minor}.{patch}{channel}{release}\""
 
 [project]
-version = "0.1.0b0"
+name = "dfnotebook-extension"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.7"
@@ -84,9 +88,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 depedencies = [
-    "dfkernel @ git+https://github.com/dataflownb/dfkernel.git@
-9005725016811c44602c21ccc782d31e74a076b7"
+    "dfkernel @ git+https://github.com/dataflownb/dfkernel.git@9005725016811c44602c21ccc782d31e74a076b7"
 ]
-
-[project.license]
-file = "LICENSE"
+dynamic = ["version", "description", "authors", "urls", "keywords"]
