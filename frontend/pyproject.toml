@@ -1,17 +1,92 @@
 [build-system]
-requires = ["jupyter_packaging~=0.10,<2", "jupyterlab~=3.4"]
-build-backend = "jupyter_packaging.build_api"
+requires = [
+    "hatchling",
+    "jupyterlab~=3.4",
+    "hatch-nodejs-version"
+]
+build-backend = "hatchling.build"
 
-[tool.jupyter-packaging.options]
-skip-if-exists = ["dfnotebook-extension/labextension/static/style.js"]
-ensured-targets = ["dfnotebook-extension/labextension/static/style.js", "dfnotebook-extension/labextension/package.json"]
+[tool.hatch.build.hooks.version]
+path = "dfnotebook-extension/_version.py"
 
-[tool.jupyter-packaging.builder]
-factory = "jupyter_packaging.npm_builder"
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = [
+    "hatch-jupyter-builder>=0.5",
+]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "dfnotebook-extension/labextension/static/style.js",
+    "dfnotebook-extension/labextension/package.json",
+]
+skip-if-exists = [
+    "dfnotebook-extension/labextension/static/style.js",
+]
 
-[tool.jupyter-packaging.build-args]
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_dir = "dfnotebook-extension/labextension"
+build_cmd = "install:extension"
+npm = [
+    "jlpm",
+]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
-npm = ["jlpm"]
+npm = [
+    "jlpm",
+]
 
-[tool.check-manifest]
-ignore = ["dfnotebook-extension/labextension/**", "yarn.lock", ".*", "package-lock.json"]
+[tool.hatch.build.targets.sdist]
+artifacts = ["dfnotebook-extension/labextension"]
+exclude = [".github"]
+
+[tool.hatch.version]
+source = "nodejs"
+
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls"]
+
+[tool.tbump]
+field = [
+    { name = "channel", default = "" },
+    { name = "release", default = "" },
+]
+
+[tool.tbump.version]
+current = "0.1.0b0"
+regex = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)((?P<channel>a|b|rc|.dev)(?P<release>\\d+))?"
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+version_template = "version = \"{major}.{minor}.{patch}{channel}{release}\""
+
+[project]
+version = "0.1.0b0"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter :: JupyterLab :: 3",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+depedencies = [
+    "dfkernel @ git+https://github.com/dataflownb/dfkernel.git@
+9005725016811c44602c21ccc782d31e74a076b7"
+]
+
+[project.license]
+file = "LICENSE"
