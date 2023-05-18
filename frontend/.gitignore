@@ -119,3 +119,7 @@ dfnotebook-extension/labextension/static/
 dfnotebook-extension/labextension/
 
 package-lock.json
+
+.yarn/cache/
+
+.yarn/
