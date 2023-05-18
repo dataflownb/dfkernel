@@ -23,7 +23,6 @@ import { IModelDB } from '@jupyterlab/observables';
 export class DataflowNotebookModel extends NotebookModel {
   constructor(options: NotebookModel.IOptions = {}) {
     super({contentFactory: DataflowNotebookModel.defaultContentFactory, ...options});
-    console.log("CREATING DATAFLOW NOTEBOOK MODEL:", this.contentFactory);
   }
 
   /**
@@ -47,7 +46,6 @@ export namespace DataflowNotebookModel {
      */
     constructor(options: NotebookModel.ContentFactory.IOptions) {
       super(options);
-      console.log("INITED DATAFLOW NOTEBOOK MODEL CONTENT FACTORY");
     }
 
     /**
@@ -70,7 +68,6 @@ export namespace DataflowNotebookModel {
         }
         options.modelDB = this.modelDB.view(options.id);
       }
-      console.log("CREATING CODE CELL MODEL", options);
       return new DataflowCodeCellModel(options);
     }
 

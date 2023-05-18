@@ -52,14 +52,11 @@ export class DataflowOutputArea extends OutputArea {
         output = { ...msg.content, output_type: msgType };
         if (output.execution_count) {
           const cellId = output.execution_count.toString(16).padStart(8, '0');
-          const execCount = output.execution_count;
-          console.log("Output Cell IDS:", {execCount, cellId, myCellId: this.cellId});
           if(msgType === 'stream') {
             delete output.execution_count;
           }
           if (cellId !== this.cellId) {
             if (DataflowOutputArea.cellIdWidgetMap) {
-              console.log("Calling other onIOPub")
               const cellWidget = DataflowOutputArea.cellIdWidgetMap[cellId];
               //@ts-ignore
               const outputArea = cellWidget._output;

@@ -585,10 +585,10 @@ Please wait for the complete rendering before invoking that action.`,
               }
             });
           }
-          console.log('codeDict:', codeDict);
-          console.log('cellIdWidgetMap:', cellIdWidgetMap);
-          console.log('outputTags:', outputTags);
-          console.log('inputTags:', inputTags);
+          // console.log('codeDict:', codeDict);
+          // console.log('cellIdWidgetMap:', cellIdWidgetMap);
+          // console.log('outputTags:', outputTags);
+          // console.log('inputTags:', inputTags);
 
           const dfData = {
             // FIXME replace with utility function (see dfcells/widget)

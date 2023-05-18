@@ -20,7 +20,6 @@ const CELL_INPUT_AREA_CLASS = 'jp-Cell-inputArea';
 const CELL_OUTPUT_AREA_CLASS = 'jp-Cell-outputArea';
 
 function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Cell.IOptions<T>) {
-  console.log("CALLING SET INPUT AREA");
   // FIXME may be able to get panel via (this.layout as PanelLayout).widgets?
   //@ts-expect-error
   const panel = cell._inputWrapper as Panel;
@@ -45,7 +44,6 @@ function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Ce
   input.dispose()
   //@ts-expect-error
   cell._input = dfInput;
-  console.log("DONE SETTING INPUT AREA");
 }
 
 function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
@@ -135,7 +133,6 @@ export abstract class DataflowAttachmentsCell<T extends IAttachmentsCellModel> e
 export class DataflowCodeCell extends CodeCell {
     constructor(options: CodeCell.IOptions) {
         super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        console.log("CREATING DATAFLOW CODE CELL", {contentFactory: DataflowCell.defaultContentFactory, ...options})
         setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
         setOutputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
     }
@@ -245,7 +242,6 @@ export namespace DataflowCodeCell {
                 .execution_count;
             if (executionCount !== null) {
               const cellId = executionCount.toString(16).padStart(8, '0');
-              console.log('EXECUTE INPUT:', cellId);
               if (cellIdWidgetMap) {
                 const cellWidget = cellIdWidgetMap[cellId];
                 cellWidget.model.value.text = (msg as KernelMessage.IExecuteInputMsg).content.code;
@@ -259,7 +255,6 @@ export namespace DataflowCodeCell {
         }
         return true;
       };
-      console.log("REGISTER:", cell, cell.outputArea, cell.outputArea.future);
       cell.outputArea.future.registerMessageHook(clearOutput);
 
       // Save this execution's future so we can compare in the catch below.

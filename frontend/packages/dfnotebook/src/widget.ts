@@ -38,7 +38,6 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
-      console.log("CREATING CODE CELL");
       return new DataflowCodeCell(options).initializeState();
     }
 
@@ -56,7 +55,6 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
-      console.log("CREATING MARKDOWN CELL");
       return new DataflowMarkdownCell(options).initializeState();
     }
 
@@ -71,7 +69,6 @@ export namespace DataflowStaticNotebook {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
-      console.log("CREATING RAW CELL");
       return new DataflowRawCell(options).initializeState();
     }
   }
@@ -85,8 +82,6 @@ export namespace DataflowStaticNotebook {
 export class DataflowNotebook extends Notebook {
   constructor(options: Notebook.IOptions) {
     super({contentFactory: DataflowNotebook.defaultContentFactory, ...options});
-    console.log("CREATING DATAFLOW NOTEBOOK", options);
-    console.log("CONTENT FACTORY AFTER SUPER:", this.contentFactory);
   }
 }
 

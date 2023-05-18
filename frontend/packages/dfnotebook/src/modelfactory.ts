@@ -17,7 +17,6 @@ export class DataflowNotebookModelFactory extends NotebookModelFactory {
     super({contentFactory: new DataflowNotebookModel.ContentFactory({
       codeCellContentFactory: options.codeCellContentFactory}), 
       ...options});
-    console.log("CREATED MODEL FACTORY:", this.contentFactory);
   }
 
   /**
@@ -33,7 +32,6 @@ export class DataflowNotebookModelFactory extends NotebookModelFactory {
     isInitialized?: boolean
   ): INotebookModel {
     const contentFactory = this.contentFactory;
-    console.log("CALLING NEW DATAFLOW NOTEBOOK MODEL", contentFactory);
     return new DataflowNotebookModel({
       languagePreference,
       contentFactory,

@@ -19,7 +19,6 @@ export namespace DataflowNotebookPanel {
      * Create a new content area for the panel.
      */
     createNotebook(options: Notebook.IOptions): Notebook {
-      console.log("CALLING CREATE DATAFLOW NOTEBOOK!", options);
       return new DataflowNotebook(options);
     }
   }

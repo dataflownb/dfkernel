@@ -80,11 +80,7 @@
   "jupyterlab": {
     "extension": true,
     "schemaDir": "schema",
-    "outputDir": "labextension",
-    "disabledExtensions": [
-      "@jupyterlab/notebook-extension:factory",
-      "@jupyterlab/notebook-extension:tracker"
-    ]
+    "outputDir": "labextension"
   },
   "styleModule": "style/index.js"
 }
