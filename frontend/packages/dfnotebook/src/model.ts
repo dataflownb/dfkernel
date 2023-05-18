@@ -25,6 +25,13 @@ export class DataflowNotebookModel extends NotebookModel {
     super({contentFactory: DataflowNotebookModel.defaultContentFactory, ...options});
     console.log("CREATING DATAFLOW NOTEBOOK MODEL:", this.contentFactory);
   }
+
+  /**
+   * The name of the model.
+   */
+   get name(): string {
+    return 'dfnotebook';
+  }
 }
 
 /**

@@ -11,4 +11,6 @@ export * from './model';
 export * from './modelfactory';
 export * from './panel';
 export * from './widget';
-export * from "@jupyterlab/notebook";
+export * from './tokens';
+export * from './widgetfactory';
+// export * from "@jupyterlab/notebook";

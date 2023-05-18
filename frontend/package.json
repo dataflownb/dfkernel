@@ -46,7 +46,6 @@
     "schemaDir": "packages/dfnotebook-extension/schema",
     "outputDir": "dfnotebook-extension/labextension",
     "disabledExtensions": [
-      "@jupyterlab/notebook-extension:factory",
       "@jupyterlab/notebook-extension:tracker"
     ]
   }

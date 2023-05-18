@@ -52,7 +52,8 @@ export class DataflowOutputArea extends OutputArea {
         output = { ...msg.content, output_type: msgType };
         if (output.execution_count) {
           const cellId = output.execution_count.toString(16).padStart(8, '0');
-          console.log("Output Cell IDS:", {cellId, myCellId: this.cellId});
+          const execCount = output.execution_count;
+          console.log("Output Cell IDS:", {execCount, cellId, myCellId: this.cellId});
           if(msgType === 'stream') {
             delete output.execution_count;
           }
