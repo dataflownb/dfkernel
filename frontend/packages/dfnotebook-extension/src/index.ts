@@ -631,7 +631,7 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   widgetFactoryPlugin,
   modelFactoryPlugin,
   trackerPlugin,
-  cellToolbar
+  cellToolbar,
   DepViewer,
   MiniMap,
   GraphManagerPlugin
