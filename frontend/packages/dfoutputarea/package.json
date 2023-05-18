@@ -12,7 +12,7 @@
   },
   "license": "BSD-3-Clause",
   "author": {
-    "name":"Dataflow Notebook Development Team",
+    "name": "Dataflow Notebook Development Team",
     "email": "dataflownb@users.noreply.github.com"
   },
   "sideEffects": [
@@ -61,8 +61,8 @@
     "@lumino/properties": "^1.8.0",
     "@lumino/signaling": "^1.10.0",
     "@lumino/widgets": "^1.30.0",
-    "resize-observer-polyfill": "^1.5.1",
-    "@types/resize-observer-browser": "^0.1.7"
+    "@types/resize-observer-browser": "^0.1.7",
+    "resize-observer-polyfill": "^1.5.1"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^3.4.2",

@@ -1,5 +1,5 @@
 {
-  "name": "@dfnotebook/dfnotebook-extension",
+  "name": "@dfnotebook/repo-top",
   "version": "0.1.0-beta.0",
   "description": "A JupyterLab extension for running dataflow notebooks",
   "main": "packages/dfnotebook-extension/lib/index.js",
@@ -28,7 +28,7 @@
     "clean:slate": "python clean.py",
     "develop": "jupyter labextension develop . --overwrite",
     "install": "lerna bootstrap",
-    "install:extension": "jlpm build",
+    "install:extension": "lerna run install:extension",
     "watch": "run-p watch:cells watch:notebook watch:outputarea watch:extension",
     "watch:cells": "lerna exec --stream --scope \"@dfnotebook/dfcells\" jlpm watch",
     "watch:notebook": "lerna exec --stream --scope \"@dfnotebook/dfnotebook\" jlpm watch",
@@ -36,31 +36,10 @@
     "watch:extension": "lerna exec --stream --scope \"@dfnotebook/dfnotebook-extension\" jlpm watch"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^3.4.2",
-    "@jupyterlab/buildutils": "^3.4.2",
-    "@typescript-eslint/eslint-plugin": "^4.2.0",
-    "@typescript-eslint/parser": "^4.2.0",
-    "eslint": "^7.10.0",
-    "eslint-config-prettier": "^6.15.0",
-    "eslint-plugin-jest": "^24.1.3",
-    "eslint-plugin-prettier": "^3.1.4",
-    "eslint-plugin-react": "^7.21.5",
-    "extra-watch-webpack-plugin": "^1.0.3",
     "husky": "^3",
-    "jest": "^26.4.2",
-    "jest-junit": "^11.1.0",
-    "jest-raw-loader": "^1.0.1",
-    "jest-summary-reporter": "^0.0.2",
     "lerna": "^4.0.0",
     "lint-staged": "^10.4.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^1.19.0",
-    "rimraf": "^3.0.2",
-    "shell-quote": "^1.7.2",
-    "typescript": "~4.6.3"
-  },
-  "publishConfig": {
-    "access": "public"
+    "prettier": "^1.19.0"
   },
   "jupyterlab": {
     "extension": true,

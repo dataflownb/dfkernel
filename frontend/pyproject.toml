@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-    "hatchling",
-    "jupyterlab>=3.4.7",
+    "hatchling>=1.4.0",
+    "jupyterlab>=3.4.7,<4.0.0",
     "hatch-nodejs-version"
 ]
 build-backend = "hatchling.build"
@@ -9,15 +9,20 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "nodejs"
 
+[tool.hatch.build]
+artifacts = ["dfnotebook-extension/labextension"]
+
 [tool.hatch.metadata.hooks.nodejs]
 fields = ["description", "authors", "urls"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.sdist]
-artifacts = ["dfnotebook-extension/labextension"]
 exclude = [".github"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"dfnotbook-extension/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
+"dfnotebook-extension/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
 "install.json" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension/install.json"
 
 [tool.hatch.build.hooks.version]
@@ -39,15 +44,11 @@ skip-if-exists = [
 [tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
 build_dir = "dfnotebook-extension/labextension"
 build_cmd = "install:extension"
-npm = [
-    "jlpm",
-]
+npm = ["jlpm"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
-npm = [
-    "jlpm",
-]
+npm = ["jlpm"]
 
 [tool.tbump]
 field = [
@@ -87,7 +88,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-depedencies = [
+dependencies = [
     "dfkernel @ git+https://github.com/dataflownb/dfkernel.git@9005725016811c44602c21ccc782d31e74a076b7"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]

@@ -11,8 +11,8 @@
     "url": "https://github.com/dataflownb/dfnotebook-extension.git"
   },
   "license": "BSD-3-Clause",
-    "author": {
-    "name":"Dataflow Notebook Development Team",
+  "author": {
+    "name": "Dataflow Notebook Development Team",
     "email": "dataflownb@users.noreply.github.com"
   },
   "sideEffects": [
