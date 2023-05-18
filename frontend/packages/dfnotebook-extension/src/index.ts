@@ -12,6 +12,7 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 import {
+  createToolbarFactory,
   Dialog,
   ICommandPalette,
   InputDialog,
@@ -24,6 +25,7 @@ import {
   ToolbarButton
 } from '@jupyterlab/apputils';
 import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
+import { CellBarExtension } from '@jupyterlab/cell-toolbar';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
@@ -595,11 +597,41 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
     };
 
 
+const cellToolbar: JupyterFrontEndPlugin<void> = {
+  id: '@dfnotebook/dfnotebook-extension:cell-toolbar',
+  autoStart: true,
+  activate: async (
+    app: JupyterFrontEnd,
+    settingRegistry: ISettingRegistry | null,
+    toolbarRegistry: IToolbarWidgetRegistry | null,
+    translator: ITranslator | null
+  ) => {
+    const cellToolbarId = '@jupyterlab/cell-toolbar-extension:plugin';
+    const toolbarItems =
+      settingRegistry && toolbarRegistry
+        ? createToolbarFactory(
+            toolbarRegistry,
+            settingRegistry,
+            CellBarExtension.FACTORY_NAME,
+            cellToolbarId,
+            translator ?? nullTranslator
+          )
+        : undefined;
+
+    app.docRegistry.addWidgetExtension(
+      DATAFLOW_FACTORY,
+      new CellBarExtension(app.commands, toolbarItems)
+    );
+  },
+  optional: [ISettingRegistry, IToolbarWidgetRegistry, ITranslator]
+};
+
 const plugins: JupyterFrontEndPlugin<any>[] = [
   contentFactoryPlugin,
   widgetFactoryPlugin,
   modelFactoryPlugin,
   trackerPlugin,
+  cellToolbar
   DepViewer,
   MiniMap,
   GraphManagerPlugin
