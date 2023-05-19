@@ -977,7 +977,7 @@ function activateNotebookHandler(
     if (model != undefined) {
       const widget = ((await commands.execute('docmanager:open', {
         path: model.path,
-        factory: FACTORY,
+        factory: kernelName == "dfpython3" ? DATAFLOW_FACTORY : FACTORY,
         kernel: { name: kernelName }
       })) as unknown) as IDocumentWidget;
       widget.isUntitled = true;
