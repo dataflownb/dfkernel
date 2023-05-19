@@ -96,7 +96,7 @@
     "@lumino/widgets": "^1.37.2"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^4.0.0",    
+    "@jupyterlab/builder": "^3.1.0",    
     "@typescript-eslint/eslint-plugin": "^2.25.0",
     "@typescript-eslint/parser": "^2.25.0",
     "eslint": "^6.8.0",

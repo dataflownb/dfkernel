@@ -7,11 +7,6 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-	"lib": [
-      "es2017",
-      "DOM",
-      "DOM.Iterable"
-    ],
     "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": true,
@@ -19,10 +14,11 @@
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
-	"sourceMap":true,
+    "sourceMap":true,
     "skipLibCheck": true,
     "strictNullChecks": true,
-	"strictPropertyInitialization": false,
-    "target": "es2017"
+    "strictPropertyInitialization": false,
+    "target": "ES2018",
+    "types": []
   }
 }
