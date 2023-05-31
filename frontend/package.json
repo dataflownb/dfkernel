@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/repo-top",
-  "version": "0.1.0-beta.0",
+  "version": "0.2.0",
   "description": "A JupyterLab extension for running dataflow notebooks",
   "main": "packages/dfnotebook-extension/lib/index.js",
   "keywords": [

@@ -28,6 +28,7 @@ import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgrap
 import { CellBarExtension } from '@jupyterlab/cell-toolbar';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
+import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import {
@@ -300,7 +301,7 @@ const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
     ILayoutRestorer,
     IMainMenu,
     ISettingRegistry,
-    ISessionContextDialogs
+    ISessionContextDialogs,
   ],
   activate: activateNotebookHandler,
   autoStart: true
@@ -839,7 +840,8 @@ function activateNotebookHandler(
   const registry = app.docRegistry;
   const modelFactory = new NotebookModelFactory({
     disableDocumentWideUndoRedo:
-      factory.notebookConfig.disableDocumentWideUndoRedo
+      factory.notebookConfig.disableDocumentWideUndoRedo,
+    collaborative: true
   });
   registry.addModelFactory(modelFactory);
   
@@ -920,7 +922,7 @@ function activateNotebookHandler(
       showEditorForReadOnlyMarkdown: settings.get(
         'showEditorForReadOnlyMarkdown'
       ).composite as boolean,
-      disableDocumentWideUndoRedo: settings.get(
+      disableDocumentWideUndoRedo: !settings.get(
         'experimentalDisableDocumentWideUndoRedo'
       ).composite as boolean,
       renderingLayout: settings.get('renderingLayout').composite as
@@ -931,7 +933,9 @@ function activateNotebookHandler(
       sideBySideRightMarginOverride: settings.get(
         'sideBySideRightMarginOverride'
       ).composite as string,
-      sideBySideOutputRatio: settings.get('sideBySideOutputRatio').composite as number,
+      sideBySideOutputRatio: settings.get(
+        'sideBySideOutputRatio'
+      ).composite as number
     };
     const sideBySideMarginStyle = `.jp-mod-sideBySide.jp-Notebook .jp-Notebook-cell { 
       margin-left: ${factory.notebookConfig.sideBySideLeftMarginOverride} !important;
@@ -965,19 +969,22 @@ function activateNotebookHandler(
   }
 
   // Utility function to create a new notebook.
-  const createNew = (cwd: string, kernelName?: string) => {
-    return commands
-      .execute('docmanager:new-untitled', { path: cwd, type: 'notebook' })
-      .then(model => {
-        if (model != undefined) {
-          return commands.execute('docmanager:open', {
-            path: model.path,
-            factory: kernelName == "dfpython3" ? DATAFLOW_FACTORY : FACTORY,
-            kernel: { name: kernelName }
-          });
-        }
-      });
+  const createNew = async (cwd: string, kernelName?: string) => {
+    const model = await commands.execute('docmanager:new-untitled', {
+      path: cwd,
+      type: 'notebook'
+    });
+    if (model != undefined) {
+      const widget = ((await commands.execute('docmanager:open', {
+        path: model.path,
+        factory: FACTORY,
+        kernel: { name: kernelName }
+      })) as unknown) as IDocumentWidget;
+      widget.isUntitled = true;
+      return widget;
+    }
   };
+    
 
   // Add a command for creating a new notebook.
   commands.addCommand(CommandIDs.createNew, {
@@ -1142,7 +1149,7 @@ const isEnabledAndHeadingSelected = (): boolean => {
     isEnabled
   });
   commands.addCommand(CommandIDs.run, {
-    label: trans.__("Run Selected Cells and Don't Advance"),
+    label: trans.__("Run Selected Cells and Do not Advance"),
     execute: args => {
       const current = getCurrent(tracker, shell, args);
 

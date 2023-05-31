@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/dfoutputarea",
-  "version": "0.1.0-beta.0",
+  "version": "0.2.0",
   "description": "Dataflow Notebook Output Area",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
@@ -47,26 +47,24 @@
     "test:watch": "jest --runInBand --watch"
   },
   "dependencies": {
-    "@jupyterlab/apputils": "^3.4.2",
-    "@jupyterlab/nbformat": "^3.4.2",
-    "@jupyterlab/observables": "^4.4.2",
-    "@jupyterlab/outputarea": "^3.4.2",
-    "@jupyterlab/rendermime": "^3.4.2",
-    "@jupyterlab/rendermime-interfaces": "^3.4.2",
-    "@jupyterlab/services": "^6.4.2",
+    "@jupyterlab/apputils": "^3.6.3",
+    "@jupyterlab/nbformat": "^3.6.3",
+    "@jupyterlab/observables": "^4.6.3",
+    "@jupyterlab/outputarea": "^3.6.3",
+    "@jupyterlab/rendermime": "^3.6.3",
+    "@jupyterlab/rendermime-interfaces": "^3.6.3",
+    "@jupyterlab/services": "^6.6.3",
     "@lumino/algorithm": "^1.9.0",
     "@lumino/coreutils": "^1.11.0",
     "@lumino/disposable": "^1.10.0",
     "@lumino/messaging": "^1.10.0",
     "@lumino/properties": "^1.8.0",
     "@lumino/signaling": "^1.10.0",
-    "@lumino/widgets": "^1.30.0",
-    "@types/resize-observer-browser": "^0.1.7",
+    "@lumino/widgets": "^1.37.2",
     "resize-observer-polyfill": "^1.5.1"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^3.4.2",
-    "@jupyterlab/testutils": "^3.4.2",
+    "@jupyterlab/testutils": "^3.6.3",
     "@types/jest": "^26.0.10",
     "jest": "^26.4.2",
     "rimraf": "~3.0.0",

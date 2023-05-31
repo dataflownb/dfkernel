@@ -29,12 +29,14 @@ export class DataflowNotebookModelFactory extends NotebookModelFactory {
   createNew(
     languagePreference?: string,
     modelDB?: IModelDB,
-    isInitialized?: boolean
+    isInitialized?: boolean,
+    collaborationEnabled?: boolean
   ): INotebookModel {
     const contentFactory = this.contentFactory;
     return new DataflowNotebookModel({
       languagePreference,
       contentFactory,
+      collaborationEnabled: collaborationEnabled && this.collaborative,
       modelDB,
       isInitialized,
       //@ts-ignore
