@@ -80,6 +80,9 @@ class GraphManager {
         let modifiedorder = neworder.map((cellid:any) => cellid.replace(/-/g, '').substr(0, 8) as string);
         this.minimap.updateOrder(modifiedorder);
         this.depview.updateOrder(modifiedorder);
+        //FIXME: Make this only update for minimap
+        console.log("Updating dependency views");
+        this.update_dep_views(true);
     }
 
     /** @method updates all viewers based on if they're open or not */

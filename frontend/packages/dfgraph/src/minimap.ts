@@ -165,7 +165,7 @@ export class Minimap {
 
         let circles = this.svg.selectAll('circle');
         let groups = circles
-        .data(Object.keys(this.cells),(a:string)=>a)
+        .data(this.order,(a:string)=>a)
         .enter()
         .append('g')
         //Have to use a proper start pattern for ID rules in HTML4
@@ -204,7 +204,7 @@ export class Minimap {
         }
 
 
-        let values = Object.keys(this.cells)
+        let values = this.order
         .map((a:string)=>[a,
             grab_out_tags(a,this.cells[a])
             .split("OUTTAGSTARTSHERE")
