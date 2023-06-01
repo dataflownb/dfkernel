@@ -367,6 +367,8 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
 
       nbTrackers.widgetAdded.connect((sender,nbPanel) => {
             const session = nbPanel.sessionContext;
+            GraphManager.set_tracker(nbTrackers);
+
             session.ready.then(() =>
             {
                 let output_tags: {[index: string]:any}  = {};
@@ -402,9 +404,10 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                     //@ts-ignore
                     GraphManager.graphs[sess_id] = new Graph({'cells':cells,'nodes':output_tags,'internal_nodes':output_tags,'uplinks':uplinks,'downlinks':downlinks,'cell_contents':cell_contents});
                     GraphManager.update_graph(sess_id);
+                    GraphManager.update_order((nbPanel.content as any)._model._cells._cellOrder._array);
                 }
                 console.log(sess_id);
-            })
+            });
             (nbPanel.content as any)._model._cells._cellOrder._changed.connect(() =>{
                 //console.log((nbPanel.content as any)._model._cells._cellOrder._array);
                 GraphManager.update_order((nbPanel.content as any)._model._cells._cellOrder._array);

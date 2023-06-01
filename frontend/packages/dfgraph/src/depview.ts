@@ -53,6 +53,8 @@ export class DepView {
     depdiv: any;
     svg: any;
     widget: any;
+    tracker: any;
+    order: any;
 
 
 
@@ -129,6 +131,11 @@ export class DepView {
             d3.select(this.parentdiv).transition().delay(100).style('height','0vh');
             d3.select('.end_space').transition().delay(100).style('height','0vh');
     };
+
+    updateOrder = function(order:any){
+        this.order = order;
+    }
+
 //
 //     /** @method closes the depviewer and scrolls to the currently selected cell **/
 //     close_and_scroll = function () {
@@ -143,6 +150,11 @@ export class DepView {
 //     };
 //
 //
+    setTracker = function(tracker:any){
+        this.tracker = tracker;
+        console.log(tracker);
+    }
+
     /** @method creates dependency div*/
     create_dep_div = function() {
 
@@ -223,6 +235,8 @@ export class DepView {
 
             //Jupyter.notebook.select_by_id(that.active_cell);
             //Jupyter.notebook.scroll_to_cell_id(that.active_cell);
+            this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(cellid);
+
             $('#'+cellid+'cluster').find('polygon').toggleClass('selected',true);
             d3.select('#table').selectAll('.badge-pill').remove();
             let int_nodes = that.dfgraph.get_internal_nodes(cellid);

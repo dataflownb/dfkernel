@@ -30,6 +30,7 @@ class GraphManager {
     depWidget: any;
     miniWidget: any;
     activeID: string;
+    tracker: any;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
@@ -44,6 +45,13 @@ class GraphManager {
         return this.graphs[prop]
     }
     return ''
+    }
+
+
+    set_tracker = function(tracker:any){
+        this.tracker = tracker;
+        this.minimap.setTracker(this.tracker);
+        this.depview.setTracker(this.tracker);
     }
 
     /** @method updates the activate graph and calls the update views method */
@@ -69,6 +77,9 @@ class GraphManager {
 
     update_order = function(neworder:any){
         this.graphs[this.current_graph].update_order(neworder);
+        let modifiedorder = neworder.map((cellid:any) => cellid.replace(/-/g, '').substr(0, 8) as string);
+        this.minimap.updateOrder(modifiedorder);
+        this.depview.updateOrder(modifiedorder);
     }
 
     /** @method updates all viewers based on if they're open or not */

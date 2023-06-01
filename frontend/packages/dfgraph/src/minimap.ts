@@ -20,6 +20,8 @@ export class Minimap {
     dfgraph: any;
     was_created: boolean;
     output_tags : {[name:string]:[]}
+    tracker : any;
+    order : any;
 
     constructor(dfgraph?: any, parentdiv?: any) {
             this.was_created = false;
@@ -33,7 +35,18 @@ export class Minimap {
             this.edges = [];
             this.output_tags = {};
             this.dfgraph = dfgraph || null;
+            this.tracker = null;
             //this.widget =
+    }
+
+    setTracker = function(tracker:any){
+        this.tracker = tracker;
+        console.log(tracker);
+    }
+
+    updateOrder = function(order:any){
+        this.order = order;
+        //update minimap appearance based on order changes
     }
 
     /** @method resets all paths **/
