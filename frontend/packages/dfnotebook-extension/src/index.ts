@@ -371,15 +371,14 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             {
                 let output_tags: {[index: string]:any}  = {};
                 let cell_contents: {[index: string]:any} = {};
-                (nbPanel.content as any)._cellsArray.map((cell:any)=>
+                for (let [cell_uuid,cell] of (nbPanel.content as any)._model._cells._cellMap._map)
                 {
-                let cell_id = cell.model?.id.replace(/-/g, '').substr(0, 8) as string;
-                cell_contents[cell_id] = cell._input.model._executedCode;
+                let cell_id = cell_uuid.replace(/-/g, '').substr(0, 8) as string;
+                cell_contents[cell_id] = cell._executedCode;
                 output_tags[cell_id] =
-                (cell.model.outputs.list._array).map(
+                (cell.outputs.list._array).map(
                     (output:any)=>output._rawMetadata.output_tag)
                 }
-                );
                 let cells = Object.keys(output_tags);
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
                 let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]=[];return dict;},{});;
