@@ -67,6 +67,10 @@ class GraphManager {
         }
     }
 
+    update_order = function(neworder:any){
+        this.graphs[this.current_graph].update_order(neworder);
+    }
+
     /** @method updates all viewers based on if they're open or not */
     // view flag is based on if it's a new view or the same view
     update_dep_views = function(newView:boolean){
@@ -111,6 +115,7 @@ export class Graph {
     depview: any;
     minimap: any;
     cell_contents : any;
+    cell_order: any;
 
     /*
     * Create a graph to contain all inner cell dependencies
@@ -123,7 +128,7 @@ export class Graph {
         this.downlinks = downlinks || {};
         this.internal_nodes = internal_nodes || {};
         this.cell_contents = cell_contents || {};
-
+        this.cell_order = [];
         //Cache downstream lists
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
@@ -151,6 +156,12 @@ export class Graph {
         //that.minimap.update_edges();
         //celltoolbar.CellToolbar.rebuild_all();
     };
+
+
+    update_order = function(neworder:any){
+        console.log(neworder);
+        this.cell_order = neworder;
+    }
 
     /** @method removes a cell entirely from the graph **/
     remove_cell = function(this:Graph,uuid: string){

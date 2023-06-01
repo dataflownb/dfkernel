@@ -405,6 +405,10 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 }
                 console.log(sess_id);
             })
+            (nbPanel.content as any)._model._cells._cellOrder._changed.connect(() =>{
+                //console.log((nbPanel.content as any)._model._cells._cellOrder._array);
+                GraphManager.update_order((nbPanel.content as any)._model._cells._cellOrder._array);
+            });
             nbPanel.content.activeCellChanged.connect(() =>{
                 //Have to get this off the model the same way that actions.tsx does
                 let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
