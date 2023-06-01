@@ -373,14 +373,17 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             {
                 let output_tags: {[index: string]:any}  = {};
                 let cell_contents: {[index: string]:any} = {};
-                for (let [cell_uuid,cell] of (nbPanel.content as any)._model._cells._cellMap._map)
+                let cell_list = (nbPanel.model?.toJSON() as any)?.cells;
+
+                cell_list.map(function(cell:any)
                 {
-                let cell_id = cell_uuid.replace(/-/g, '').substr(0, 8) as string;
-                cell_contents[cell_id] = cell._executedCode;
+                let cell_id = cell.id.replace(/-/g, '').substr(0, 8) as string;
+                if(cell?.cell_type != "code"){return;}
+                cell_contents[cell_id] = cell.source;
                 output_tags[cell_id] =
-                (cell.outputs.list._array).map(
-                    (output:any)=>output._rawMetadata.output_tag)
-                }
+                (cell?.outputs).map(
+                    (output:any)=>output.metadata.output_tag)
+                });
                 let cells = Object.keys(output_tags);
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
                 let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]=[];return dict;},{});;
@@ -404,13 +407,14 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                     //@ts-ignore
                     GraphManager.graphs[sess_id] = new Graph({'cells':cells,'nodes':output_tags,'internal_nodes':output_tags,'uplinks':uplinks,'downlinks':downlinks,'cell_contents':cell_contents});
                     GraphManager.update_graph(sess_id);
-                    GraphManager.update_order((nbPanel.content as any)._model._cells._cellOrder._array);
+                    let cell_order = cell_list.map((c:any) => c.id);
+                    GraphManager.update_order(cell_order);
                 }
                 console.log(sess_id);
             });
-            (nbPanel.content as any)._model._cells._cellOrder._changed.connect(() =>{
+            (nbPanel.content as any).model._cells._cellOrder._changed.connect(() =>{
                 //console.log((nbPanel.content as any)._model._cells._cellOrder._array);
-                GraphManager.update_order((nbPanel.content as any)._model._cells._cellOrder._array);
+                GraphManager.update_order((nbPanel.content as any).model._cells._cellOrder._array);
             });
             nbPanel.content.activeCellChanged.connect(() =>{
                 //Have to get this off the model the same way that actions.tsx does
