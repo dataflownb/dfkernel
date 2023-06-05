@@ -20,7 +20,7 @@ except ImportError:
     _asyncio_runner = None
 
 from .zmqshell import ZMQInteractiveShell
-from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer
+from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer, DataflowRef
 
 def _accepts_cell_id(meth):
     parameters = inspect.signature(meth).parameters
@@ -102,7 +102,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             if lineno != end_lineno:
                 raise Exception("Names cannot be split over multiple lines")
             s = code_arr[lineno-1]
-            code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(cell_id, name), s[end_col_offset:]])
+            ref = DataflowRef([0,0],[0,len(cell_id) + len(name) + 1],name=name, cell_id=cell_id)
+            code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(ref), s[end_col_offset:]])
         code = '\n'.join(code_arr)
         # print("STEP 2:", code)
 
@@ -187,6 +188,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         except SyntaxError:
             # ignore this for now, catch it in do_execute
             pass
+    
+        # print("FIRST CODE:", code)
 
         if not silent:
             self._publish_execute_input(code, parent, execution_count)
@@ -197,6 +200,9 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         except SyntaxError:
             # ignore this for now, catch it in do_execute
             pass
+
+        # print("SECOND CODE:", code)
+
 
         cell_id = (parent.get("metadata") or {}).get("cellId")
         if _accepts_cell_id(self.do_execute):

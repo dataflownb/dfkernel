@@ -1,6 +1,11 @@
 import ast
 import re
 
+import tokenize
+from io import StringIO
+from collections import defaultdict
+from operator import attrgetter
+
 def default_replacer(cell_id, var):
     return f"_oh['{cell_id}']['{var}']"
 
@@ -75,3 +80,97 @@ def convert_dfvar(s, replacer_f=default_replacer):
         code_arr[lineno - 1] = ''.join(
             [s[:col_offset], replacer_f(cell_id, var_name), s[end_col_offset:]])
     return '\n'.join(code_arr)
+
+class DataflowRef:
+    __slots__ = ['start_pos','end_pos','name','cell_id','cell_tag','ref_qualifier']
+
+    def __init__(self, start_pos, end_pos, name, cell_id, cell_tag=None, ref_qualifier=None):
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.name = name
+        self.cell_id = cell_id
+        self.cell_tag = cell_tag
+        self.ref_qualifier = ref_qualifier
+
+    def __repr__(self):
+        return f'DataflowRef({self.start_pos}, {self.end_pos}, {self.name}, {self.cell_id}, {self.cell_tag}, {self.ref_qualifier})'
+
+def identifier_replacer(ref):
+    # FIXME deal with tags and qualifiers
+    return f"__dfvar_{ref.cell_id}_{ref.name}__"
+
+def ref_replacer(ref):
+    # FIXME deal with tags and qualifiers
+    return f"_oh['{ref.cell_id}']['{ref.name}']"
+
+def convert_dollar(s, replace_f=ref_replacer, input_tags={}):
+    def positions_mesh(end, start):
+        return end[0] == start[0] and end[1] == start[1]
+
+    res = defaultdict(list)
+    s_stream = StringIO(s)
+
+    dollar_pos = None
+    var_name = None
+    ref_qualifier = None
+    cell_ref = ""
+    last_token = None
+
+    for t in tokenize.generate_tokens(s_stream.readline):
+        if t.string == '$':
+            if last_token is not None and positions_mesh(last_token.end, t.start):
+                dollar_pos = last_token.start, t.end
+                var_name = last_token.string
+        elif dollar_pos is not None:
+            if t.string in ['-','+'] and t.end[1] - t.start[1] == 1 and positions_mesh(dollar_pos[1], t.start):
+                ref_qualifier = t.string
+                dollar_pos = dollar_pos[0], t.end
+            elif t.type == 2 and positions_mesh(dollar_pos[1], t.start): # NUMBER
+                cell_ref += t.string
+                dollar_pos = dollar_pos[0], t.end
+            elif t.type == 1 and positions_mesh(dollar_pos[1], t.start): # NAME
+                cell_ref += t.string
+                dollar_pos = dollar_pos[0], t.end                
+            else: # DONE
+                if cell_ref in input_tags:
+                    cell_tag = cell_ref
+                    cell_id = input_tags[cell_ref]
+                else:
+                    cell_id = cell_ref
+                    cell_tag = None
+                res[dollar_pos[0][0]].append(DataflowRef(
+                    start_pos=dollar_pos[0],
+                    end_pos=dollar_pos[1],
+                    name=var_name,
+                    cell_id=cell_id,
+                    cell_tag=cell_tag,
+                    ref_qualifier=ref_qualifier)
+                )
+                dollar_pos = None
+                var_name = None
+                ref_qualifier = None
+                cell_ref = ""
+                last_token = None
+                if t.type == 1: # NAME
+                    last_token = t
+        elif t.type == 1: # NAME
+            last_token = t
+
+    s_stream.seek(0)
+    out_s = ""
+    res = dict(res)
+    # print("RES:", res)
+    for i, line in enumerate(s_stream.readlines()):
+        for ref in sorted(res.get(i+1,[]), key=attrgetter('end_pos'), reverse=True):
+            # FIXME improve error handling
+            assert ref.start_pos[0] == ref.end_pos[0]
+            line = line[:ref.start_pos[1]] + replace_f(ref) + line[ref.end_pos[1]:]
+        out_s += line
+    # print("OUT S:", out_s)
+    return out_s
+
+
+# find positions and then replace them later?
+
+
+
