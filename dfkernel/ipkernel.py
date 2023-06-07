@@ -20,7 +20,7 @@ except ImportError:
     _asyncio_runner = None
 
 from .zmqshell import ZMQInteractiveShell
-from .utils import convert_dollar, convert_dfvar, identifier_replacer, dollar_replacer, DataflowRef
+from .utils import ground_refs, convert_dollar, convert_identifier, ref_replacer, identifier_replacer, dollar_replacer
 
 def _accepts_cell_id(meth):
     parameters = inspect.signature(meth).parameters
@@ -59,58 +59,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # Ignore the incrememnting done by KernelBase, in favour of our shell's
         # execution counter.
         pass
-
-    def ground_code(self, code, execution_count, input_tags):
-        code = convert_dollar(code, identifier_replacer, input_tags)
-
-
-        class DataflowLinker(ast.NodeVisitor):
-            def __init__(self, user_ns):
-                self.user_ns = user_ns
-                self.stored = set()
-                self.updates = []
-                super().__init__()
-
-            # need to make sure we visit right side before left!
-            # seems to happen by default?
-            def visit_Assign(self, node):
-                self.visit(node.value)
-                for target in node.targets:
-                    self.visit(target)
-
-            def visit_Name(self, name):
-                import sys
-                # FIXME what to do with del?
-                if isinstance(name.ctx, ast.Store):
-                    # print("STORE", name.id, file=sys.__stdout__)
-                    self.stored.add(name.id)
-                elif (isinstance(name.ctx, ast.Load) and
-                        name.id not in self.stored and
-                        self.user_ns._is_external_link(name.id, execution_count)):
-                    # figure out where we are and keep track of change
-                    # FIXME get_parent needs to get most recently used verison of id
-                    cell_id = self.user_ns.get_parent(name.id)
-                    self.updates.append((name.end_lineno, name.end_col_offset, name.lineno, name.col_offset, name.id, cell_id))
-                    # print("LOAD", name.id, cell_id, file=sys.__stdout__)
-                self.generic_visit(name)
-
-        tree = ast.parse(code)
-        linker = DataflowLinker(self.shell.user_ns)
-        linker.visit(tree)
-        code_arr = code.splitlines()
-        for end_lineno, end_col_offset, lineno, col_offset, name, cell_id in sorted(linker.updates, reverse=True):
-            if lineno != end_lineno:
-                raise Exception("Names cannot be split over multiple lines")
-            s = code_arr[lineno-1]
-            ref = DataflowRef([0,0],[0,len(cell_id) + len(name) + 1],name=name, cell_id=cell_id)
-            code_arr[lineno-1] = ''.join([s[:col_offset], identifier_replacer(ref), s[end_col_offset:]])
-        code = '\n'.join(code_arr)
-        # print("STEP 2:", code)
-
-        code = convert_dfvar(code, dollar_replacer)
-        # print("STEP 3:", code)
-
-        return code
 
     # def _publish_execute_input(self, code, parent, execution_count):
     #     # go through nodes and for each node that exists in self.shell's history
@@ -184,9 +132,12 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             uuid = '1'
             execution_count = 1
         try:
-            code = self.ground_code(code, uuid, input_tags)
-        except SyntaxError:
+            code = convert_dollar(code, self.shell.user_ns, uuid, identifier_replacer, input_tags)
+            code = ground_refs(code, self.shell.user_ns, uuid, identifier_replacer, input_tags)
+            code = convert_identifier(code, dollar_replacer)
+        except SyntaxError as e:
             # ignore this for now, catch it in do_execute
+            # print(e)
             pass
     
         # print("FIRST CODE:", code)
@@ -196,7 +147,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         # convert all tilded code
         try:
-            code = convert_dollar(code)
+            code = convert_dollar(code, self.shell.user_ns, uuid, ref_replacer, input_tags)
         except SyntaxError:
             # ignore this for now, catch it in do_execute
             pass
