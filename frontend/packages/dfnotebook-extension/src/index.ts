@@ -417,10 +417,20 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 GraphManager.update_order((nbPanel.content as any).model._cells._cellOrder._array);
             });
             nbPanel.content.activeCellChanged.connect(() =>{
+                let prevActive = GraphManager.get_active();
+                if(prevActive != "None"){
+                    let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
+                    if(prevActive.value.text != GraphManager.get_text(uuid)){
+                        GraphManager.mark_stale(uuid);
+                    }
+                    else if(GraphManager.get_stale(uuid) == 'Stale'){
+                        GraphManager.revert_stale(uuid);
+                    }
+                }
                 //Have to get this off the model the same way that actions.tsx does
                 let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
-                console.log("Active Cell ID: ",activeId);
-                GraphManager.update_active(activeId);
+                //console.log("Active Cell ID: ",activeId,nbPanel.content.activeCell?.model?.value.text);
+                GraphManager.update_active(activeId,nbPanel.content.activeCell?.model);
             });
       });
 

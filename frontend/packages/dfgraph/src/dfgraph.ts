@@ -31,12 +31,14 @@ class GraphManager {
     miniWidget: any;
     activeID: string;
     tracker: any;
+    previousActive: string;
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
         this.current_graph = "None";
         this.depview = new DepView();
         this.minimap = new Minimap();
+        this.previousActive = "None";
     }
 
     getProperty = function(prop: string){
@@ -64,8 +66,9 @@ class GraphManager {
         }
     }
 
-    update_active = function(activeid?:string){
+    update_active = function(activeid?:string,prevActive?:any){
         this.activeID = activeid || "none";
+        this.previousActive = prevActive || "none";
         //FIXME: Add depviewer active cell code
         //         if(this.depWidget.is_open){
         //             console.log("Update dep viewer here");
@@ -73,6 +76,26 @@ class GraphManager {
         if(this.miniWidget.is_open){
             this.minimap.updateActiveByID(activeid);
         }
+    }
+
+    mark_stale = function(uuid:string){
+        this.graphs[this.current_graph].update_stale(uuid);
+    }
+
+    revert_stale = function(uuid:string){
+        this.graphs[this.current_graph].update_fresh(uuid,true);
+    }
+
+    get_stale = function(uuid:string){
+        return this.graphs[this.current_graph].states[uuid];
+    }
+
+    get_active = function(){
+        return this.previousActive;
+    }
+
+    get_text = function(uuid:string){
+        return this.graphs[this.current_graph].cell_contents[uuid];
     }
 
     update_order = function(neworder:any){
@@ -134,11 +157,14 @@ export class Graph {
     minimap: any;
     cell_contents : any;
     cell_order: any;
+    states: any;
+    executed: any;
 
     /*
     * Create a graph to contain all inner cell dependencies
     */
-    constructor({cells = [],nodes = [],uplinks={},downlinks={}, internal_nodes= {}, all_down= {}, cell_contents= {}}:{cells?: string[], nodes?: string[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}} = {}) {
+    constructor({cells = [],nodes = [],uplinks={},downlinks={}, internal_nodes= {}, all_down= {}, cell_contents= {}}:{cells?: string[], nodes?: string[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}} = {}, states?: {}) {
+        let that = this;
         this.was_changed = false;
         this.cells = cells || [];
         this.nodes = nodes || [];
@@ -150,6 +176,52 @@ export class Graph {
         //Cache downstream lists
         this.downstream_lists = all_down || {};
         this.upstream_list = {};
+        this.states = states || {};
+        this.executed = {};
+        if(that.cells.length > 1){
+                that.cells.forEach(function(uuid:string){
+                    that.states[uuid] = "Stale";
+                    that.executed[uuid] = false;
+                });
+        }
+    }
+
+    /** @method update_stale updates the stale states in the graph */
+    update_stale(uuid:string){
+        this.states[uuid] = "Stale";
+        this.downlinks[uuid].forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
+    }
+
+    /** @method update_fresh updates the stale states in the graph */
+    update_fresh(uuid:string,revert:boolean){
+        let that = this;
+        //Make sure that we don't mark non executed cells as fresh
+        if(revert && !that.executed[uuid]){
+            return;
+        }
+        that.states[uuid] = "Fresh";
+        that.executed[uuid] = true;
+        //We have to execute upstreams either way
+        console.log(that.uplinks[uuid]);
+        Object.keys(that.uplinks[uuid]).forEach(function(upuuid:string){
+            that.states[upuuid] = "Fresh";
+        });
+        
+        if(revert == true){
+            //Restore downstream statuses
+            that.downlinks[uuid].forEach(function(duuid:string){
+                if(that.upstream_fresh(duuid) && that.states[duuid] == "Upstream Stale"){
+                    that.states[duuid] = "Fresh";
+                }
+            })
+        }
+
+    }
+
+    /** @method upstream_fresh checks to see if everything upstream from a cell is fresh or not */
+    upstream_fresh(uuid:string){
+        let that = this;
+        return Object.keys(that.uplinks[uuid]).reduce(function(flag:boolean,upuuid:string){return flag && that.states[upuuid] == "Fresh";},true);
     }
 
 
@@ -170,6 +242,7 @@ export class Graph {
         that.downlinks[uuid] = downlinks || [];
         that.internal_nodes[uuid] = internal_nodes;
         that.update_dep_lists(all_ups,uuid);
+        that.update_fresh(uuid,false);
         //Shouldn't need the old way of referencing
         //that.minimap.update_edges();
         //celltoolbar.CellToolbar.rebuild_all();
