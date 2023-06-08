@@ -7,6 +7,14 @@
     transition: 0.5s;
 }
 
+.cells{
+  fill:none;
+  stroke-width: 1px;
+  stroke: black;
+    stroke-dasharray: 4;
+    stroke-dashoffset: 2;
+}
+
 #minisvg {
   display:block;
   width: 500px;
@@ -25,7 +33,7 @@
   display:block;
 }
 
-#minimap rect{
+#minimap rect:not(.cells){
   stroke:none;
 }
 
