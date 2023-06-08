@@ -177,6 +177,30 @@ export class Minimap {
         return [];
    }
 
+    /** @method update_states updates the states present in the graph */
+    update_states = function(){
+            let that = this;
+            let decoffset = 0;
+            this.svg.selectAll('text.states')
+            .data(Object.keys(that.dfgraph.states))
+            .text((uuid:string) => that.dfgraph.states[uuid])
+            .enter()
+            .append('text')
+            .attr('x',that.text_offset+that.svg_offset_x+20)
+            .attr('y',function(a:string,b:number){
+                    let curroffset = decoffset;
+                    let node = a[0];
+                    let node_length = that.out_tags_length(node);
+                    decoffset = decoffset + node_length;
+                    if(node_length > 1){
+                        return 15+(that.offset_x*curroffset)+(that.offset_x/(node_length));
+                    }
+                    return 15+(that.offset_x*curroffset);
+                    })
+            .text((uuid:string) => that.dfgraph.states[uuid])
+            .classed('states',true);
+    }
+
    /** @method combines tags with respective uuids **/
    out_tags_length = function(uuid:string)
    {
@@ -306,7 +330,7 @@ export class Minimap {
             .append('text')
             .on('click',textclick)
             .attr('id',(a:Array<string>)=> 'text'+a[0])
-            .attr('x',that.text_offset+that.svg_offset_x+50)
+            .attr('x',that.text_offset+that.svg_offset_x+70)
             .attr('y',function(a:Array<string>,b:number){
                     let curroffset = decoffset;
                     let node = a[0];
@@ -327,6 +351,25 @@ export class Minimap {
                 .text((a:any)=>a[0])
                 .classed('outtag',(a:any)=>a[1]);
             })
+
+            decoffset = 0;
+            this.svg.selectAll('text.states')
+            .data(Object.keys(that.dfgraph.states))
+            .enter()
+            .append('text')
+            .attr('x',that.text_offset+that.svg_offset_x+20)
+            .attr('y',function(a:string,b:number){
+                    let curroffset = decoffset;
+                    let node = a[0];
+                    let node_length = that.out_tags_length(node);
+                    decoffset = decoffset + node_length;
+                    if(node_length > 1){
+                        return 15+(that.offset_x*curroffset)+(that.offset_x/(node_length));
+                    }
+                    return 15+(that.offset_x*curroffset);
+                    })
+            .text((uuid:string) => that.dfgraph.states[uuid])
+            .classed('states',true);
         }
 
 

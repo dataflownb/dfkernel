@@ -80,10 +80,12 @@ class GraphManager {
 
     mark_stale = function(uuid:string){
         this.graphs[this.current_graph].update_stale(uuid);
+        this.minimap.update_states();
     }
 
     revert_stale = function(uuid:string){
         this.graphs[this.current_graph].update_fresh(uuid,true);
+        this.minimap.update_states();
     }
 
     get_stale = function(uuid:string){
