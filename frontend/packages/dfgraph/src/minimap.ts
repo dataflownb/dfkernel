@@ -74,7 +74,7 @@ export class Minimap {
     makePaths = function(source:any,destination:any,parent:any,left:boolean)
     {
         let x_val = left ? this.svg_offset_x+this.radius+4 : this.svg_offset_x-(this.radius+4);
-        let y_val = (Math.abs(destination.attr('cy') - source.attr('cy')));
+        let y_val = ((destination.attr('cy') - source.attr('cy')));
         parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source.attr('cy') + 'v '+y_val).attr('stroke-width',2);
     }
 
