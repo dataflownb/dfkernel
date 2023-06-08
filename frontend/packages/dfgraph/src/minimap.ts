@@ -24,6 +24,8 @@ export class Minimap {
     order : any;
     mode : string;
     fixed_identifier : string;
+    toggle: any;
+    tabular: any;
 
     constructor(dfgraph?: any, parentdiv?: any) {
             this.was_created = false;
@@ -39,6 +41,8 @@ export class Minimap {
             this.output_tags = {};
             this.dfgraph = dfgraph || null;
             this.tracker = null;
+            this.toggle = null;
+            this.tabular = null;
             //this.mode = 'cells';
             this.mode = 'nodes';
             //this.widget =
@@ -429,16 +433,21 @@ export class Minimap {
         }
     }
 
-
-
     /** @method creates the starting environment for first time setup*/
     createMiniArea = function(svg:any){
         (async() => {
             while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
                 await new Promise(resolve => setTimeout(resolve, 100));
+                d3.select('#minimap').classed('container',true);
+                let that = this;
                 this.svg = d3.select('#minisvg');
                 this.svg = this.svg.append('g');
                 this.svg.attr('transform','translate(0,0)');
+                this.toggle = d3.select('#minimap').append('div').attr('id','side-panel-mini');
+                this.tabular = this.toggle.append("div").attr('id', 'table').classed('card', true);
+                let label = this.tabular.append('label').classed('switch',true);
+                label.append('input').attr('type','checkbox').on('change',function(){that.changeMode();});
+                label.append('span').classed('slider',true).classed('round',true);
                 this.startMinimapCreation();
         })();
     };
@@ -464,6 +473,15 @@ export class Minimap {
         this.update_edges();
         this.createMinimap();
     };
+
+    /** @method changes the current mode in which the minimap is being displayed */
+    changeMode = function(){
+        let that = this;
+        that.mode = that.mode == 'nodes' ? 'cells' : 'nodes';
+        that.clearMinimap();
+        that.startMinimapCreation();
+    }
+
 
     /** @method set graph, sets the current activate graph to be visualized */
     set_graph = function(graph:any){

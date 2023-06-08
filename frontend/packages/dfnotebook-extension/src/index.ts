@@ -543,10 +543,13 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
       // Add a div to the panel
         let panel = document.createElement('div');
         panel.setAttribute('id','minimap');
+        let inner = document.createElement('div');
+        inner.setAttribute('id','minidiv');
         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
         svg.setAttribute('id','minisvg');
-        panel.appendChild(svg);
+        inner.append(svg);
+        panel.appendChild(inner);
         content.node.appendChild(panel);
 
 
