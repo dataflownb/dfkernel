@@ -76,6 +76,10 @@ class GraphManager {
     }
 
     update_order = function(neworder:any){
+
+        if(!(this.current_graph in this.graphs)){
+            return;
+        }
         this.graphs[this.current_graph].update_order(neworder);
         let modifiedorder = neworder.map((cellid:any) => cellid.replace(/-/g, '').substr(0, 8) as string);
         this.minimap.updateOrder(modifiedorder);
