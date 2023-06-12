@@ -125,6 +125,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # FIXME does it make sense to reparent a request?
         metadata = self.init_metadata(parent)
 
+        # print("INNER EXECUTE:", uuid)
+
         try:
             execution_count = int(uuid, 16)
         except:
@@ -132,8 +134,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             uuid = '1'
             execution_count = 1
         try:
-            code = convert_dollar(code, self.shell.user_ns, uuid, identifier_replacer, input_tags)
-            code = ground_refs(code, self.shell.user_ns, uuid, identifier_replacer, input_tags)
+            code = convert_dollar(code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags)
+            code = ground_refs(code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags)
             code = convert_identifier(code, dollar_replacer)
         except SyntaxError as e:
             # ignore this for now, catch it in do_execute
@@ -145,9 +147,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         if not silent:
             self._publish_execute_input(code, parent, execution_count)
 
+        # update the code_dict with the modified code
+        dfkernel_data['code_dict'][uuid] = code
         # convert all tilded code
         try:
-            code = convert_dollar(code, self.shell.user_ns, uuid, ref_replacer, input_tags)
+            code = convert_dollar(code, self.shell.dataflow_state, uuid, ref_replacer, input_tags)
         except SyntaxError:
             # ignore this for now, catch it in do_execute
             pass

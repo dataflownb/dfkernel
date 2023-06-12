@@ -53,14 +53,14 @@ def ref_replacer(ref):
 def dollar_replacer(ref):
     return str(ref)
 
-def update_refs(refs, df_namespace, execution_count, input_tags):
+def update_refs(refs, dataflow_state, execution_count, input_tags):
     for ref in refs:
         if ref.ref_qualifier == '^' or (not ref.cell_tag and not ref.cell_id):
             # get latest cell_id
             # FIXME is_external_link needs to be updated to find
             # the external link that is not the current uuid...
-            assert df_namespace._is_external_link(ref.name, execution_count)
-            ref.cell_id = df_namespace.get_parent(ref.name)
+            if dataflow_state.has_external_link(ref.name, execution_count):
+                ref.cell_id = dataflow_state.get_external_link(ref.name, execution_count)
             # print("ASSIGNING CELL_ID:", ref.cell_id)
 
         if ref.cell_tag is not None:
@@ -91,7 +91,7 @@ def run_replacer(s, refs, replace_f):
             line[:ref.start_pos[1]] + replace_f(ref) + line[ref.end_pos[1]:]
     return '\n'.join(code_arr)    
 
-def ground_refs(s, df_namespace, execution_count, replace_f=ref_replacer, input_tags={}):
+def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}):
     updates = []
 
     class DataflowLinker(ast.NodeVisitor):
@@ -114,10 +114,10 @@ def ground_refs(s, df_namespace, execution_count, replace_f=ref_replacer, input_
                 self.stored.add(node.id)
             elif (isinstance(node.ctx, ast.Load) and
                     node.id not in self.stored and
-                    df_namespace._is_external_link(node.id, execution_count)):
+                    dataflow_state.has_external_link(node.id, execution_count)):
                 # figure out where we are and keep track of change
                 # FIXME get_parent needs to get most recently used verison of id
-                cell_id = df_namespace.get_parent(node.id)
+                cell_id = dataflow_state.get_external_link(node.id, execution_count)
                 ref = DataflowRef(
                     start_pos=(node.lineno, node.col_offset),
                     end_pos=(node.end_lineno, node.end_col_offset),
@@ -132,11 +132,11 @@ def ground_refs(s, df_namespace, execution_count, replace_f=ref_replacer, input_
     linker = DataflowLinker()
     linker.visit(tree)
 
-    update_refs(linker.updates, df_namespace, execution_count, input_tags)
+    update_refs(linker.updates, dataflow_state, execution_count, input_tags)
 
     return run_replacer(s, linker.updates, replace_f)
 
-def convert_dollar(s, df_namespace, execution_count, replace_f=ref_replacer, input_tags={}):
+def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}):
     def positions_mesh(end, start):
         return end[0] == start[0] and end[1] == start[1]
 
@@ -211,7 +211,7 @@ def convert_dollar(s, df_namespace, execution_count, replace_f=ref_replacer, inp
             last_token = t
 
     # print("UPDATES:", updates)
-    update_refs(updates, df_namespace, execution_count, input_tags)
+    update_refs(updates, dataflow_state, execution_count, input_tags)
 
     return run_replacer(s, updates, replace_f)
 

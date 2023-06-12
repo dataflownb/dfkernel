@@ -44,7 +44,7 @@ from ast import AST
 import importlib
 
 from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
-    DataflowNamespace, DataflowCellException, DuplicateNameError
+    DataflowNamespace, DataflowCellException, DataflowState, DuplicateNameError
 from .dflink import build_linked_result
 
 # Python 3.10 removed the alias from collections
@@ -392,7 +392,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         def cell_scope_completer(completer, text):
             print("GOT COMPLETION REQUEST:", completer, text,
                   file=sys.__stdout__)
-            results = self.user_ns.complete(text, self.input_tags)
+            results = self.dataflow_state.complete(text, self.input_tags)
             return results
         self.set_custom_completer(cell_scope_completer)
 
@@ -553,7 +553,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             self.dataflow_history_manager.update_codes(code_dict)
             self.dataflow_history_manager.update_auto_update(auto_update_flags)
             self.dataflow_history_manager.update_force_cached(force_cached_flags)
-            self.user_ns._add_links(output_tags)
+            self.dataflow_state.add_links(output_tags)
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
@@ -590,7 +590,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.user_ns._start_uuid(self.uuid)
 
         self.uuid = uuid
-        self.user_ns._start_uuid(self.uuid)
+        self.dataflow_state.set_cur_cell_id(self.uuid)
         self.push_result()
 
         result = await super().run_cell_async(raw_cell,
@@ -605,7 +605,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.pop_result()
         uuid = self.uuid
         # this is actually referencing the parent uuid...
-        self.user_ns._revisit_uuid(self.parent_uuid())
+        self.dataflow_state.set_cur_cell_id(self.parent_uuid())
 
         # AFTER RUN_AST_NODES CODE
         # # Reset this so later displayed values do not modify the
@@ -1113,9 +1113,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     ast.fix_missing_locations(node)
             interactivity = 'last_expr'
 
-        # print("DO NOT LINK", no_link_vars)
-        self.user_ns.__do_not_link__.update(no_link_vars)
-
         # import astor
         # import inspect
         # if sys.version_info > (3, 8):
@@ -1146,7 +1143,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # print("END CODE")
         res = await super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         # print("DONE WITH AST NODES")
-        self.user_ns.__do_not_link__.difference_update(no_link_vars)
         self.pop_uuid()
         self.pop_execution_count()
 
@@ -1255,6 +1251,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         ns['Func'] = self.dataflow_function_manager
         ns['_build_linked_result'] = build_linked_result
         ns['_ns'] = self.user_ns
+
+        self.dataflow_state = DataflowState(self.dataflow_history_manager)
+        self.user_ns.__df_state__ = self.dataflow_state
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython

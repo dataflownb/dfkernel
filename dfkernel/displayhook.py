@@ -102,9 +102,9 @@ class ZMQShellDisplayHook(ipyZMQShellDisplayHook):
             self.finish_displayhook()
 
     def update_dataflow_ns(self, result):
-        self.shell.user_ns._reset_cell(result.__uuid__)
+        self.shell.dataflow_state.reset_cell(result.__uuid__)
         for res_tag in result.keys():
-            self.shell.user_ns._add_link(res_tag, result.__uuid__)
+            self.shell.dataflow_state.add_link(res_tag, result.__uuid__)
     
     def finish_displayhook(self):
         """Finish up all displayhook activities."""
