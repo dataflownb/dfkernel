@@ -1,4 +1,3 @@
-from _ast import Subscript
 import ast
 import re
 
@@ -8,6 +7,7 @@ from collections import defaultdict
 from operator import attrgetter
 import json
 from typing import Any
+import itertools
 
 class DataflowRef:
     __slots__ = ['start_pos','end_pos','name','cell_id','cell_tag','ref_qualifier']
@@ -96,27 +96,20 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
 
     class DataflowLinker(ast.NodeVisitor):
         def __init__(self):
-            self.stored = set()
-            self.updates = []
             super().__init__()
-
-        # need to make sure we visit right side before left!
-        # seems to happen by default?
-        def visit_Assign(self, node):
-            self.visit(node.value)
-            for target in node.targets:
-                self.visit(target)
+            self.scope = [set()]
+            self.updates = []
 
         def visit_Name(self, node):
             # FIXME what to do with del?
             if isinstance(node.ctx, ast.Store):
                 # print("STORE", name.id, file=sys.__stdout__)
-                self.stored.add(node.id)
+                self.scope[-1].add(node.id)
+            elif isinstance(node.ctx, ast.Del):
+                self.scope[-1].discard(node.id)
             elif (isinstance(node.ctx, ast.Load) and
-                    node.id not in self.stored and
+                    all(node.id not in s for s in self.scope) and
                     dataflow_state.has_external_link(node.id, execution_count)):
-                # figure out where we are and keep track of change
-                # FIXME get_parent needs to get most recently used verison of id
                 cell_id = dataflow_state.get_external_link(node.id, execution_count)
                 ref = DataflowRef(
                     start_pos=(node.lineno, node.col_offset),
@@ -127,6 +120,98 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                 self.updates.append(ref)
                 # print("LOAD", name.id, cell_id, file=sys.__stdout__)
             self.generic_visit(node)
+
+        # need to make sure we visit right side before left!
+        def visit_Assign(self, node):
+            self.visit(node.value)
+            for target in node.targets:
+                self.visit(target)
+
+        # FIXME we should rewrite augmented assignments to
+        # deal with c += 12 where c is referencing another
+        # cell's output
+        def visit_AugAssign(self, node):
+            self.visit(node.value)
+            self.visit(node.target)
+
+        def visit_AnnAssign(self, node):
+            if node.value:
+                self.visit(node.value)
+            self.visit(node.annotation)
+            self.visit(node.target)
+
+        def process_function(self, node, add_name=True):
+            if add_name:
+                self.scope[-1].add(node.name)
+            func_args = set()
+            for a in itertools.chain(node.args.args, node.args.posonlyargs, node.args.kwonlyargs):
+                func_args.add(a.arg)
+            self.scope.append(func_args)
+            retval = self.generic_visit(node)
+            self.scope.pop()
+            return retval
+
+        def visit_FunctionDef(self, node):
+            return self.process_function(node)
+
+        def visit_AsyncFunctionDef(self, node):
+            return self.process_function(node)
+
+        def visit_Lambda(self, node):
+            return self.process_function(node, add_name=False)
+
+        def visit_ClassDef(self, node):
+            self.scope[-1].add(node.name)
+            self.scope.append(set())
+            retval = self.generic_visit(node)
+            self.scope.pop()
+            return retval
+
+        def process_import(self, node):
+            for alias in node.names:
+                if alias.asname:
+                    self.scope[-1].add(alias.asname)
+                else:
+                    self.scope[-1].add(alias.name)
+            self.generic_visit(node)
+
+        def visit_Import(self, node):
+            self.process_import(node)
+
+        def visit_ImportFrom(self, node):
+            self.process_import(node)
+
+        def visit_ExceptHandler(self, node):
+            self.scope.append(set())
+            if node.name:
+                self.scope[-1].add(node.name)
+            retval = self.generic_visit(node)
+            self.scope.pop()
+            return retval
+
+        def process_elt_comp(self, node):
+            self.scope.append(set())
+            for generator in node.generators:
+                self.visit(generator)
+            self.visit(node.elt)
+            self.scope.pop()
+
+        def visit_ListComp(self, node):
+            self.process_elt_comp(node)
+
+        def visit_SetComp(self, node):
+            self.process_elt_comp(node)
+
+        def visit_GeneratorExp(self, node):
+            self.process_elt_comp(node)
+
+        def visit_DictComp(self, node):
+            self.scope.append(set())
+            for generator in node.generators:
+                self.visit(generator)
+            self.visit(node.key)
+            self.visit(node.value)
+            self.scope.pop()
 
     tree = ast.parse(s)
     linker = DataflowLinker()
