@@ -1,3 +1,5 @@
+import asyncio
+from functools import partial
 import ipykernel.ipkernel
 from ipykernel.ipkernel import *
 
