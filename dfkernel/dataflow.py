@@ -501,46 +501,6 @@ class DataflowState:
         self.rev_links.clear()
 
 class DataflowNamespace(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # __df_state__ is set in zmqshell
-
-    def __getitem__(self, k):
-        if super().__contains__(k):
-            return super().__getitem__(k)
-        if self.__df_state__.has_link(k):
-            return self.__df_state__.get_link(k)
-        return super().__getitem__(k)
-
-    # FIXME how should we use MutableMapping here?
-    # can use existing definitions or try this
-
-    def __contains__(self, k):
-        return super().__contains__(k) or self.__df_state__.has_link(k)
-
-    def __is_local__(self, k):
-        return super().__contains__(k)
-
-    def __iter__(self):
-        return itertools.chain(super().__iter__(), 
-                               filter(lambda k: not self.__is_local__(k) and self.__df_state__.has_link(k), self.__df_state__.links))
-
-    def __len__(self):
-        return super().__len__() + sum(map(lambda k: 1 if (self.__is_local__(k) and self.__df_state__.has_link(k)) else 0, self.__df_state__.links))
-
-    def keys(self):
-        return self.__iter__()
-    
-    def items(self):
-        return map(lambda k: (k, self.__getitem__(k)), self.__iter__())
-    
-    def values(self):
-        return map(lambda k: self.__getitem__(k), self.__iter__())
-
-#     keys = MutableMapping.keys
-#     items = MutableMapping.items
-#     values = MutableMapping.values
-
     def clear(self):
         super().clear()
         self.__df_state__.clear()
