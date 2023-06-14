@@ -78,7 +78,7 @@ export class DepView {
         this.tabular = null;
         this.execute_panel = null;
         //Label Styles should be set in text so that GraphViz can properly size the nodes
-        this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 1.2em;';
+        this.labelstyles = labelstyles || 'font-family: monospace; fill: #D84315; font-size: 0.85em;';
 
         //Divs are created and defined in here
         //this.create_dep_div();
@@ -476,7 +476,7 @@ export class DepView {
 
         that.cell_list.forEach(function(a:any) {that.cell_child_nums[a.id] = 0;});
         that.cell_links.forEach(function(a:any){ that.cell_child_nums[a.source] += 1;});
-        let g = new GraphLib.Graph({compound:true}).setGraph({compound:true,ranksep:1,nodesep:.1,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
+        let g = new GraphLib.Graph({compound:true}).setGraph({compound:true,ranksep:1,nodesep:0.03,tooltip:' ',rankdir:'LR'}).setDefaultEdgeLabel(function () {
             return {};
         });
 
@@ -484,8 +484,8 @@ export class DepView {
 
         that.cell_list.forEach(function(a:any){
             if(that.output_nodes[a.id]){
-                if(that.selected && a.level == 0){ g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode cellid',shape:'box'});}
-                else{g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode cellid',tooltip:' ',shape:'box'});}
+                if(that.selected && a.level == 0){ g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id, id:'selected', clusterLabelPos:'top', class:'parentnode cellid',shape:'box', margin: 5 });}
+                else{g.setNode("cluster_Out["+a.id+"]", {label: that.cell_label + a.id,id:a.id+'cluster', clusterLabelPos:'top', class:'parentnode cellid',tooltip:' ',shape:'box', margin: 5 });}
             }
         });
 
@@ -493,7 +493,7 @@ export class DepView {
             let parent = 'cluster_Out['+a+']';
             if(that.dataflow || that.selected){
                 let cell = a+'-Cell';
-                g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis',peripheries:0, height:0, width:0,tooltip:' ',shape:'point',id:cell});
+                g.setNode(cell,{label:'Cell['+a+']',class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles, style:'invis', peripheries:0, height:0, width:0, margin: '0,0', tooltip:' ',shape:'point',id:cell});
                 g.setParent(cell,parent);
 
             }
@@ -501,10 +501,10 @@ export class DepView {
                 //var uuid = t.substr(4,uuid_length);
                 //FIXME: Make this more robust so it uses uuid_length
                 if(/cluster_Out\_[a-f0-9]{8}/.test(t)){
-                    g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
+                    g.setNode(a+t,{label:parent, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t, width: 0.2, height: 0.05, margin: '0.1,0.01'}); g.setParent(a+t,parent);
                 }
                 else{
-                    g.setNode(a+t,{label:t, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t}); g.setParent(a+t,parent);
+                    g.setNode(a+t,{label:t, class:'child-node prompt output_prompt cellid', labelStyle:that.labelstyles,tooltip:' ',shape:'box',id:a+t, width: 0.2, height: 0.05, margin: '0.1,0.01'}); g.setParent(a+t,parent);
                 }
 
         }) });

@@ -47,10 +47,10 @@
     overflow-y:scroll;
 }
 
-g text {
+.dep-div g text {
   font-weight: 300;
   font-family: monospace;
-  font-size: .85em;
+  font-size: 1em;
 }
 
 .node rect {
@@ -213,7 +213,7 @@ span.cellid{
 }
 
 .cluster text{
-    font-size:1.2em;
+    font-size:0.85em;
     fill:#303f9f;
 }
 
