@@ -1,5 +1,4 @@
 .dep-div {
-    height: 100%;
     z-index: -999;
     background-color: rgba(255,255,255,.5);
     overflow-x: hidden;
@@ -13,11 +12,9 @@
     font-size: 60px;
 }
 
-#svg-div {
-    width: 76%;
-    height: 100%;
-   text-align: center;
-    overflow: hidden;
+#svg-div svg {
+    height: auto;
+    width: 100%;
 }
 
 #table {
@@ -73,8 +70,6 @@
 
 .internal rect{
     fill-opacity: 0;
-    rx: 10px;
-    ry: 10px;
     stroke: white;
     stroke-width: 1.5px;
     stroke-linejoin: round;
@@ -90,8 +85,6 @@
     fill-opacity: 1;
     stroke-width: 1.5px;
     stroke-linejoin: round;
-    rx: 10px;
-    ry: 10px;
 }
 
 tspan {

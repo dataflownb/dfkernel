@@ -344,9 +344,6 @@ export class DepView {
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
             graphviz('#svg-div').options(defaultOptions)
-                .width(500)
-                .height(500)
-                .fit(true)
                 .zoom(true)
                 .on('end',function(){
                     that.update_cell_lists();
