@@ -11,8 +11,8 @@ const uuid_length = 8;
 
 
 const defaultOptions: GraphvizOptions = {
-  height: 500,
-  width: 500,
+  height: 1600,
+  width: 1600,
   scale: 1,
   tweenPrecision: 1,
   engine: "dot",
@@ -24,7 +24,7 @@ const defaultOptions: GraphvizOptions = {
   tweenPaths: false,
   tweenShapes: false,
   useWorker: false,
-  zoom: false
+  zoom: true
 };
 
 
@@ -344,7 +344,6 @@ export class DepView {
 
             //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
             graphviz('#svg-div').options(defaultOptions)
-                .zoom(true)
                 .on('end',function(){
                     that.update_cell_lists();
                     that.done_rendering = true;
