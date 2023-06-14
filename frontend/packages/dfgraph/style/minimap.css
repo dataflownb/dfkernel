@@ -1,4 +1,7 @@
 #minimap {
+  --active-color: #3b5fc0;
+  --default-color: #000000;
+  --inactive-color: #c4c4c4;
    width: 500px;
    height: 100%;
     z-index: -999;
@@ -8,38 +11,50 @@
 }
 
 .cells{
-  fill:none;
+  fill: none;
   stroke-width: 1px;
-  stroke: black;
-    stroke-dasharray: 4;
-    stroke-dashoffset: 2;
+  stroke: var(--default-color);
+  stroke-dasharray: 4;
+  stroke-dashoffset: 2;
 }
 
 #minisvg {
-  display:block;
+  display: block;
   width: 500px;
   height: 500px !important;
 }
 
-#minisvg circle,rect,path,text{
-    display:block;
+#minisvg circle,rect,path,text,g{
+  display: block;
+}
+
+#minimap text { 
+  font-family: monospace; 
+}
+
+#minimap path {
+  stroke: currentColor;
+}
+
+#minimap circle {
+  fill: currentColor;
+}
+
+#minimap text {
+  fill: currentColor;
+  stroke: none;
 }
 
 #minimap .active_node{
-  fill:#3b5fc0;
-}
-
-#minimap g{
-  display:block;
+  color: var(--active-color);
 }
 
 #minimap rect:not(.cells){
-  stroke:none;
+  stroke: none;
 }
 
 #minimap .active:not(.gray){
-  stroke:#3b5fc0;
-  color:#3b5fc0;
+  color: var(--active-color);
 }
 
 #minimap .move_left{
@@ -55,42 +70,33 @@
 }
 
 #minimap tspan {
-  stroke: #c4c4c4;
-  color: #c4c4c4;
-  font-family: monospace;
+  color: var(--inactive-color);
 }
 
+#minimap .active:not(.gray) tspan {
+  color: var(--active-color);
+  font-weight: bold;
+}
 
 #minimap tspan.outtag{
-  stroke: #000;
-  color: #000;
+  color: var(--default-color);
 }
 
 #minimap text.active > tspan.outtag{
-  stroke: #3b5fc0;
-  color: #3b5fc0;
+  color: var(--active-color);
+  font-weight: bold;
 }
 
-.active_node:not(.gray){
-  fill:#3b5fc0;
-}
-
-g{
-  display:block;
-}
-
-rect{
-  stroke:none;
+#minimap .active_node:not(.gray){
+  color: var(--active-color);
 }
 
 .active:not(.gray),.imm{
-  stroke:#3b5fc0 !important;
-  color:#3b5fc0 !important;
-  fill: #3b5fc0 !important;
+  color: var(--active-color);
 }
 
 .imm .source,.imm .destination, .active:not(.gray) .source, .active:not(.gray) .destination{
-  stroke:#3b5fc0 !important;
+  color: var(--active-color);
 }
 
 .move_left{
@@ -106,24 +112,19 @@ rect{
 }
 
 .gray{
-  stroke:#c4c4c4;
-  color:#c4c4c4;
-  fill: #c4c4c4;
+  color: var(--inactive-color);
 }
 
 .gray .source,.gray .destination{
-  stroke: #c4c4c4;
-  color:#c4c4c4;
+  color: var(--inactive-color);
 }
 
-svg text { font-family: monospace; }
-
 .source{
-  stroke:black;
+  color: var(--default-color);
 }
 
 .destination{
-  stroke:black;
+  color: var(--default-color);
 }
 
 #side-panel-mini{
