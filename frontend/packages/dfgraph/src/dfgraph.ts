@@ -191,7 +191,9 @@ export class Graph {
     /** @method update_stale updates the stale states in the graph */
     update_stale(uuid:string){
         this.states[uuid] = "Stale";
-        this.downlinks[uuid].forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
+        if(uuid in this.downlinks){
+            this.downlinks[uuid].forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
+        }
     }
 
     /** @method update_fresh updates the stale states in the graph */
