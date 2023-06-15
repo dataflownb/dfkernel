@@ -198,8 +198,19 @@ export class Minimap {
 
     /** @method takes in a string id input and activates based on that ID*/
     updateActiveByID = function(activeid:string){
-            let source_node = d3.select('#node'+activeid).classed('move_right',true).classed('active',true);
-            let src = source_node.select('circle');
+            let source_node = null;
+            let src = null;
+            if(this.mode == 'nodes'){
+                let deps = this.dfgraph.get_nodes(activeid);
+                let add_specifier = deps.length > 0 ? deps[0] : "";
+                console.log('#node'+activeid+add_specifier);
+                source_node = d3.select('#node'+add_specifier+this.fixed_identifier+activeid).classed('move_right',true).classed('active',true);
+                src = source_node.select('circle');
+            }
+            else{
+                source_node = d3.select('#node'+activeid).classed('move_right',true).classed('active',true);
+                src = source_node.select('circle');
+            }
             this.elementActivate(source_node,src);
     }
 
