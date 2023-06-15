@@ -257,8 +257,6 @@ export class Minimap {
 
         let minitran = d3.transition()
             .duration(0);
-            //.ease(d3.easeLinear)
-            //.end();
 
         let circles = this.svg.selectAll('circle');
         let data = null;
@@ -291,10 +289,11 @@ export class Minimap {
 
         groups.append('circle')
           .transition(minitran)
-          .on('end',() => that.mapEdges(that))
           .attr('cx', this.svg_offset_x)
           .attr('cy',(a:string,b:number)=> 10+this.offset_x*b)
           .attr('r',this.radius);
+
+        that.mapEdges(that);
 
         let grab_out_tags = function(id:string,text:string){
             if(id in that.output_tags){
@@ -456,14 +455,27 @@ export class Minimap {
 
     /** @method maps edges to incoming and outgoing paths in the svg **/
     mapEdges = function(parent:any,node:any){
-
+        let that = this;
+        if(that.mode == 'cells'){
+            that.order_fixed = this.order;
+        }
+        else{
+            that.order_fixed = this.order.reduce(function(a:any,b:any){return a.concat(that.combine_tags(b))},[]);
+        }
+        let edgelist:{[index: string]:any} = {};//:;
         this.edges.map(function(edge:any){
              let source_id = '#node'+edge['source'];
              let destination_id = '#node'+edge['destination'];
-             let source = d3.select(source_id).select('circle');
-             let destination = d3.select(destination_id).select('circle');
-             let source_x = source.attr('cx');
-             let source_y = source.attr('cy');
+
+             if(source_id in edgelist) {
+                if(edgelist[source_id].includes(destination_id)){return;}
+                edgelist[source_id].push(destination_id);
+             }
+             else{ edgelist[source_id] = [destination_id]; }
+             let source_x = that.svg_offset_x;
+             let source_y = 10+that.offset_x*that.order_fixed.indexOf(edge['source']);
+             let destination_x = that.svg_offset_x;
+             let destination_y = 10+that.offset_x*that.order_fixed.indexOf(edge['destination']);
 
              d3.select(source_id).append('g')
              .attr('transform','translate(0,0)')
