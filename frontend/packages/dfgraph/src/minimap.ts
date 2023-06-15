@@ -340,7 +340,7 @@ export class Minimap {
         if(that.mode == 'nodes')
         {
             let full_source = values;
-            values = that.order.reduce(function(a:any,b:any){return a.concat(that.output_tags[b].map((tag:string) => ([tag+that.fixed_identifier+b,[[tag,true]]])))},[]);
+            values = that.order.reduce(function(a:any,b:any){return a.concat((that.output_tags[b] || []).map((tag:string) => ([tag+that.fixed_identifier+b,[[tag,true]]])))},[]);
             let decoffset = 0;
             that.svg.selectAll('rect.cells')
             .data(that.order)
@@ -371,7 +371,10 @@ export class Minimap {
                 .data(a[1])
                 .enter()
                 .append('tspan')
-                .text((a:any)=>a[0])
+                .text(function(a:any){
+                    if(a[0]){ return a[0];}
+                    return "";
+                })
                 .classed('outtag',(a:any)=>a[1]);
             })
             .on('click',textclick)
@@ -397,7 +400,10 @@ export class Minimap {
                 .data(a[1])
                 .enter()
                 .append('tspan')
-                .text((a:any)=>a[0])
+                .text(function(a:any){
+                    if(a[0]){ return a[0];}
+                    return "";
+                })
                 .classed('outtag',(a:any)=>a[1]);
             })
 
@@ -440,7 +446,12 @@ export class Minimap {
             .data(a[1])
             .enter()
             .append('tspan')
-            .text((a:any)=>a[0])
+            .text(function(a:any){
+            if(a[0]){
+                return a[0].length > 10 ? a[0].substring(0,7)+".." : a[0];
+            }
+                return "";
+            })
             .classed('outtag',(a:any)=>a[1]);
         })
         .on('click',textclick)
@@ -457,7 +468,12 @@ export class Minimap {
             .data(a[1])
             .enter()
             .append('tspan')
-            .text((a:any)=>a[0])
+            .text(function(a:any){
+            if(a[0]){
+                return (a[0].length > 10 ? a[0].substring(0,7)+".." : a[0]);
+            }
+            return "";
+            })
             .classed('outtag',(a:any)=>a[1]);
         })
 
@@ -496,9 +512,6 @@ export class Minimap {
              .attr('d','M'+ source_x +' ' + source_y + 'h 8')
              .attr('stroke-width',2).attr('fill','none')
              .attr('stroke',"black");
-
-             let destination_x = destination.attr('cx');
-             let destination_y = destination.attr('cy');
 
              d3.select(destination_id).append('g')
              .attr('transform','translate(0,0)')
