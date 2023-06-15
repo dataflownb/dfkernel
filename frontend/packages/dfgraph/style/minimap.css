@@ -43,11 +43,11 @@
 }
 
 #minimap .move_left{
-  transform: translate(15px,0);
+  transform: translate(19px,0);
 }
 
 #minimap .move_right{
-  transform: translate(-15px,0);
+  transform: translate(-19px,0);
 }
 
 #minimap .hidden{
@@ -94,11 +94,11 @@ rect{
 }
 
 .move_left{
-  transform: translate(15px,0);
+  transform: translate(19px,0);
 }
 
 .move_right{
-  transform: translate(-15px,0);
+  transform: translate(-19px,0);
 }
 
 .hidden{

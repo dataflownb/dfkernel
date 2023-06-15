@@ -22,6 +22,7 @@ export class Minimap {
     output_tags : {[name:string]:[]}
     tracker : any;
     order : any;
+    order_fixed : any;
     mode : string;
     fixed_identifier : string;
     toggle: any;
@@ -31,7 +32,7 @@ export class Minimap {
             this.was_created = false;
             this.radius = 3;
             this.offset_x = 15;
-            this.svg_offset_x = 28;
+            this.svg_offset_x = 32;
             this.svg_offset_y = 50;
             this.text_offset = 40;
             this.fixed_identifier = "DFELEMENT"
@@ -67,20 +68,20 @@ export class Minimap {
         this.svg.selectAll('.hidden').classed('hidden',false);
         this.svg.selectAll('.gray').classed('gray',false);
         this.svg.selectAll('.joining').remove();
+        this.svg.selectAll('.activeedge').remove();
    }
 
 
    /** @method creates paths between node segments **/
     makePaths = function(source:any,destination:any,parent:any,left:boolean)
     {
-        let x_val = left ? this.svg_offset_x+this.radius+4 : this.svg_offset_x-(this.radius+4);
+        let x_val = left ? this.svg_offset_x+this.radius+8 : this.svg_offset_x-(this.radius+8);
         let y_val = ((destination.attr('cy') - source.attr('cy')));
         parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source.attr('cy') + 'v '+y_val).attr('stroke-width',2);
     }
 
     /** @method generates dependencies that aren't intermediates **/
      genDeps = function(immups:any,immdowns:any){
-      console.log(immups,immdowns);
       let that = this;
       let ups:any = [];
       let downs:any = [];
@@ -125,6 +126,37 @@ export class Minimap {
         parent.classed('active',true);
         let active_id = parent.attr('id');
         active_id = active_id.substring(4,active_id.length);
+
+        let source_x = that.svg_offset_x;
+        let offset_active = 0;
+
+        let source_y = 10+that.offset_x*that.order_fixed.indexOf(active_id);
+        let uuid = active_id.substring(active_id.length-8,active_id.length);
+        let immups = that.dfgraph.get_imm_upstreams(uuid);
+        let immdowns = that.dfgraph.get_downstreams(uuid);
+        if(immups.length > 0 && immdowns.length > 0){
+            source_x = that.svg_offset_x - 12;
+            offset_active = 24;
+        }
+        else if(immups.length > 0){
+            offset_active = -12;
+        }
+        else if(immdowns.length > 0){
+            offset_active = 12;
+        }
+
+        let active_ele = '#node'+active_id;
+
+        d3.select(active_ele).append('g')
+        .attr('transform','translate(0,0)')
+        .classed('activeedge',true)
+        .append('path')
+        .classed('source',true)
+        .attr('d','M'+ source_x +' ' + source_y + 'h '+offset_active)
+        .attr('stroke-width',2).attr('fill','#3b5fc0')
+        .attr('stroke',"#3b5fc0");
+
+
         d3.select('#text'+active_id).classed('active',true);
         if(that.mode == 'cells'){
             this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(active_id);
@@ -301,10 +333,9 @@ export class Minimap {
             .attr("y",function(node:string){
                     let curroffset = decoffset;
                     decoffset = decoffset + that.out_tags_length(node);
-                    console.log(that.out_tags_length(node),node);
                     return 4 + curroffset * 15
                     })
-            .attr("width",42)
+            .attr("width",50)
             .attr('height',(node:string) => 15*that.out_tags_length(node)-4)
             .attr('rx',3)
             .attr('ry',3);
