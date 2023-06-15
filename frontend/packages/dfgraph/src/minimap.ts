@@ -13,6 +13,7 @@ export class Minimap {
     svg_offset_x : Number;
     svg_offset_y : Number;
     text_offset : Number;
+    state_offset : Number;
     cells : { [name:string]: string};
     edges : any;
     parentdiv : any;
@@ -27,6 +28,7 @@ export class Minimap {
     fixed_identifier : string;
     toggle: any;
     tabular: any;
+    colormap: any;
 
     constructor(dfgraph?: any, parentdiv?: any) {
             this.was_created = false;
@@ -35,6 +37,7 @@ export class Minimap {
             this.svg_offset_x = 32;
             this.svg_offset_y = 50;
             this.text_offset = 40;
+            this.state_offset = 63;
             this.fixed_identifier = "DFELEMENT"
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
@@ -46,6 +49,7 @@ export class Minimap {
             this.tabular = null;
             //this.mode = 'cells';
             this.mode = 'nodes';
+            this.colormap = {'Stale':'yellow','Fresh':'blue','Upstream Stale':'orange'};
             //this.widget =
     }
 
@@ -213,23 +217,27 @@ export class Minimap {
     update_states = function(){
             let that = this;
             let decoffset = 0;
-            this.svg.selectAll('text.states')
+            this.svg.selectAll('rect.states')
             .data(Object.keys(that.dfgraph.states))
-            .text((uuid:string) => that.dfgraph.states[uuid])
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
             .enter()
-            .append('text')
-            .attr('x',that.text_offset+that.svg_offset_x+20)
+            .append('rect')
+            .attr('x',that.state_offset)
             .attr('y',function(a:string,b:number){
                     let curroffset = decoffset;
                     let node = a[0];
                     let node_length = that.out_tags_length(node);
                     decoffset = decoffset + node_length;
                     if(node_length > 1){
-                        return 15+(that.offset_x*curroffset)+(that.offset_x/(node_length));
+                        return 4+(that.offset_x*curroffset)+(that.offset_x/(node_length));
                     }
-                    return 15+(that.offset_x*curroffset);
+                    return 4+(that.offset_x*curroffset);
                     })
-            .text((uuid:string) => that.dfgraph.states[uuid])
+            .attr('width','5px')
+            .attr('height','12px')
+            .attr('rx','2px')
+            .attr('ry','2px')
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
             .classed('states',true);
     }
 
@@ -384,22 +392,27 @@ export class Minimap {
             })
 
             decoffset = 0;
-            this.svg.selectAll('text.states')
+            this.svg.selectAll('rect.states')
             .data(Object.keys(that.dfgraph.states))
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
             .enter()
-            .append('text')
-            .attr('x',that.text_offset+that.svg_offset_x+20)
+            .append('rect')
+            .attr('x',that.state_offset)
             .attr('y',function(a:string,b:number){
                     let curroffset = decoffset;
                     let node = a[0];
                     let node_length = that.out_tags_length(node);
                     decoffset = decoffset + node_length;
                     if(node_length > 1){
-                        return 15+(that.offset_x*curroffset)+(that.offset_x/(node_length));
+                        return 4+(that.offset_x*curroffset)+(that.offset_x/(node_length));
                     }
-                    return 15+(that.offset_x*curroffset);
+                    return 4+(that.offset_x*curroffset);
                     })
-            .text((uuid:string) => that.dfgraph.states[uuid])
+            .attr('width','5px')
+            .attr('height','12px')
+            .attr('rx','2px')
+            .attr('ry','2px')
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
             .classed('states',true);
         }
 
