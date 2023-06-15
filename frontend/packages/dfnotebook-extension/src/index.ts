@@ -382,7 +382,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 cell_contents[cell_id] = cell.source;
                 output_tags[cell_id] =
                 (cell?.outputs).map(
-                    (output:any)=>output.metadata.output_tag)
+                    (output:any)=>output.metadata?.output_tag)
                 });
                 let cells = Object.keys(output_tags);
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
