@@ -337,7 +337,7 @@ export class Minimap {
         if(that.mode == 'nodes')
         {
             let full_source = values;
-            values = that.order.reduce(function(a:any,b:any){return a.concat((that.get_nodes(b)).map((tag:any) => ([tag ? '' : tag+that.fixed_identifier+b,[[tag,true]]])))},[]);
+            values = that.order.reduce(function(a:any,b:any){return a.concat((that.get_nodes(b)).map((tag:any) => ([tag ? tag+that.fixed_identifier+b : "",[[tag,true]]])))},[]);
             let decoffset = 0;
             that.svg.selectAll('rect.cells')
             .data(that.order)
@@ -358,7 +358,7 @@ export class Minimap {
             decoffset = 0;
 
             this.svg.selectAll('text.source')
-            .data(full_source, function(a:any){return a[0]})
+            .data(full_source, function(a:any){ return a[0]})
             .each(function(a:any){
                 //For existing ones clear all text
                 //FIXME: This is a biproduct of not having full access to tags on load
@@ -379,6 +379,7 @@ export class Minimap {
             .append('text')
             .on('click',textclick)
             .attr('id',(a:Array<string>)=> 'text'+a[0])
+            .classed('source',true)
             .attr('x',that.text_offset+that.svg_offset_x+80)
             .attr('y',function(a:Array<string>,b:number){
                     let curroffset = decoffset;
@@ -424,8 +425,8 @@ export class Minimap {
 
 
 
-        this.svg.selectAll('text')
-        .data(values, function(a:any){return a[0]})
+        this.svg.selectAll('text.labels')
+        .data(values, function(a:any){ return a[0]})
         .each(function(a:any){
             //For existing ones clear all text
             //FIXME: This is a biproduct of not having full access to tags on load
@@ -452,6 +453,7 @@ export class Minimap {
         .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
         .on('click',textclick)
         .each(function(a:any){
+            $(this).empty();
             d3.select(this)
             .selectAll('tspan')
             .data(a[1])
@@ -465,6 +467,7 @@ export class Minimap {
             })
             .classed('outtag',(a:any)=>a[1]);
         })
+        .classed('labels',true)
 
 
     }
