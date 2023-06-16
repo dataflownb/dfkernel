@@ -410,6 +410,11 @@ export class DepView {
 
         };
 
+    /** @method this ellides the names of output nodes **/
+    get_nodes = function(uuid:string){
+        return this.dfgraph.get_nodes(uuid).map(function(a:string){ return a.length > 10 ? a.substring(0,7)+".." : a;})
+    }
+
     /** @method this creates the graphlib data structure that is used to create the visualization **/
     create_node_relations = function(){
         let that = this;
@@ -422,9 +427,10 @@ export class DepView {
         if(that.dataflow){
             that.cell_list = that.dfgraph.get_cells();
             that.cell_list.forEach(function(uuid:string){
-                that.output_nodes[uuid] = that.dfgraph.get_nodes(uuid);
+                that.output_nodes[uuid] = that.get_nodes(uuid);
                 outnames = that.output_nodes[uuid];
                 that.dfgraph.get_upstreams(uuid).forEach(function (b:string) {
+                    b = b.length > 10 ? b.substring(0,7)+".." : b;
                     if(outnames.indexOf(uuid) > -1){
                         that.cell_links.push({source: b, target: uuid});
                     }
@@ -444,7 +450,7 @@ export class DepView {
             that.cell_list = that.dfgraph.get_cells();
             that.cell_list.forEach(function(uuid:string){
 
-                that.output_nodes[uuid] = that.dfgraph.get_nodes(uuid);
+                that.output_nodes[uuid] = that.get_nodes(uuid);
                 if(that.output_nodes[uuid].length == 0){
                     delete that.output_nodes[uuid];
                     return;
@@ -454,6 +460,7 @@ export class DepView {
 
                 if(uuid in that.output_nodes) {
                     that.dfgraph.get_upstreams(uuid).forEach(function (b:string) {
+                        b = b.length > 10 ? b.substring(0,7)+".." : b;
                         if (outnames.indexOf(uuid) > -1) {
                             that.cell_links.push({source: b, target: uuid});
                         }
