@@ -203,6 +203,9 @@ export class Minimap {
             if(this.mode == 'nodes'){
                 let deps = this.dfgraph.get_nodes(activeid);
                 let add_specifier = deps.length > 0 ? deps[0] : "";
+                if (deps.length > 0 && deps[0] == undefined){
+                add_specifier = "";
+                }
                 console.log('#node'+activeid+add_specifier);
                 source_node = d3.select('#node'+add_specifier+this.fixed_identifier+activeid).classed('move_right',true).classed('active',true);
                 src = source_node.select('circle');
@@ -219,16 +222,17 @@ export class Minimap {
    {
         let that = this;
         if(uuid in this.output_tags){
-            return this.output_tags[uuid].map((tag:string) => (tag+that.fixed_identifier+uuid));
+            if(this.dfgraph.get_nodes(uuid).length == 0){ return [''+that.fixed_identifier+uuid]; }
+            return this.output_tags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixed_identifier+uuid));
         }
-        return [];
+        return this.dfgraph.get_nodes(uuid);
    }
 
     /** @method update_states updates the states present in the graph */
     update_states = function(){
             let that = this;
             let decoffset = 0;
-            this.svg.selectAll('rect.states')
+            that.svg.selectAll('rect.states')
             .data(Object.keys(that.dfgraph.states))
             .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
             .enter()
@@ -256,6 +260,7 @@ export class Minimap {
    out_tags_length = function(uuid:string)
    {
         if(uuid in this.output_tags){
+            if(this.output_tags[uuid].length == 0){ return 1; }
             return this.output_tags[uuid].length;
         }
         return 1;
@@ -340,7 +345,7 @@ export class Minimap {
         if(that.mode == 'nodes')
         {
             let full_source = values;
-            values = that.order.reduce(function(a:any,b:any){return a.concat((that.output_tags[b] || []).map((tag:string) => ([tag+that.fixed_identifier+b,[[tag,true]]])))},[]);
+            values = that.order.reduce(function(a:any,b:any){return a.concat((that.get_nodes(b)).map((tag:any) => ([tag ? '' : tag+that.fixed_identifier+b,[[tag,true]]])))},[]);
             let decoffset = 0;
             that.svg.selectAll('rect.cells')
             .data(that.order)
@@ -478,6 +483,13 @@ export class Minimap {
         })
 
 
+    }
+
+    /** @method this method is mostly here to make sure we return something for display purposes **/
+    get_nodes = function(uuid:string){
+        let nodes = this.dfgraph.get_nodes(uuid);
+        if(nodes.length == 0){ return [uuid]; }
+        return nodes;
     }
 
     /** @method maps edges to incoming and outgoing paths in the svg **/
