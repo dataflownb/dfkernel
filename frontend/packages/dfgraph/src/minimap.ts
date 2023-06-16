@@ -49,7 +49,7 @@ export class Minimap {
             this.tabular = null;
             //this.mode = 'cells';
             this.mode = 'nodes';
-            this.colormap = {'Stale':'yellow','Fresh':'blue','Upstream Stale':'orange'};
+            this.colormap = {'Stale':'yellow','Fresh':'blue','Upstream Stale':'red','Changed':'orange','None':'grey'};
             //this.widget =
     }
 
@@ -231,28 +231,20 @@ export class Minimap {
     /** @method update_states updates the states present in the graph */
     update_states = function(){
             let that = this;
-            let decoffset = 0;
             that.svg.selectAll('rect.states')
-            .data(Object.keys(that.dfgraph.states))
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
+            .data(that.order_fixed)
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
             .enter()
             .append('rect')
             .attr('x',that.state_offset)
             .attr('y',function(a:string,b:number){
-                    let curroffset = decoffset;
-                    let node = a[0];
-                    let node_length = that.out_tags_length(node);
-                    decoffset = decoffset + node_length;
-                    if(node_length > 1){
-                        return 4+(that.offset_x*curroffset)+(that.offset_x/(node_length));
-                    }
-                    return 4+(that.offset_x*curroffset);
-                    })
+                    return 4+(that.offset_x*b);})
             .attr('width','5px')
             .attr('height','12px')
             .attr('rx','2px')
             .attr('ry','2px')
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
+            .attr('id',(uuid:string) => 'state'+uuid)
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
             .classed('states',true);
     }
 
@@ -412,28 +404,20 @@ export class Minimap {
                 .classed('outtag',(a:any)=>a[1]);
             })
 
-            decoffset = 0;
             this.svg.selectAll('rect.states')
-            .data(Object.keys(that.dfgraph.states))
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
+            .data(that.order_fixed)
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
             .enter()
             .append('rect')
             .attr('x',that.state_offset)
             .attr('y',function(a:string,b:number){
-                    let curroffset = decoffset;
-                    let node = a[0];
-                    let node_length = that.out_tags_length(node);
-                    decoffset = decoffset + node_length;
-                    if(node_length > 1){
-                        return 4+(that.offset_x*curroffset)+(that.offset_x/(node_length));
-                    }
-                    return 4+(that.offset_x*curroffset);
-                    })
+                    return 4+(that.offset_x*b);})
             .attr('width','5px')
             .attr('height','12px')
             .attr('rx','2px')
             .attr('ry','2px')
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid]])
+            .attr('id',(uuid:string) => 'state'+uuid)
+            .attr('fill',function(uuid:string){return that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"];})
             .classed('states',true);
         }
 
