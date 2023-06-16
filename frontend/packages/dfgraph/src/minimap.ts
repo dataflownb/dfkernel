@@ -387,7 +387,7 @@ export class Minimap {
             .append('text')
             .on('click',textclick)
             .attr('id',(a:Array<string>)=> 'text'+a[0])
-            .attr('x',that.text_offset+that.svg_offset_x+70)
+            .attr('x',that.text_offset+that.svg_offset_x+80)
             .attr('y',function(a:Array<string>,b:number){
                     let curroffset = decoffset;
                     let node = a[0];
