@@ -117,7 +117,6 @@ class GraphManager {
     /** @method updates all viewers based on if they're open or not */
     // view flag is based on if it's a new view or the same view
     update_dep_views = function(newView:boolean){
-    console.log(this.miniWidget.is_open);
     if(this.miniWidget.is_open){
 //      Add transition code here
       if(newView){
@@ -190,10 +189,16 @@ export class Graph {
 
     /** @method update_stale updates the stale states in the graph */
     update_stale(uuid:string){
-        this.states[uuid] = "Stale";
+        this.states[uuid] = "Changed";
         if(uuid in this.downlinks){
-            this.downlinks[uuid].forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
+            this.all_downstream(uuid).forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
         }
+    }
+
+    /** @method get_text **/
+    get_text = function(uuid:string){
+        if(uuid in this.cell_contents){ return this.cell_contents[uuid];}
+        return '';
     }
 
     /** @method update_fresh updates the stale states in the graph */
@@ -213,7 +218,7 @@ export class Graph {
         
         if(revert == true){
             //Restore downstream statuses
-            that.downlinks[uuid].forEach(function(duuid:string){
+            that.all_downstream(uuid).forEach(function(duuid:string){
                 if(that.upstream_fresh(duuid) && that.states[duuid] == "Upstream Stale"){
                     that.states[duuid] = "Fresh";
                 }
@@ -225,7 +230,7 @@ export class Graph {
     /** @method upstream_fresh checks to see if everything upstream from a cell is fresh or not */
     upstream_fresh(uuid:string){
         let that = this;
-        return Object.keys(that.uplinks[uuid]).reduce(function(flag:boolean,upuuid:string){return flag && that.states[upuuid] == "Fresh";},true);
+        return Object.keys(that.get_all_upstreams(uuid)).reduce(function(flag:boolean,upuuid:string){return flag && that.states[upuuid] == "Fresh";},true);
     }
 
 
