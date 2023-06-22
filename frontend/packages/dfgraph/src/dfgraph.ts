@@ -109,14 +109,12 @@ class GraphManager {
         let modifiedorder = neworder.map((cellid:any) => cellid.replace(/-/g, '').substr(0, 8) as string);
         this.minimap.updateOrder(modifiedorder);
         this.depview.updateOrder(modifiedorder);
-        //FIXME: Make this only update for minimap
-        console.log("Updating dependency views");
-        this.update_dep_views(true);
+        this.update_dep_views(true,true);
     }
 
     /** @method updates all viewers based on if they're open or not */
     // view flag is based on if it's a new view or the same view
-    update_dep_views = function(newView:boolean){
+    update_dep_views = function(newView:boolean,mini:boolean=false){
     if(this.miniWidget.is_open){
 //      Add transition code here
       if(newView){
@@ -125,7 +123,7 @@ class GraphManager {
       this.minimap.startMinimapCreation();
 
     }
-    if(this.depWidget.is_open){
+    if(this.depWidget.is_open && !mini){
       if(newView){
         this.depview.startGraphCreation();
       }
