@@ -556,7 +556,7 @@ export class Minimap {
     }
 
     /** @method creates the starting environment for first time setup*/
-    createMiniArea = function(svg:any){
+    createMiniArea = function(){
         (async() => {
             while($('#minisvg').height() === 0) // wait until the main div has a size to do anything
                 await new Promise(resolve => setTimeout(resolve, 100));

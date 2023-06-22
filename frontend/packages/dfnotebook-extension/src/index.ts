@@ -473,18 +473,26 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
   // Create a blank content widget inside of a MainAreaWidget
-      const content = new ViewerWidget();
-      //GraphManager uses flags from the ViewerWidget
-      GraphManager.depWidget = content;
-      const widget = new MainAreaWidget({ content });
-      widget.id = 'dfnb-depview';
-      widget.title.label = 'Dependency Viewer';
-      widget.title.closable = true;
-      // Add a div to the panel
-        let panel = document.createElement('div');
-        panel.setAttribute('id','depview');
-        content.node.appendChild(panel);
+      const newWidget = () => {
+          const content = new ViewerWidget();
+          //GraphManager uses flags from the ViewerWidget
+          GraphManager.depWidget = content;
+          const widget = new MainAreaWidget({ content });
+          widget.id = 'dfnb-depview';
+          widget.title.label = 'Dependency Viewer';
+          widget.title.closable = true;
+          // Add a div to the panel
+          let panel = document.createElement('div');
+          panel.setAttribute('id','depview');
+          content.node.appendChild(panel);
+          return widget;
+      }
+      let widget = newWidget();
           function openDepViewer(){
+              if (widget.isDisposed) {
+                widget = newWidget();
+                GraphManager.depview.is_created = false;
+              }
               if (!widget.isAttached) {
                 // Attach the widget to the main work area if it's not there
                 app.shell.add(widget, 'main',{
@@ -541,26 +549,29 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
   requires: [ICommandPalette, INotebookTracker],
   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
+      const newWidget = () => {
+          const content = new ViewerWidget();
+          //Graph Manager maintains the flags on the widgets
+          GraphManager.miniWidget = content;
+          const widget = new MainAreaWidget({ content });
+          widget.id = 'dfnb-minimap';
+          widget.title.label = 'Notebook Minimap';
+          widget.title.closable = true;
+          // Add a div to the panel
+            let panel = document.createElement('div');
+            panel.setAttribute('id','minimap');
+            let inner = document.createElement('div');
+            inner.setAttribute('id','minidiv');
+            let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+            svg.setAttribute('id','minisvg');
+            inner.append(svg);
 
-      const content = new ViewerWidget();
-      //Graph Manager maintains the flags on the widgets
-      GraphManager.miniWidget = content;
-      const widget = new MainAreaWidget({ content });
-      widget.id = 'dfnb-minimap';
-      widget.title.label = 'Notebook Minimap';
-      widget.title.closable = true;
-      // Add a div to the panel
-        let panel = document.createElement('div');
-        panel.setAttribute('id','minimap');
-        let inner = document.createElement('div');
-        inner.setAttribute('id','minidiv');
-        let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        svg.setAttribute('id','minisvg');
-        inner.append(svg);
-        panel.appendChild(inner);
-        content.node.appendChild(panel);
-
+            panel.appendChild(inner);
+            content.node.appendChild(panel);
+            return widget;
+       }
+        let widget = newWidget();
 
         nbTrackers.widgetAdded.connect((sender,nbPanel) => {
             const session = nbPanel.sessionContext;
@@ -579,12 +590,13 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
            });
 
           function openMinimap(){
-          console.log("Attaching right?");
+
+              if (widget.isDisposed) {
+                widget = newWidget();
+                GraphManager.minimap.was_created = false;
+              }
               if (!widget.isAttached) {
-              console.log("Attached right");
-              console.log(content.is_open);
-                // Attach the widget to the right side work area if it's not there
-                //app.shell.add(widget, 'main');
+
                 app.shell.add(widget, 'main'
                 ,{
                     mode: 'split-right',
@@ -597,7 +609,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
-                    GraphManager.minimap.createMiniArea(svg);
+                    GraphManager.minimap.createMiniArea();
                     GraphManager.minimap.was_created = true;
                 }
                 else{
