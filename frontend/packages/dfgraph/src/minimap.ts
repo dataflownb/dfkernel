@@ -79,11 +79,11 @@ export class Minimap {
 
 
    /** @method creates paths between node segments **/
-    makePaths = function(source:any,destination:any,parent:any,left:boolean)
+    makePaths = function(source_cy:any,destination_cy:any,parent:any,left:boolean)
     {
         let x_val = left ? this.svg_offset_x+this.radius+8 : this.svg_offset_x-(this.radius+8);
-        let y_val = ((destination.attr('cy') - source.attr('cy')));
-        parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source.attr('cy') + 'v '+y_val).attr('stroke-width',2);
+        let y_val = ((destination_cy - source_cy));
+        parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source_cy + 'v '+y_val).attr('stroke-width',2);
     }
 
     /** @method generates dependencies that aren't intermediates **/
@@ -132,7 +132,6 @@ export class Minimap {
         parent.classed('active',true);
         let active_id = parent.attr('id');
         active_id = active_id.substring(4,active_id.length);
-
         let source_x = that.svg_offset_x;
         let offset_active = 0;
 
@@ -152,7 +151,6 @@ export class Minimap {
         }
 
         let active_ele = '#node'+active_id;
-
         d3.select(active_ele).append('g')
         .attr('transform','translate(0,0)')
         .classed('activeedge',true)
@@ -161,7 +159,6 @@ export class Minimap {
         .attr('d','M'+ source_x +' ' + source_y + 'h '+offset_active)
         .attr('stroke-width',2).attr('fill','#3b5fc0')
         .attr('stroke',"#3b5fc0");
-
 
         d3.select('#text'+active_id).classed('active',true);
         if(that.mode == 'cells'){
@@ -177,16 +174,16 @@ export class Minimap {
           if(source == active_id){
             downs.push(destination);
           let destination_node = d3.select('#node'+destination).classed('move_left',true).classed('active',true).classed('imm',true);
-          let dest = destination_node.select('circle');
-            that.makePaths(node,dest,parent,true);
+          let dest_cy = 10+that.offset_x*that.order_fixed.indexOf(destination);
+            that.makePaths(source_y,dest_cy,parent,true);
 
             destination_node.selectAll('path.source').classed('hidden',true);
           }
           if(destination == active_id){
               ups.push(source);
             let source_node = d3.select('#node'+source).classed('move_right',true).classed('active',true).classed('imm',true);
-            let src = source_node.select('circle');
-            that.makePaths(src,node,parent,false);
+            let src_cy = 10+that.offset_x*that.order_fixed.indexOf(source);
+            that.makePaths(src_cy,source_y,parent,false);
 
             source_node.selectAll('path.destination').classed('hidden',true);
           }
