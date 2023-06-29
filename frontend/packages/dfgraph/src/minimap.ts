@@ -49,7 +49,7 @@ export class Minimap {
             this.tabular = null;
             //this.mode = 'cells';
             this.mode = 'nodes';
-            this.colormap = {'Stale':'yellow','Fresh':'blue','Upstream Stale':'red','Changed':'orange','None':'grey'};
+            this.colormap = {'Stale':'yellow','Fresh':'blue','Upstream Stale':'yellow','Changed':'orange','None':'grey'};
             //this.widget =
     }
 
@@ -256,6 +256,21 @@ export class Minimap {
         return 1;
    }
 
+   /** @method grabs out tags from string **/
+   grab_out_tags = function(id:string,text:string)
+   {
+        let that = this;
+            if(id in that.output_tags){
+                return that.output_tags[id].reduce((textobj:string,output_tag:string)=>{
+                    //FIXME: Make this smarter
+                    let exp = new RegExp(output_tag);
+                    if(!textobj){ return '';}
+                    return textobj.replace(exp,'OUTTAGSTARTSHERE'+output_tag+'OUTTAGSTARTSHERE');
+                },text);
+            }
+                return text || "";
+   }
+
    /** @method activates the paths based on click **/
     createMinimap = function(parent:any,node:any)
     {
@@ -272,7 +287,6 @@ export class Minimap {
         else{
             data = this.order.reduce(function(a:any,b:any){return a.concat(that.combine_tags(b))},[]);
         }
-
         let groups = circles
         .data(data,(a:string)=>a)
         .enter()
@@ -301,20 +315,9 @@ export class Minimap {
 
         that.mapEdges(that);
 
-        let grab_out_tags = function(id:string,text:string){
-            if(id in that.output_tags){
-                return that.output_tags[id].reduce((textobj:string,output_tag:string)=>{
-                    //FIXME: Make this smarter
-                    let exp = new RegExp(output_tag);
-                    return textobj.replace(exp,'OUTTAGSTARTSHERE'+output_tag+'OUTTAGSTARTSHERE');
-                },text);
-            }
-                return text || "";
-        }
-
         let values = this.order
             .map((a:string)=>[a,
-                grab_out_tags(a,this.cells[a])
+                that.grab_out_tags(a,that.get_cell_contents(a))
                 .split("OUTTAGSTARTSHERE")
                 .map(
                 (text:string)=>{
@@ -449,7 +452,6 @@ export class Minimap {
         .attr('id',(a:Array<string>)=> 'text'+a[0])
         .attr('x',this.text_offset+this.svg_offset_x)
         .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
-        .on('click',textclick)
         .each(function(a:any){
             $(this).empty();
             d3.select(this)
@@ -473,7 +475,7 @@ export class Minimap {
     /** @method this method is mostly here to make sure we return something for display purposes **/
     get_nodes = function(uuid:string){
         let nodes = this.dfgraph.get_nodes(uuid);
-        if(nodes.length == 0){ return [uuid]; }
+        if(nodes.length == 0){ return [""]; }
         return nodes;
     }
 
@@ -523,6 +525,15 @@ export class Minimap {
      })
     }
 
+    /** @method get cell contents if not in graph **/
+    get_cell_contents = function(uuid:string){
+        let that = this;
+        if(uuid in that.cells){return that.cells[uuid];}
+        let split_cell = that.dfgraph.get_text(uuid).split('\n');
+        let cell_content = split_cell[split_cell.length - 1];
+        that.cells[uuid] = cell_content || '';
+        return that.cells[uuid];
+    }
 
     /** @method changes cell contents **/
     // Always call before any updates to graph
@@ -612,6 +623,13 @@ export class Minimap {
     /** @method set graph, sets the current activate graph to be visualized */
     set_graph = function(graph:any){
         this.dfgraph = graph;
+        this.updateOrder(this.tracker.currentWidget.model.cells._cellOrder._array);
+        if(this.svg){
+            this.clearMinimap();
+            this.startMinimapCreation();
+            }
+
+
     }
 
 }
