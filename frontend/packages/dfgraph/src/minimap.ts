@@ -1,6 +1,6 @@
 //UUID length has been changed need to compensate for that
 //FIXME: Future Include?
-//const uuid_length = 8;
+const uuid_length = 8;
 
 import * as d3 from "d3";
 import $ from "jquery";
@@ -57,9 +57,11 @@ export class Minimap {
         this.tracker = tracker;
     }
 
+    /** @method update the order that cells are present in the minimap **/
     updateOrder = function(order:any){
-        this.order = order;
-        //update minimap appearance based on order changes
+        //Have to set uuids properly here in case we rely on cell array
+        this.order = order.map((uuid:string) => uuid.substring(0,uuid_length));
+        return true;
     }
 
     /** @method resets all paths **/
@@ -206,7 +208,6 @@ export class Minimap {
                 if (deps.length > 0 && deps[0] == undefined){
                 add_specifier = "";
                 }
-                console.log('#node'+activeid+add_specifier);
                 source_node = d3.select('#node'+add_specifier+this.fixed_identifier+activeid).classed('move_right',true).classed('active',true);
                 src = source_node.select('circle');
             }
@@ -536,6 +537,8 @@ export class Minimap {
           a[b] = split_cell[split_cell.length - 1];
           return a;
           },{})
+        that.updateOrder(that.tracker.currentWidget.model.cells._cellOrder._array);
+        return true;
     }
 
     /** @method updates the edges in the minimap */
@@ -553,6 +556,7 @@ export class Minimap {
             //FIXME: This is really convoluted and it should be able to be rewritten
             that.edges = flatten(flatten(Object.keys(edges).map(function(edge){return flatten(Object.keys(edges[edge]).map(function(source:string){return edges[edge][source].map(function(node:string){return that.output_tags[edge].map(function(destnode:string){ return {'source':node+that.fixed_identifier+source,'destination':destnode+that.fixed_identifier+edge}})})}))})));
         }
+        return true;
     }
 
     /** @method creates the starting environment for first time setup*/
@@ -583,17 +587,20 @@ export class Minimap {
     /** @method updates the list of output_tags on the graph */
     update_output_tags = function(){
         let that = this;
+        that.output_tags = {};
         that.dfgraph.get_cells().forEach(function(uuid:string){
             that.output_tags[uuid] = that.dfgraph.get_nodes(uuid);
         });
+        return true;
     }
 
     /** @method starts minimap creation, this is the process that's ran every time **/
     startMinimapCreation = function(){
-        this.update_cells();
-        this.update_output_tags();
-        this.update_edges();
-        this.createMinimap();
+        if(this.update_cells() && this.update_output_tags() && this.update_edges()){
+            let that = this;
+            that.createMinimap();
+        }
+
     };
 
     /** @method changes the current mode in which the minimap is being displayed */
