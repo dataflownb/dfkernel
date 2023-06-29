@@ -368,7 +368,6 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
       nbTrackers.widgetAdded.connect((sender,nbPanel) => {
             const session = nbPanel.sessionContext;
             GraphManager.set_tracker(nbTrackers);
-
             session.ready.then(() =>
             {
                 let output_tags: {[index: string]:any}  = {};
@@ -402,7 +401,6 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 })
                 let sess_id = session?.session?.id || "None";
                 if(!(sess_id in Object.keys(GraphManager.graphs))){
-                    //GraphManager.graphs[sess_id] = new Graph({});
                     //@ts-ignore
                     GraphManager.graphs[sess_id] = new Graph({'cells':cells,'nodes':output_tags,'internal_nodes':output_tags,'uplinks':uplinks,'downlinks':downlinks,'cell_contents':cell_contents});
                     GraphManager.update_graph(sess_id);
@@ -412,12 +410,11 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 console.log(sess_id);
             });
             (nbPanel.content as any).model._cells._cellOrder._changed.connect(() =>{
-                //console.log((nbPanel.content as any)._model._cells._cellOrder._array);
                 GraphManager.update_order((nbPanel.content as any).model._cells._cellOrder._array);
             });
             nbPanel.content.activeCellChanged.connect(() =>{
                 let prevActive = GraphManager.get_active();
-                if(prevActive != "None"){
+                if(prevActive && prevActive != "None"){
                     let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
                     if(prevActive.value.text != GraphManager.get_text(uuid)){
                         GraphManager.mark_stale(uuid);
@@ -428,7 +425,6 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 }
                 //Have to get this off the model the same way that actions.tsx does
                 let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
-                //console.log("Active Cell ID: ",activeId,nbPanel.content.activeCell?.model?.value.text);
                 GraphManager.update_active(activeId,nbPanel.content.activeCell?.model);
             });
       });
@@ -437,25 +433,10 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
       shell.currentChanged.connect((_, change) => {
       //@ts-ignore
         let sess_id = change['newValue']?.sessionContext?.session?.id;
-        //@ts-ignore
-        console.log(change['newValue']?.sessionContext?.session?.id);
-        //console.log(GraphManager.depview.is_open);
-        console.log(GraphManager.graphs);
-        if(sess_id in GraphManager.graphs){
-            GraphManager.update_graph(sess_id);
-            console.log(GraphManager.graphs[GraphManager.current_graph]);
-        }
-        //if(GraphManager.depview.is_open){
-        //    console.log("Updating dependency view");
-            //console.log(change['newValue']);
 
-        //    if(!(change['newValue']?.node?.id == 'dfnb-depview')){
-                //@ts-ignore
-        //        console.log(change['newValue']?.sessionContext?.session?.id);
-        //    }
-         //   console.log(change['newValue']?.node?.id);
-        //}
-        // ...
+        if(sess_id in GraphManager.graphs){
+            GraphManager.update_active_graph();
+        }
         });
 
   }

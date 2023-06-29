@@ -58,12 +58,13 @@ class GraphManager {
 
     /** @method updates the activate graph and calls the update views method */
     update_graph = function(graph:string){
-        if(graph != this.current_graph){
-            this.current_graph = graph;
-            this.depview.dfgraph = this.graphs[graph];
-            this.minimap.dfgraph = this.graphs[graph];
-            this.update_dep_views(true);
-        }
+
+        if(graph == "None"){ return; }
+        this.current_graph = graph;
+        this.depview.dfgraph = this.graphs[graph];
+        this.minimap.set_graph(this.graphs[graph]);
+        this.update_dep_views(true);
+
     }
 
     update_active = function(activeid?:string,prevActive?:any){
@@ -76,6 +77,14 @@ class GraphManager {
         if(this.miniWidget.is_open){
             this.minimap.updateActiveByID(activeid);
         }
+    }
+
+    /** @method attempt to update the active graph using the tracker this is not preferred **/
+    update_active_graph = function(){
+        this.current_graph = this.tracker.currentWidget.sessionContext.session?.id || "None";
+        this.depview.dfgraph = this.graphs[this.current_graph];
+        this.minimap.set_graph(this.graphs[this.current_graph]);
+        this.update_dep_views(true,false,true);
     }
 
     mark_stale = function(uuid:string){
