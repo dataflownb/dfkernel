@@ -88,6 +88,10 @@ class GraphManager {
     }
 
     mark_stale = function(uuid:string){
+        this.update_active_graph();
+        if(!(this.current_graph in this.graphs)){
+            return;
+        }
         this.graphs[this.current_graph].update_stale(uuid);
         this.minimap.update_states();
     }
@@ -106,11 +110,15 @@ class GraphManager {
     }
 
     get_text = function(uuid:string){
+        this.update_active_graph();
+        if(!(this.current_graph in this.graphs)){
+            return '';
+        }
         return this.graphs[this.current_graph].cell_contents[uuid];
     }
 
     update_order = function(neworder:any){
-
+        this.update_active_graph();
         if(!(this.current_graph in this.graphs)){
             return;
         }
@@ -123,9 +131,9 @@ class GraphManager {
 
     /** @method updates all viewers based on if they're open or not */
     // view flag is based on if it's a new view or the same view
-    update_dep_views = function(newView:boolean,mini:boolean=false){
+    update_dep_views = function(newView:boolean,mini:boolean=false,mini2:boolean=false){
     if(this.miniWidget.is_open){
-//      Add transition code here
+      if(mini2) {return;}
       if(newView){
         this.minimap.clearMinimap();
       }
