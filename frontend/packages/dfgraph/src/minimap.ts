@@ -559,10 +559,19 @@ export class Minimap {
             that.edges = flatten(Object.keys(edges).map(function(edge){return edges[edge].map(function(dest:string){return{'source':edge,'destination':dest}})}));
         }
         else{
-            const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
-            let edges = that.dfgraph.uplinks;
-            //FIXME: This is really convoluted and it should be able to be rewritten
-            that.edges = flatten(flatten(Object.keys(edges).map(function(edge){return flatten(Object.keys(edges[edge]).map(function(source:string){return edges[edge][source].map(function(node:string){return that.output_tags[edge].map(function(destnode:string){ return {'source':node+that.fixed_identifier+source,'destination':destnode+that.fixed_identifier+edge}})})}))})));
+            that.edges = [];
+            let cells = that.dfgraph.get_cells();
+            that.cell_links = [];
+            that.output_nodes = [];
+            cells.forEach(function(uuid:string){
+                that.output_nodes[uuid] = that.get_nodes(uuid);
+                let outnames = that.output_nodes[uuid];
+                that.dfgraph.get_upstreams(uuid).forEach(function (b:string) {
+                    let s_uuid = b.substring(0,uuid_length);
+                    let s_node = b.substring(uuid_length,b.length);
+                        outnames.forEach((out:any) => {that.edges.push({'source': s_node+that.fixed_identifier+s_uuid, 'destination': out+that.fixed_identifier+uuid});});
+                });
+            });
         }
         return true;
     }
