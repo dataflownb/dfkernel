@@ -2,19 +2,19 @@ import { DepView } from './depview';
 import { Minimap } from './minimap';
 
 //UUID length has been changed need to compensate for that
-const uuid_length = 8;
+const uuidLength = 8;
 
 
 // @ts-ignore
     declare global {
     interface Array<T> {
-        setadd(item: T): Array<T>;
+        setAdd(item: T): Array<T>;
         }
     }
 
         /** @method this is a set addition method for dependencies */
     // @ts-ignore
-    Array.prototype.setadd = function (item) {
+    Array.prototype.setAdd = function (item) {
         let that = this;
         if(that.indexOf(item) < 0){
             that.push(item);
@@ -24,7 +24,7 @@ const uuid_length = 8;
 class GraphManager {
 
     public graphs: {[index: string]:any} ;
-    current_graph: string;
+    currentGraph: string;
     depview: any;
     minimap: any;
     depWidget: any;
@@ -35,7 +35,7 @@ class GraphManager {
 
     constructor(graphs?:{}){
         this.graphs = graphs || {};
-        this.current_graph = "None";
+        this.currentGraph = "None";
         this.depview = new DepView();
         this.minimap = new Minimap();
         this.previousActive = "None";
@@ -50,89 +50,89 @@ class GraphManager {
     }
 
 
-    set_tracker = function(tracker:any){
+    setTracker = function(tracker:any){
         this.tracker = tracker;
         this.minimap.setTracker(this.tracker);
         this.depview.setTracker(this.tracker);
     }
 
     /** @method updates the activate graph and calls the update views method */
-    update_graph = function(graph:string){
+    updateGraph = function(graph:string){
 
         if(graph == "None"){ return; }
-        this.current_graph = graph;
+        this.currentGraph = graph;
         this.depview.dfgraph = this.graphs[graph];
-        this.minimap.set_graph(this.graphs[graph]);
-        this.update_dep_views(true);
+        this.minimap.setGraph(this.graphs[graph]);
+        this.updateDepViews(true);
 
     }
 
-    update_active = function(activeid?:string,prevActive?:any){
+    updateActive = function(activeid?:string,prevActive?:any){
         this.activeID = activeid || "none";
         this.previousActive = prevActive || "none";
         //FIXME: Add depviewer active cell code
         //         if(this.depWidget.is_open){
         //             console.log("Update dep viewer here");
         //         }
-        if(this.miniWidget.is_open){
+        if(this.miniWidget.isOpen){
             this.minimap.updateActiveByID(activeid);
         }
     }
 
     /** @method attempt to update the active graph using the tracker this is not preferred **/
-    update_active_graph = function(){
-        this.current_graph = this.tracker.currentWidget.sessionContext.session?.id || "None";
-        this.depview.dfgraph = this.graphs[this.current_graph];
-        this.minimap.set_graph(this.graphs[this.current_graph]);
-        this.update_dep_views(true,false,true);
+    updateActiveGraph = function(){
+        this.currentGraph = this.tracker.currentWidget.sessionContext.session?.id || "None";
+        this.depview.dfgraph = this.graphs[this.currentGraph];
+        this.minimap.setGraph(this.graphs[this.currentGraph]);
+        this.updateDepViews(true,false,true);
     }
 
-    mark_stale = function(uuid:string){
-        this.update_active_graph();
-        if(!(this.current_graph in this.graphs)){
+    markStale = function(uuid:string){
+        this.updateActiveGraph();
+        if(!(this.currentGraph in this.graphs)){
             return;
         }
-        this.graphs[this.current_graph].update_stale(uuid);
-        this.minimap.update_states();
+        this.graphs[this.currentGraph].updateStale(uuid);
+        this.minimap.updateStates();
     }
 
-    revert_stale = function(uuid:string){
-        this.graphs[this.current_graph].update_fresh(uuid,true);
-        this.minimap.update_states();
+    revertStale = function(uuid:string){
+        this.graphs[this.currentGraph].updateFresh(uuid,true);
+        this.minimap.updateStates();
     }
 
-    get_stale = function(uuid:string){
-        return this.graphs[this.current_graph].states[uuid];
+    getStale = function(uuid:string){
+        return this.graphs[this.currentGraph].states[uuid];
     }
 
-    get_active = function(){
+    getActive = function(){
         return this.previousActive;
     }
 
-    get_text = function(uuid:string){
-        this.update_active_graph();
-        if(!(this.current_graph in this.graphs)){
+    getText = function(uuid:string){
+        this.updateActiveGraph();
+        if(!(this.currentGraph in this.graphs)){
             return '';
         }
-        return this.graphs[this.current_graph].cell_contents[uuid];
+        return this.graphs[this.currentGraph].cellContents[uuid];
     }
 
-    update_order = function(neworder:any){
-        this.update_active_graph();
-        if(!(this.current_graph in this.graphs)){
+    updateOrder = function(neworder:any){
+        this.updateActiveGraph();
+        if(!(this.currentGraph in this.graphs)){
             return;
         }
-        this.graphs[this.current_graph].update_order(neworder);
+        this.graphs[this.currentGraph].updateOrder(neworder);
         let modifiedorder = neworder.map((cellid:any) => cellid.replace(/-/g, '').substr(0, 8) as string);
         this.minimap.updateOrder(modifiedorder);
         this.depview.updateOrder(modifiedorder);
-        this.update_dep_views(true,true);
+        this.updateDepViews(true,true);
     }
 
     /** @method updates all viewers based on if they're open or not */
     // view flag is based on if it's a new view or the same view
-    update_dep_views = function(newView:boolean,mini:boolean=false,mini2:boolean=false){
-    if(this.miniWidget.is_open){
+    updateDepViews = function(newView:boolean,mini:boolean=false,mini2:boolean=false){
+    if(this.miniWidget.isOpen){
       if(mini2) {return;}
       if(newView){
         this.minimap.clearMinimap();
@@ -140,13 +140,13 @@ class GraphManager {
       this.minimap.startMinimapCreation();
 
     }
-    if(this.depWidget.is_open && !mini){
+    if(this.depWidget.isOpen && !mini){
       if(newView){
         this.depview.startGraphCreation();
       }
       else{
-        let g = this.depview.create_node_relations(this.depview.globaldf, this.depview.globalselect);
-        this.depview.create_graph(g);
+        let g = this.depview.createNodeRelations(this.depview.globaldf, this.depview.globalselect);
+        this.depview.createGraph(g);
       }
     }
 
@@ -161,37 +161,37 @@ class GraphManager {
 export class Graph {
 
 
-    upstream_list: {};
-    was_changed: boolean;
+    upstreamList: {};
+    wasChanged: boolean;
     cells: any;
     nodes: any;
     uplinks: any;
     downlinks: any;
-    internal_nodes: any;
-    downstream_lists: any;
+    internalNodes: any;
+    downstreamLists: any;
     depview: any;
     minimap: any;
-    cell_contents : any;
-    cell_order: any;
+    cellContents : any;
+    cellOrder: any;
     states: any;
     executed: any;
 
     /*
     * Create a graph to contain all inner cell dependencies
     */
-    constructor({cells = [],nodes = [],uplinks={},downlinks={}, internal_nodes= {}, all_down= {}, cell_contents= {}}:{cells?: string[], nodes?: string[], uplinks?: {}, downlinks?: {}, internal_nodes?: {}, all_down?: {}, cell_contents?: {}} = {}, states?: {}) {
+    constructor({cells = [],nodes = [],uplinks={},downlinks={}, internalNodes= {}, allDown= {}, cellContents= {}}:{cells?: string[], nodes?: string[], uplinks?: {}, downlinks?: {}, internalNodes?: {}, allDown?: {}, cellContents?: {}} = {}, states?: {}) {
         let that = this;
-        this.was_changed = false;
+        this.wasChanged = false;
         this.cells = cells || [];
         this.nodes = nodes || [];
         this.uplinks = uplinks || {};
         this.downlinks = downlinks || {};
-        this.internal_nodes = internal_nodes || {};
-        this.cell_contents = cell_contents || {};
-        this.cell_order = [];
+        this.internalNodes = internalNodes || {};
+        this.cellContents = cellContents || {};
+        this.cellOrder = [];
         //Cache downstream lists
-        this.downstream_lists = all_down || {};
-        this.upstream_list = {};
+        this.downstreamLists = allDown || {};
+        this.upstreamList = {};
         this.states = states || {};
         this.executed = {};
         if(that.cells.length > 1){
@@ -202,22 +202,22 @@ export class Graph {
         }
     }
 
-    /** @method update_stale updates the stale states in the graph */
-    update_stale(uuid:string){
+    /** @method updateStale updates the stale states in the graph */
+    updateStale(uuid:string){
         this.states[uuid] = "Changed";
         if(uuid in this.downlinks){
-            this.all_downstream(uuid).forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
+            this.allDownstream(uuid).forEach((duuid:string) => (this.states[duuid] = "Upstream Stale"));
         }
     }
 
-    /** @method get_text **/
-    get_text = function(uuid:string){
-        if(uuid in this.cell_contents){ return this.cell_contents[uuid];}
+    /** @method getText **/
+    getText = function(uuid:string){
+        if(uuid in this.cellContents){ return this.cellContents[uuid];}
         return '';
     }
 
-    /** @method update_fresh updates the stale states in the graph */
-    update_fresh(uuid:string,revert:boolean){
+    /** @method updateFresh updates the stale states in the graph */
+    updateFresh(uuid:string,revert:boolean){
         let that = this;
         //Make sure that we don't mark non executed cells as fresh
         if(revert && !that.executed[uuid]){
@@ -233,8 +233,8 @@ export class Graph {
         
         if(revert == true){
             //Restore downstream statuses
-            that.all_downstream(uuid).forEach(function(duuid:string){
-                if(that.upstream_fresh(duuid) && that.states[duuid] == "Upstream Stale"){
+            that.allDownstream(uuid).forEach(function(duuid:string){
+                if(that.upstreamFresh(duuid) && that.states[duuid] == "Upstream Stale"){
                     that.states[duuid] = "Fresh";
                 }
             })
@@ -242,18 +242,18 @@ export class Graph {
 
     }
 
-    /** @method upstream_fresh checks to see if everything upstream from a cell is fresh or not */
-    upstream_fresh(uuid:string){
+    /** @method upstreamFresh checks to see if everything upstream from a cell is fresh or not */
+    upstreamFresh(uuid:string){
         let that = this;
-        return Object.keys(that.get_all_upstreams(uuid)).reduce(function(flag:boolean,upuuid:string){return flag && that.states[upuuid] == "Fresh";},true);
+        return Object.keys(that.getAllUpstreams(uuid)).reduce(function(flag:boolean,upuuid:string){return flag && that.states[upuuid] == "Fresh";},true);
     }
 
 
-    /** @method update_graph */
-    update_graph(this:Graph,cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, all_ups: any, internal_nodes: any){
+    /** @method updateGraph */
+    updateGraph(this:Graph,cells: any, nodes: never[], uplinks: any, downlinks: never[], uuid: string, allUps: any, internalNodes: any){
         let that:Graph = this;
-//         if(that.depview.is_open === false){
-//             that.was_changed = true;
+//         if(that.depview.isOpen === false){
+//             that.wasChanged = true;
 //         }
         that.cells = cells;
         that.nodes[uuid] = nodes || [];
@@ -264,29 +264,29 @@ export class Graph {
         }
         that.uplinks[uuid] = uplinks;
         that.downlinks[uuid] = downlinks || [];
-        that.internal_nodes[uuid] = internal_nodes;
-        that.update_dep_lists(all_ups,uuid);
-        that.update_fresh(uuid,false);
+        that.internalNodes[uuid] = internalNodes;
+        that.updateDepLists(allUps,uuid);
+        that.updateFresh(uuid,false);
         //Shouldn't need the old way of referencing
-        //that.minimap.update_edges();
-        //celltoolbar.CellToolbar.rebuild_all();
+        //that.minimap.updateEdges();
+        //celltoolbar.CellToolbar.rebuildAll();
     }
 
 
-    update_order = function(neworder:any){
+    updateOrder = function(neworder:any){
         console.log(neworder);
-        this.cell_order = neworder;
+        this.cellOrder = neworder;
     }
 
     /** @method removes a cell entirely from the graph **/
-    remove_cell = function(this:Graph,uuid: string){
+    removeCell = function(this:Graph,uuid: string){
         let that:Graph = this;
-        let cell_index = that.cells.indexOf(uuid);
-        if(cell_index > -1){
-          that.cells.splice(cell_index,1);
+        let cellIndex = that.cells.indexOf(uuid);
+        if(cellIndex > -1){
+          that.cells.splice(cellIndex,1);
           delete that.nodes[uuid];
-          delete that.internal_nodes[uuid];
-          delete that.downstream_lists[uuid];
+          delete that.internalNodes[uuid];
+          delete that.downstreamLists[uuid];
           (that.downlinks[uuid] || []).forEach(function (down: any) {
               if(down in that.uplinks && uuid in that.uplinks[down]){
                   delete (that.uplinks[down])[uuid];
@@ -301,41 +301,41 @@ export class Graph {
                   });
           }
           delete that.uplinks[uuid];
-          if(uuid in that.upstream_list){
+          if(uuid in that.upstreamList){
               // @ts-ignore
-              let all_ups = that.upstream_list[uuid].slice(0);
+              let allUps = that.upstreamList[uuid].slice(0);
               // @ts-ignore
-              delete that.upstream_list[uuid];
-              all_ups.forEach(function (up : any) {
+              delete that.upstreamList[uuid];
+              allUps.forEach(function (up : any) {
                       //Better to just invalidate the cached list so you don't have to worry about downstreams too
-                      delete that.downstream_lists[up];
+                      delete that.downstreamLists[up];
               });
           }
         }
     };
 
 
-    /** @method set_internal_nodes */
-    set_internal_nodes = function (this:Graph,uuid: string | number, internal_nodes: any){
-        this.internal_nodes[uuid] = internal_nodes;
+    /** @method setInternalNodes */
+    setInternalNodes = function (this:Graph,uuid: string | number, internalNodes: any){
+        this.internalNodes[uuid] = internalNodes;
     };
 
 
     /** @method recursively yield all downstream deps */
-    all_downstream(this:Graph,uuid: string | number){
+    allDownstream(this:Graph,uuid: string | number){
         let that:Graph = this;
         let visited:Array<string> = [];// Array<string> = [];
         let res:Array<string> = [];//: Array<string> = [];
         let downlinks = (this.downlinks[uuid] || []).slice(0);
         while(downlinks.length > 0){
             let cid = downlinks.pop();
-            visited.setadd(cid);
-            res.setadd(cid);
-            if(cid in that.downstream_lists)
+            visited.setAdd(cid);
+            res.setAdd(cid);
+            if(cid in that.downstreamLists)
             {
-                that.downstream_lists[cid].forEach(function (pid : string) {
-                    res.setadd(pid);
-                    visited.setadd(pid);
+                that.downstreamLists[cid].forEach(function (pid : string) {
+                    res.setAdd(pid);
+                    visited.setAdd(pid);
                 });
             }
             else{
@@ -352,70 +352,70 @@ export class Graph {
                 }
             }
         }
-        that.downstream_lists[uuid] = res;
+        that.downstreamLists[uuid] = res;
         return res;
     }
 
 
-    all_upstream_cell_ids(cid: any) {
-        let uplinks = this.get_imm_upstreams(cid);
-        let all_cids:Array<string> = [];
+    allUpstreamCellIds(cid: any) {
+        let uplinks = this.getImmUpstreams(cid);
+        let allCids:Array<string> = [];
         while (uplinks.length > 0) {
-            let up_cid = uplinks.pop() || '';
-            all_cids.setadd(up_cid);
-            uplinks = uplinks.concat(this.get_imm_upstreams(up_cid));
+            let upCid = uplinks.pop() || '';
+            allCids.setAdd(upCid);
+            uplinks = uplinks.concat(this.getImmUpstreams(upCid));
         }
-        return all_cids;
+        return allCids;
     }
 
 
      /** @method updates all downstream links with downstream updates passed from kernel */
-    update_down_links(this:Graph,downupdates: any[]) {
+    updateDownLinks(this:Graph,downupdates: any[]) {
         let that:Graph = this;
         downupdates.forEach(function (t) {
-            let uuid = t['key'].substr(0, uuid_length);
+            let uuid = t['key'].substr(0, uuidLength);
             that.downlinks[uuid] = t['data'];
-            if(uuid in that.cell_contents && t.data){
+            if(uuid in that.cellContents && t.data){
                 that.downlinks[uuid] = t['data'];
             }
         });
-        that.downstream_lists = {};
+        that.downstreamLists = {};
     }
 
-    /** @method update_code_dict */
-    update_cell_contents(this:Graph,cell_contents:any){
-        this.cell_contents = cell_contents;
+    /** @method updateCodeDict */
+    updateCellContents(this:Graph,cellContents:any){
+        this.cellContents = cellContents;
     }
 
 
-    /** @method update_dep_lists */
-    update_dep_lists(this:Graph,all_ups: string | any[], uuid: string | number){
+    /** @method updateDepLists */
+    updateDepLists(this:Graph,allUps: string | any[], uuid: string | number){
         let that:Graph = this;
-    //     let cell = Jupyter.notebook.get_code_cell(uuid);
+    //     let cell = Jupyter.notebook.getCodeCell(uuid);
     //
     //     if(cell.last_msg_id){
     //         cell.clear_df_info();
     //     }
     //
     //     if(that.downlinks[uuid].length > 0){
-    //         cell.update_df_list(cell,that.all_downstream(uuid),'downstream');
+    //         cell.updateDfList(cell,that.allDownstream(uuid),'downstream');
     //     }
     //
-        if(all_ups.length > 0){
+        if(allUps.length > 0){
            // @ts-ignore
-            that.upstream_list[uuid] = all_ups;
-    //        cell.update_df_list(cell,all_ups,'upstream');
+            that.upstreamList[uuid] = allUps;
+    //        cell.updateDfList(cell,allUps,'upstream');
         }
     }
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
-    get_all_upstreams(uuid: string | number) {
+    getAllUpstreams(uuid: string | number) {
         // @ts-ignore
-        return this.upstream_list[uuid];
+        return this.upstreamList[uuid];
     }
 
     /** @method returns upstreams for a cell with a given uuid */
-    get_upstreams(this:Graph,uuid: string | number){
+    getUpstreams(this:Graph,uuid: string | number){
         let that:Graph = this;
         return Object.keys(that.uplinks[uuid] || []).reduce(function (arr,uplink) {
            let links = that.uplinks[uuid][uplink].map(function (item: string){
@@ -427,7 +427,7 @@ export class Graph {
 
 
     /** @method returns single cell based upstreams for a cell with a given uuid */
-    get_imm_upstreams(uuid: string | undefined){
+    getImmUpstreams(uuid: string | undefined){
         // @ts-ignore
         if (uuid in this.uplinks) {
             // @ts-ignore
@@ -436,41 +436,41 @@ export class Graph {
         return [];
     }
 
-    get_imm_upstream_names(this:Graph,uuid: string | number | undefined) {
+    getImmUpstreamNames(this:Graph,uuid: string | number | undefined) {
         let arr: never[] = [];
         let that:Graph = this;
         // @ts-ignore
-        this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
+        this.getImmUpstreams(uuid).forEach(function(upUuid) {
             // @ts-ignore
-            Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid]);
+            Array.prototype.push.apply(arr, that.uplinks[uuid][upUuid]);
         });
         return arr;
     }
 
-    get_imm_upstream_pairs(uuid: string | number | undefined) {
+    getImmUpstreamPairs(uuid: string | number | undefined) {
         let arr: never[] = [];
         let that:Graph = this;
         // @ts-ignore
-        this.get_imm_upstreams(uuid).forEach(function(up_uuid) {
+        this.getImmUpstreams(uuid).forEach(function(upUuid) {
             // @ts-ignore
-            Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid].map(function(v) { return [v, up_uuid];}));
+            Array.prototype.push.apply(arr, that.uplinks[uuid][upUuid].map(function(v) { return [v, upUuid];}));
         });
         return arr;
     }
 
 
     /** @method returns downstreams for a cell with a given uuid */
-    get_downstreams(uuid: string | number) {
+    getDownstreams(uuid: string | number) {
         return this.downlinks[uuid];
     }
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
-    get_internal_nodes(uuid: string | number) {
-        return this.internal_nodes[uuid] || [];
+    getInternalNodes(uuid: string | number) {
+        return this.internalNodes[uuid] || [];
     }
 
     /** @method returns all nodes for a cell*/
-    get_nodes(this:Graph,uuid: string){
+    getNodes(this:Graph,uuid: string){
         let that:Graph = this;
         if (uuid in that.nodes) {
             if ((that.nodes[uuid] || []).length > 0) {
@@ -481,7 +481,7 @@ export class Graph {
     }
 
     /** @method returns all cells on kernel side*/
-    get_cells = function(this:Graph){
+    getCells = function(this:Graph){
         return this.cells;
     };
 

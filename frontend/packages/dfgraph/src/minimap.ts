@@ -1,6 +1,6 @@
 //UUID length has been changed need to compensate for that
 //FIXME: Future Include?
-const uuid_length = 8;
+const uuidLength = 8;
 
 import * as d3 from "d3";
 import $ from "jquery";
@@ -9,40 +9,40 @@ export class Minimap {
 
 
     radius : number;
-    offset_x : number;
-    svg_offset_x : number;
-    svg_offset_y : number;
-    text_offset : number;
-    state_offset : number;
+    offsetX : number;
+    svgOffsetX : number;
+    svgOffsetY : number;
+    textOffset : number;
+    stateOffset : number;
     cells : { [name:string]: string};
     edges : any;
     parentdiv : any;
     svg: any;
     dfgraph: any;
-    was_created: boolean;
-    output_tags : {[name:string]:[]}
+    wasCreated: boolean;
+    outputTags : {[name:string]:[]}
     tracker : any;
     order : any;
-    order_fixed : any;
+    orderFixed : any;
     mode : string;
-    fixed_identifier : string;
+    fixedIdentifier : string;
     toggle: any;
     tabular: any;
     colormap: any;
 
     constructor(dfgraph?: any, parentdiv?: any) {
-            this.was_created = false;
+            this.wasCreated = false;
             this.radius = 3;
-            this.offset_x = 15;
-            this.svg_offset_x = 32;
-            this.svg_offset_y = 50;
-            this.text_offset = 40;
-            this.state_offset = 63;
-            this.fixed_identifier = "DFELEMENT"
+            this.offsetX = 15;
+            this.svgOffsetX = 32;
+            this.svgOffsetY = 50;
+            this.textOffset = 40;
+            this.stateOffset = 63;
+            this.fixedIdentifier = "DFELEMENT"
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
             this.edges = [];
-            this.output_tags = {};
+            this.outputTags = {};
             this.dfgraph = dfgraph || null;
             this.tracker = null;
             this.toggle = null;
@@ -60,7 +60,7 @@ export class Minimap {
     /** @method update the order that cells are present in the minimap **/
     updateOrder = function(order:any){
         //Have to set uuids properly here in case we rely on cell array
-        this.order = order.map((uuid:string) => uuid.substring(0,uuid_length));
+        this.order = order.map((uuid:string) => uuid.substring(0,uuidLength));
         return true;
     }
 
@@ -79,11 +79,11 @@ export class Minimap {
 
 
    /** @method creates paths between node segments **/
-    makePaths = function(source_cy:any,destination_cy:any,parent:any,left:boolean)
+    makePaths = function(sourceCy:any,destinationCy:any,parent:any,left:boolean)
     {
-        let x_val = left ? this.svg_offset_x+this.radius+8 : this.svg_offset_x-(this.radius+8);
-        let y_val = ((destination_cy - source_cy));
-        parent.append('path').classed('joining',true).attr('d','M'+ x_val +' ' + source_cy + 'v '+y_val).attr('stroke-width',2);
+        let xVal = left ? this.svgOffsetX+this.radius+8 : this.svgOffsetX-(this.radius+8);
+        let yVal = ((destinationCy - sourceCy));
+        parent.append('path').classed('joining',true).attr('d','M'+ xVal +' ' + sourceCy + 'v '+yVal).attr('stroke-width',2);
     }
 
     /** @method generates dependencies that aren't intermediates **/
@@ -130,62 +130,62 @@ export class Minimap {
         this.reset();
         node.classed('active_node',true);
         parent.classed('active',true);
-        let active_id = parent.attr('id');
-        active_id = active_id.substring(4,active_id.length);
-        let source_x = that.svg_offset_x;
-        let offset_active = 0;
+        let activeId = parent.attr('id');
+        activeId = activeId.substring(4,activeId.length);
+        let sourceX = that.svgOffsetX;
+        let offsetActive = 0;
 
-        let source_y = 10+that.offset_x*that.order_fixed.indexOf(active_id);
-        let uuid = active_id.substring(active_id.length-8,active_id.length);
-        let immups = that.dfgraph.get_imm_upstreams(uuid);
-        let immdowns = that.dfgraph.get_downstreams(uuid);
+        let sourceY = 10+that.offsetX*that.orderFixed.indexOf(activeId);
+        let uuid = activeId.substring(activeId.length-8,activeId.length);
+        let immups = that.dfgraph.getImmUpstreams(uuid);
+        let immdowns = that.dfgraph.getDownstreams(uuid);
         if(immups.length > 0 && immdowns.length > 0){
-            source_x = that.svg_offset_x - 12;
-            offset_active = 24;
+            sourceX = that.svgOffsetX - 12;
+            offsetActive = 24;
         }
         else if(immups.length > 0){
-            offset_active = -12;
+            offsetActive = -12;
         }
         else if(immdowns.length > 0){
-            offset_active = 12;
+            offsetActive = 12;
         }
 
-        let active_ele = '#node'+active_id;
-        d3.select(active_ele).append('g')
+        let activeEle = '#node'+activeId;
+        d3.select(activeEle).append('g')
         .attr('transform','translate(0,0)')
         .classed('activeedge',true)
         .append('path')
         .classed('source',true)
-        .attr('d','M'+ source_x +' ' + source_y + 'h '+offset_active)
+        .attr('d','M'+ sourceX +' ' + sourceY + 'h '+offsetActive)
         .attr('stroke-width',2).attr('fill','#3b5fc0')
         .attr('stroke',"#3b5fc0");
 
-        d3.select('#text'+active_id).classed('active',true);
+        d3.select('#text'+activeId).classed('active',true);
         if(that.mode == 'cells'){
-            this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(active_id);
+            this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(activeId);
            }
        else{
-            this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(active_id.split(that.fixed_identifier)[1]);
+            this.tracker.currentWidget.content.activeCellIndex = this.order.indexOf(activeId.split(that.fixedIdentifier)[1]);
        }
         this.edges.map(function(edge:any)
         {
           let source = edge['source'];
           let destination = edge['destination'];
-          if(source == active_id){
+          if(source == activeId){
             downs.push(destination);
-          let destination_node = d3.select('#node'+destination).classed('move_left',true).classed('active',true).classed('imm',true);
-          let dest_cy = 10+that.offset_x*that.order_fixed.indexOf(destination);
-            that.makePaths(source_y,dest_cy,parent,true);
+          let destinationNode = d3.select('#node'+destination).classed('move_left',true).classed('active',true).classed('imm',true);
+          let destCy = 10+that.offsetX*that.orderFixed.indexOf(destination);
+            that.makePaths(sourceY,destCy,parent,true);
 
-            destination_node.selectAll('path.source').classed('hidden',true);
+            destinationNode.selectAll('path.source').classed('hidden',true);
           }
-          if(destination == active_id){
+          if(destination == activeId){
               ups.push(source);
-            let source_node = d3.select('#node'+source).classed('move_right',true).classed('active',true).classed('imm',true);
-            let src_cy = 10+that.offset_x*that.order_fixed.indexOf(source);
-            that.makePaths(src_cy,source_y,parent,false);
+            let sourceNode = d3.select('#node'+source).classed('move_right',true).classed('active',true).classed('imm',true);
+            let srcCy = 10+that.offsetX*that.orderFixed.indexOf(source);
+            that.makePaths(srcCy,sourceY,parent,false);
 
-            source_node.selectAll('path.destination').classed('hidden',true);
+            sourceNode.selectAll('path.destination').classed('hidden',true);
           }
         })
        }
@@ -197,46 +197,46 @@ export class Minimap {
 
     /** @method takes in a string id input and activates based on that ID*/
     updateActiveByID = function(activeid:string){
-            let source_node = null;
+            let sourceNode = null;
             let src = null;
             if(this.mode == 'nodes'){
-                let deps = this.dfgraph.get_nodes(activeid);
-                let add_specifier = deps.length > 0 ? deps[0] : "";
+                let deps = this.dfgraph.getNodes(activeid);
+                let addSpecifier = deps.length > 0 ? deps[0] : "";
                 if (deps.length > 0 && deps[0] == undefined){
-                add_specifier = "";
+                addSpecifier = "";
                 }
-                source_node = d3.select('#node'+add_specifier+this.fixed_identifier+activeid).classed('move_right',true).classed('active',true);
-                src = source_node.select('circle');
+                sourceNode = d3.select('#node'+addSpecifier+this.fixedIdentifier+activeid).classed('move_right',true).classed('active',true);
+                src = sourceNode.select('circle');
             }
             else{
-                source_node = d3.select('#node'+activeid).classed('move_right',true).classed('active',true);
-                src = source_node.select('circle');
+                sourceNode = d3.select('#node'+activeid).classed('move_right',true).classed('active',true);
+                src = sourceNode.select('circle');
             }
-            this.elementActivate(source_node,src);
+            this.elementActivate(sourceNode,src);
     }
 
    /** @method combines tags with respective uuids **/
-   combine_tags = function(uuid:string)
+   combineTags = function(uuid:string)
    {
         let that = this;
-        if(uuid in this.output_tags){
-            if(this.dfgraph.get_nodes(uuid).length == 0){ return [''+that.fixed_identifier+uuid]; }
-            return this.output_tags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixed_identifier+uuid));
+        if(uuid in this.outputTags){
+            if(this.dfgraph.getNodes(uuid).length == 0){ return [''+that.fixed_identifier+uuid]; }
+            return this.outputTags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixed_identifier+uuid));
         }
-        return this.dfgraph.get_nodes(uuid);
+        return this.dfgraph.getNodes(uuid);
    }
 
-    /** @method update_states updates the states present in the graph */
-    update_states = function(){
+    /** @method updateStates updates the states present in the graph */
+    updateStates = function(){
             let that = this;
             that.svg.selectAll('rect.states')
-            .data(that.order_fixed)
+            .data(that.orderFixed)
             .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
             .enter()
             .append('rect')
-            .attr('x',that.state_offset)
+            .attr('x',that.stateOffset)
             .attr('y',function(a:string,b:number){
-                    return 4+(that.offset_x*b);})
+                    return 4+(that.offsetX*b);})
             .attr('width','5px')
             .attr('height','12px')
             .attr('rx','2px')
@@ -247,25 +247,25 @@ export class Minimap {
     }
 
    /** @method combines tags with respective uuids **/
-   out_tags_length = function(uuid:string)
+   outTagsLength = function(uuid:string)
    {
-        if(uuid in this.output_tags){
-            if(this.output_tags[uuid].length == 0){ return 1; }
-            return this.output_tags[uuid].length;
+        if(uuid in this.outputTags){
+            if(this.outputTags[uuid].length == 0){ return 1; }
+            return this.outputTags[uuid].length;
         }
         return 1;
    }
 
    /** @method grabs out tags from string **/
-   grab_out_tags = function(id:string,text:string)
+   grabOutTags = function(id:string,text:string)
    {
         let that = this;
-            if(id in that.output_tags){
-                return that.output_tags[id].reduce((textobj:string,output_tag:string)=>{
+            if(id in that.outputTags){
+                return that.outputTags[id].reduce((textobj:string,outputTag:string)=>{
                     //FIXME: Make this smarter
-                    let exp = new RegExp(output_tag);
+                    let exp = new RegExp(outputTag);
                     if(!textobj){ return '';}
-                    return textobj.replace(exp,'OUTTAGSTARTSHERE'+output_tag+'OUTTAGSTARTSHERE');
+                    return textobj.replace(exp,'OUTTAGSTARTSHERE'+outputTag+'OUTTAGSTARTSHERE');
                 },text);
             }
                 return text || "";
@@ -285,7 +285,7 @@ export class Minimap {
             data = this.order;
         }
         else{
-            data = this.order.reduce(function(a:any,b:any){return a.concat(that.combine_tags(b))},[]);
+            data = this.order.reduce(function(a:any,b:any){return a.concat(that.combineTags(b))},[]);
         }
         let groups = circles
         .data(data,(a:string)=>a)
@@ -309,19 +309,19 @@ export class Minimap {
 
         groups.append('circle')
           .transition(minitran)
-          .attr('cx', this.svg_offset_x)
-          .attr('cy',(a:string,b:number)=> 10+this.offset_x*b)
+          .attr('cx', this.svgOffsetX)
+          .attr('cy',(a:string,b:number)=> 10+this.offsetX*b)
           .attr('r',this.radius);
 
         that.mapEdges(that);
 
         let values = this.order
             .map((a:string)=>[a,
-                that.grab_out_tags(a,that.get_cell_contents(a))
+                that.grabOutTags(a,that.getCellContents(a))
                 .split("OUTTAGSTARTSHERE")
                 .map(
                 (text:string)=>{
-                return [text,(that.output_tags[a] || []).includes(text)]
+                return [text,(that.outputTags[a] || []).includes(text)]
                 }
                 )
             ]);
@@ -337,8 +337,8 @@ export class Minimap {
 
         if(that.mode == 'nodes')
         {
-            let full_source = values;
-            values = that.order.reduce(function(a:any,b:any){return a.concat((that.get_nodes(b)).map((tag:any) => ([tag ? tag+that.fixed_identifier+b : "",[[tag,true]]])))},[]);
+            let fullSource = values;
+            values = that.order.reduce(function(a:any,b:any){return a.concat((that.getNodes(b)).map((tag:any) => ([tag ? tag+that.fixedIdentifier+b : "",[[tag,true]]])))},[]);
             let decoffset = 0;
             that.svg.selectAll('rect.cells')
             .data(that.order)
@@ -348,18 +348,18 @@ export class Minimap {
             .attr("x",8)
             .attr("y",function(node:string){
                     let curroffset = decoffset;
-                    decoffset = decoffset + that.out_tags_length(node);
+                    decoffset = decoffset + that.outTagsLength(node);
                     return 4 + curroffset * 15
                     })
             .attr("width",50)
-            .attr('height',(node:string) => 15*that.out_tags_length(node)-4)
+            .attr('height',(node:string) => 15*that.outTagsLength(node)-4)
             .attr('rx',3)
             .attr('ry',3);
 
             decoffset = 0;
 
             this.svg.selectAll('text.source')
-            .data(full_source, function(a:any){ return a[0]})
+            .data(fullSource, function(a:any){ return a[0]})
             .each(function(a:any){
                 //For existing ones clear all text
                 //FIXME: This is a biproduct of not having full access to tags on load
@@ -381,16 +381,16 @@ export class Minimap {
             .on('click',textclick)
             .attr('id',(a:Array<string>)=> 'text'+a[0])
             .classed('source',true)
-            .attr('x',that.text_offset+that.svg_offset_x+80)
+            .attr('x',that.textOffset+that.svgOffsetX+80)
             .attr('y',function(a:Array<string>,b:number){
                     let curroffset = decoffset;
                     let node = a[0];
-                    let node_length = that.out_tags_length(node);
-                    decoffset = decoffset + node_length;
-                    if(node_length > 1){
-                        return 15+(that.offset_x*curroffset)+(that.offset_x/(node_length));
+                    let nodeLength = that.outTagsLength(node);
+                    decoffset = decoffset + nodeLength;
+                    if(nodeLength > 1){
+                        return 15+(that.offsetX*curroffset)+(that.offsetX/(nodeLength));
                     }
-                    return 15+(that.offset_x*curroffset);
+                    return 15+(that.offsetX*curroffset);
                     })
             .on('click',textclick)
             .each(function(a:any){
@@ -407,13 +407,13 @@ export class Minimap {
             })
 
             this.svg.selectAll('rect.states')
-            .data(that.order_fixed)
+            .data(that.orderFixed)
             .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
             .enter()
             .append('rect')
-            .attr('x',that.state_offset)
+            .attr('x',that.stateOffset)
             .attr('y',function(a:string,b:number){
-                    return 4+(that.offset_x*b);})
+                    return 4+(that.offsetX*b);})
             .attr('width','5px')
             .attr('height','12px')
             .attr('rx','2px')
@@ -450,8 +450,8 @@ export class Minimap {
         .append('text')
         .on('click',textclick)
         .attr('id',(a:Array<string>)=> 'text'+a[0])
-        .attr('x',this.text_offset+this.svg_offset_x)
-        .attr('y',(a:Array<string>,b:number)=> 15+this.offset_x*b)
+        .attr('x',this.textOffset+this.svgOffsetX)
+        .attr('y',(a:Array<string>,b:number)=> 15+this.offsetX*b)
         .each(function(a:any){
             $(this).empty();
             d3.select(this)
@@ -473,8 +473,8 @@ export class Minimap {
     }
 
     /** @method this method is mostly here to make sure we return something for display purposes **/
-    get_nodes = function(uuid:string){
-        let nodes = this.dfgraph.get_nodes(uuid);
+    getNodes = function(uuid:string){
+        let nodes = this.dfgraph.getNodes(uuid);
         if(nodes.length == 0){ return [""]; }
         return nodes;
     }
@@ -483,41 +483,41 @@ export class Minimap {
     mapEdges = function(parent:any,node:any){
         let that = this;
         if(that.mode == 'cells'){
-            that.order_fixed = this.order;
+            that.orderFixed = this.order;
         }
         else{
-            that.order_fixed = this.order.reduce(function(a:any,b:any){return a.concat(that.combine_tags(b))},[]);
+            that.orderFixed = this.order.reduce(function(a:any,b:any){return a.concat(that.combineTags(b))},[]);
         }
         let edgelist:{[index: string]:any} = {};//:;
         this.edges.map(function(edge:any){
-             let source_id = '#node'+edge['source'];
-             let destination_id = '#node'+edge['destination'];
+             let sourceId = '#node'+edge['source'];
+             let destinationId = '#node'+edge['destination'];
 
-             if(source_id in edgelist) {
-                if(edgelist[source_id].includes(destination_id)){return;}
-                edgelist[source_id].push(destination_id);
+             if(sourceId in edgelist) {
+                if(edgelist[sourceId].includes(destinationId)){return;}
+                edgelist[sourceId].push(destinationId);
              }
-             else{ edgelist[source_id] = [destination_id]; }
-             let source_x = that.svg_offset_x;
-             let source_y = 10+that.offset_x*that.order_fixed.indexOf(edge['source']);
-             let destination_x = that.svg_offset_x;
-             let destination_y = 10+that.offset_x*that.order_fixed.indexOf(edge['destination']);
+             else{ edgelist[sourceId] = [destinationId]; }
+             let sourceX = that.svgOffsetX;
+             let sourceY = 10+that.offsetX*that.orderFixed.indexOf(edge['source']);
+             let destinationX = that.svgOffsetX;
+             let destinationY = 10+that.offsetX*that.orderFixed.indexOf(edge['destination']);
 
-             d3.select(source_id).append('g')
+             d3.select(sourceId).append('g')
              .attr('transform','translate(0,0)')
              .attr('id','edge'+edge['source'])
              .append('path')
              .classed('source',true)
-             .attr('d','M'+ source_x +' ' + source_y + 'h 8')
+             .attr('d','M'+ sourceX +' ' + sourceY + 'h 8')
              .attr('stroke-width',2).attr('fill','none')
              .attr('stroke',"black");
 
-             d3.select(destination_id).append('g')
+             d3.select(destinationId).append('g')
              .attr('transform','translate(0,0)')
              .attr('id','edge'+edge['source'])
              .append('path')
              .classed('destination',true)
-             .attr('d','M'+ destination_x +' ' + destination_y + 'h -8')
+             .attr('d','M'+ destinationX +' ' + destinationY + 'h -8')
              .attr('stroke-width',2)
              .attr('fill','none')
              .attr('stroke',"black");
@@ -526,23 +526,23 @@ export class Minimap {
     }
 
     /** @method get cell contents if not in graph **/
-    get_cell_contents = function(uuid:string){
+    getCellContents = function(uuid:string){
         let that = this;
         if(uuid in that.cells){return that.cells[uuid];}
-        let split_cell = that.dfgraph.get_text(uuid).split('\n');
-        let cell_content = split_cell[split_cell.length - 1];
-        that.cells[uuid] = cell_content || '';
+        let splitCell = that.dfgraph.getText(uuid).split('\n');
+        let cellContent = splitCell[splitCell.length - 1];
+        that.cells[uuid] = cellContent || '';
         return that.cells[uuid];
     }
 
     /** @method changes cell contents **/
     // Always call before any updates to graph
-    update_cells = function(){
+    updateCells = function(){
         let that = this;
-        that.cells = Object.keys(this.dfgraph.cell_contents).reduce(function(a:any,b:string)
+        that.cells = Object.keys(this.dfgraph.cellContents).reduce(function(a:any,b:string)
         {
-          let split_cell = that.dfgraph.cell_contents[b].split('\n');
-          a[b] = split_cell[split_cell.length - 1];
+          let splitCell = that.dfgraph.cellContents[b].split('\n');
+          a[b] = splitCell[splitCell.length - 1];
           return a;
           },{})
         that.updateOrder(that.tracker.currentWidget.model.cells._cellOrder._array);
@@ -551,7 +551,7 @@ export class Minimap {
 
     /** @method updates the edges in the minimap */
     //Always call before any updates to graph
-    update_edges = function(){
+    updateEdges = function(){
         let that = this;
         if(this.mode == 'cells'){
             const flatten = (arr:any[]) =>  arr.reduce((flat:any[], next:any[]) => flat.concat(next), []);
@@ -560,16 +560,16 @@ export class Minimap {
         }
         else{
             that.edges = [];
-            let cells = that.dfgraph.get_cells();
-            that.cell_links = [];
-            that.output_nodes = [];
+            let cells = that.dfgraph.getCells();
+            that.cellLinks = [];
+            that.outputNodes = [];
             cells.forEach(function(uuid:string){
-                that.output_nodes[uuid] = that.get_nodes(uuid);
-                let outnames = that.output_nodes[uuid];
-                that.dfgraph.get_upstreams(uuid).forEach(function (b:string) {
-                    let s_uuid = b.substring(0,uuid_length);
-                    let s_node = b.substring(uuid_length,b.length);
-                        outnames.forEach((out:any) => {that.edges.push({'source': s_node+that.fixed_identifier+s_uuid, 'destination': out+that.fixed_identifier+uuid});});
+                that.outputNodes[uuid] = that.getNodes(uuid);
+                let outnames = that.outputNodes[uuid];
+                that.dfgraph.getUpstreams(uuid).forEach(function (b:string) {
+                    let sUuid = b.substring(0,uuidLength);
+                    let sNode = b.substring(uuidLength,b.length);
+                        outnames.forEach((out:any) => {that.edges.push({'source': sNode+that.fixedIdentifier+sUuid, 'destination': out+that.fixedIdentifier+uuid});});
                 });
             });
         }
@@ -601,19 +601,19 @@ export class Minimap {
         $('#minisvg g').empty();
     }
 
-    /** @method updates the list of output_tags on the graph */
-    update_output_tags = function(){
+    /** @method updates the list of output tags on the graph */
+    updateOutputTags = function(){
         let that = this;
-        that.output_tags = {};
-        that.dfgraph.get_cells().forEach(function(uuid:string){
-            that.output_tags[uuid] = that.dfgraph.get_nodes(uuid);
+        that.outputTags = {};
+        that.dfgraph.getCells().forEach(function(uuid:string){
+            that.outputTags[uuid] = that.dfgraph.getNodes(uuid);
         });
         return true;
     }
 
     /** @method starts minimap creation, this is the process that's ran every time **/
     startMinimapCreation = function(){
-        if(this.update_cells() && this.update_output_tags() && this.update_edges()){
+        if(this.updateCells() && this.updateOutputTags() && this.updateEdges()){
             let that = this;
             that.createMinimap();
         }
@@ -630,7 +630,7 @@ export class Minimap {
 
 
     /** @method set graph, sets the current activate graph to be visualized */
-    set_graph = function(graph:any){
+    setGraph = function(graph:any){
         this.dfgraph = graph;
         this.updateOrder(this.tracker.currentWidget.model.cells._cellOrder._array);
         if(this.svg){

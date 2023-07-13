@@ -367,75 +367,75 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
 
       nbTrackers.widgetAdded.connect((sender,nbPanel) => {
             const session = nbPanel.sessionContext;
-            GraphManager.set_tracker(nbTrackers);
+            GraphManager.setTracker(nbTrackers);
             session.ready.then(() =>
             {
-                let output_tags: {[index: string]:any}  = {};
-                let cell_contents: {[index: string]:any} = {};
-                let cell_list = (nbPanel.model?.toJSON() as any)?.cells;
+                let outputTags: {[index: string]:any}  = {};
+                let cellContents: {[index: string]:any} = {};
+                let cellList = (nbPanel.model?.toJSON() as any)?.cells;
 
-                cell_list.map(function(cell:any)
+                cellList.map(function(cell:any)
                 {
-                let cell_id = cell.id.replace(/-/g, '').substr(0, 8) as string;
+                let cellId = cell.id.replace(/-/g, '').substr(0, 8) as string;
                 if(cell?.cell_type != "code"){return;}
-                cell_contents[cell_id] = cell.source;
-                output_tags[cell_id] =
-                (cell?.outputs).flatMap((output:any) => (output?.metadata?.output_tag ?? []));
+                cellContents[cellId] = cell.source;
+                outputTags[cellId] =
+                (cell?.outputs).flatMap((output:any) => (output?.metadata?.outputTag ?? []));
                 });
-                let cells = Object.keys(output_tags);
-                let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]={};return dict;},{});
-                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cell_id:string)=>{dict[cell_id]=[];return dict;},{});;
-                Object.keys(cell_contents).map(function(cell_id){
+                let cells = Object.keys(outputTags);
+                let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]={};return dict;},{});
+                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]=[];return dict;},{});;
+                Object.keys(cellContents).map(function(cellId){
                     let regex = /\w+\$[a-f0-9]{8}/g
-                    let references = (cell_contents[cell_id].match(regex)) || [];
+                    let references = (cellContents[cellId].match(regex)) || [];
                     references.map(function(reference:string){
                        let ref = reference.split('$');
-                       if (ref[1] in uplinks[cell_id]){
-                         uplinks[cell_id][ref[1]].push(ref[0]);
+                       if (ref[1] in uplinks[cellId]){
+                         uplinks[cellId][ref[1]].push(ref[0]);
                        }
                        else{
-                         uplinks[cell_id][ref[1]] = [ref[0]]
+                         uplinks[cellId][ref[1]] = [ref[0]]
                        }
-                       downlinks[ref[1]].push(cell_id);
+                       downlinks[ref[1]].push(cellId);
                     });
                 })
-                let sess_id = session?.session?.id || "None";
-                if(!(sess_id in Object.keys(GraphManager.graphs))){
+                let sessId = session?.session?.id || "None";
+                if(!(sessId in Object.keys(GraphManager.graphs))){
                     //@ts-ignore
-                    GraphManager.graphs[sess_id] = new Graph({'cells':cells,'nodes':output_tags,'internal_nodes':output_tags,'uplinks':uplinks,'downlinks':downlinks,'cell_contents':cell_contents});
-                    GraphManager.update_graph(sess_id);
-                    let cell_order = cell_list.map((c:any) => c.id);
-                    GraphManager.update_order(cell_order);
+                    GraphManager.graphs[sessId] = new Graph({'cells':cells,'nodes':outputTags,'internalNodes':outputTags,'uplinks':uplinks,'downlinks':downlinks,'cellContents':cellContents});
+                    GraphManager.updateGraph(sessId);
+                    let cellOrder = cellList.map((c:any) => c.id);
+                    GraphManager.updateOrder(cellOrder);
                 }
-                console.log(sess_id);
+                console.log(sessId);
             });
             (nbPanel.content as any).model._cells._cellOrder._changed.connect(() =>{
-                GraphManager.update_order((nbPanel.content as any).model._cells._cellOrder._array);
+                GraphManager.updateOrder((nbPanel.content as any).model._cells._cellOrder._array);
             });
             nbPanel.content.activeCellChanged.connect(() =>{
-                let prevActive = GraphManager.get_active();
+                let prevActive = GraphManager.getActive();
                 if(prevActive && prevActive != "None"){
                     let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
-                    if(prevActive.value.text != GraphManager.get_text(uuid)){
-                        GraphManager.mark_stale(uuid);
+                    if(prevActive.value.text != GraphManager.getText(uuid)){
+                        GraphManager.markStale(uuid);
                     }
-                    else if(GraphManager.get_stale(uuid) == 'Stale'){
-                        GraphManager.revert_stale(uuid);
+                    else if(GraphManager.getStale(uuid) == 'Stale'){
+                        GraphManager.revertStale(uuid);
                     }
                 }
                 //Have to get this off the model the same way that actions.tsx does
                 let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
-                GraphManager.update_active(activeId,nbPanel.content.activeCell?.model);
+                GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
             });
       });
 
 
       shell.currentChanged.connect((_, change) => {
       //@ts-ignore
-        let sess_id = change['newValue']?.sessionContext?.session?.id;
+        let sessId = change['newValue']?.sessionContext?.session?.id;
 
-        if(sess_id in GraphManager.graphs){
-            GraphManager.update_active_graph();
+        if(sessId in GraphManager.graphs){
+            GraphManager.updateActiveGraph();
         }
         });
 
@@ -472,7 +472,7 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
           function openDepViewer(){
               if (widget.isDisposed) {
                 widget = newWidget();
-                GraphManager.depview.is_created = false;
+                GraphManager.depview.isCreated = false;
               }
               if (!widget.isAttached) {
                 // Attach the widget to the main work area if it's not there
@@ -480,15 +480,15 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
                     mode: 'split-right',
                     activate: false
                 });
-                if (!GraphManager.depview.is_created){
-                  GraphManager.depview.create_dep_div();
+                if (!GraphManager.depview.isCreated){
+                  GraphManager.depview.createDepDiv();
                 }
 
 
               }
               // Activate the widget
               app.shell.activateById(widget.id);
-              GraphManager.depview.is_open = true;
+              GraphManager.depview.isOpen = true;
               GraphManager.depview.startGraphCreation();
             }
 
@@ -574,7 +574,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
 
               if (widget.isDisposed) {
                 widget = newWidget();
-                GraphManager.minimap.was_created = false;
+                GraphManager.minimap.wasCreated = false;
               }
               if (!widget.isAttached) {
 
@@ -585,13 +585,13 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
                 });
                 //'right');
 
-                if(!GraphManager.minimap.was_created){
-                    console.log("Active Graph",GraphManager.graphs[GraphManager.current_graph])
+                if(!GraphManager.minimap.wasCreated){
+                    console.log("Active Graph",GraphManager.graphs[GraphManager.currentGraph])
 
                     // Activate the widget
                     app.shell.activateById(widget.id);
                     GraphManager.minimap.createMiniArea();
-                    GraphManager.minimap.was_created = true;
+                    GraphManager.minimap.wasCreated = true;
                 }
                 else{
                     GraphManager.minimap.startMinimapCreation();

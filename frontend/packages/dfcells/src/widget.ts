@@ -271,11 +271,11 @@ export namespace DataflowCodeCell {
       let internalNodes = content.internal_nodes;
       let sessId = sessionContext.session.id;
       //Set information about the graph based on sessionid
-      GraphManager.graphs[sessId].update_cell_contents(dfData?.code_dict);
-      GraphManager.graphs[sessId].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      GraphManager.update_dep_views(false);
+      GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
+      GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
+      GraphManager.updateDepViews(false);
        if (content.update_downstreams) {
-                    GraphManager.graphs[sessId].update_down_links(content.update_downstreams);
+                    GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
       }
 
       if (recordTiming) {
