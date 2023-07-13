@@ -10,10 +10,24 @@ export class Minimap {
 
     radius : number;
     offsetX : number;
+    offsetY : number;
     svgOffsetX : number;
     svgOffsetY : number;
     textOffset : number;
     stateOffset : number;
+    pathOffset : number;
+    edgeYOffset : number;
+    strokeWidth : number;
+    textEllide : number;
+    offsetActive : number;
+    rectYOffset : number;
+    statesWidth : number;
+    statesHeight : number;
+    statesRx : number;
+    statesRy : number;
+    nodesRx : number;
+    nodesRy : number;
+    idSubstr : string;
     cells : { [name:string]: string};
     edges : any;
     parentdiv : any;
@@ -34,10 +48,23 @@ export class Minimap {
             this.wasCreated = false;
             this.radius = 3;
             this.offsetX = 15;
+            this.offsetY = 15;
             this.svgOffsetX = 32;
             this.svgOffsetY = 50;
             this.textOffset = 40;
             this.stateOffset = 63;
+            this.pathOffset = 8;
+            this.edgeYOffset = 10;
+            this.strokeWidth = 2;
+            this.offsetActive = 24;
+            this.rectYOffset = 4;
+            this.statesWidth = 5;
+            this.statesHeight = 12;
+            this.nodesRx = this.nodesRy = 3;
+            this.statesRx = this.statesRy = 2;
+            //Elides text after this length
+            this.textEllide = 10;
+            this.idSubstr = "node";
             this.fixedIdentifier = "DFELEMENT"
             this.cells = {};
             this.parentdiv = parentdiv || '#minimap';
@@ -81,9 +108,9 @@ export class Minimap {
    /** @method creates paths between node segments **/
     makePaths = function(sourceCy:any,destinationCy:any,parent:any,left:boolean)
     {
-        let xVal = left ? this.svgOffsetX+this.radius+8 : this.svgOffsetX-(this.radius+8);
+        let xVal = left ? this.svgOffsetX+this.radius+this.pathOffset : this.svgOffsetX-(this.radius+this.pathOffset);
         let yVal = ((destinationCy - sourceCy));
-        parent.append('path').classed('joining',true).attr('d','M'+ xVal +' ' + sourceCy + 'v '+yVal).attr('stroke-width',2);
+        parent.append('path').classed('joining',true).attr('d','M'+ xVal +' ' + sourceCy + 'v '+yVal).attr('stroke-width',this.strokeWidth);
     }
 
     /** @method generates dependencies that aren't intermediates **/
@@ -131,23 +158,23 @@ export class Minimap {
         node.classed('active_node',true);
         parent.classed('active',true);
         let activeId = parent.attr('id');
-        activeId = activeId.substring(4,activeId.length);
+        activeId = activeId.substring(that.idSubstr.length,activeId.length);
         let sourceX = that.svgOffsetX;
         let offsetActive = 0;
 
-        let sourceY = 10+that.offsetX*that.orderFixed.indexOf(activeId);
-        let uuid = activeId.substring(activeId.length-8,activeId.length);
+        let sourceY = that.edgeYOffset+that.offsetX*that.orderFixed.indexOf(activeId);
+        let uuid = activeId.substring(activeId.length-uuidLength,activeId.length);
         let immups = that.dfgraph.getImmUpstreams(uuid);
         let immdowns = that.dfgraph.getDownstreams(uuid);
         if(immups.length > 0 && immdowns.length > 0){
-            sourceX = that.svgOffsetX - 12;
-            offsetActive = 24;
+            sourceX = that.svgOffsetX - (that.offsetActive/2);
+            offsetActive = that.offsetActive;
         }
         else if(immups.length > 0){
-            offsetActive = -12;
+            offsetActive = -(that.offsetActive/2);
         }
         else if(immdowns.length > 0){
-            offsetActive = 12;
+            offsetActive = that.offsetActive/2;
         }
 
         let activeEle = '#node'+activeId;
@@ -157,7 +184,7 @@ export class Minimap {
         .append('path')
         .classed('source',true)
         .attr('d','M'+ sourceX +' ' + sourceY + 'h '+offsetActive)
-        .attr('stroke-width',2).attr('fill','#3b5fc0')
+        .attr('stroke-width',that.strokeWidth).attr('fill','#3b5fc0')
         .attr('stroke',"#3b5fc0");
 
         d3.select('#text'+activeId).classed('active',true);
@@ -174,7 +201,7 @@ export class Minimap {
           if(source == activeId){
             downs.push(destination);
           let destinationNode = d3.select('#node'+destination).classed('move_left',true).classed('active',true).classed('imm',true);
-          let destCy = 10+that.offsetX*that.orderFixed.indexOf(destination);
+          let destCy = that.edgeYOffset+that.offsetY*that.orderFixed.indexOf(destination);
             that.makePaths(sourceY,destCy,parent,true);
 
             destinationNode.selectAll('path.source').classed('hidden',true);
@@ -182,7 +209,7 @@ export class Minimap {
           if(destination == activeId){
               ups.push(source);
             let sourceNode = d3.select('#node'+source).classed('move_right',true).classed('active',true).classed('imm',true);
-            let srcCy = 10+that.offsetX*that.orderFixed.indexOf(source);
+            let srcCy = that.edgeYOffset+that.offsetY*that.orderFixed.indexOf(source);
             that.makePaths(srcCy,sourceY,parent,false);
 
             sourceNode.selectAll('path.destination').classed('hidden',true);
@@ -231,18 +258,18 @@ export class Minimap {
             let that = this;
             that.svg.selectAll('rect.states')
             .data(that.orderFixed)
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-uuidLength,uuid.length)] || "None"])
             .enter()
             .append('rect')
             .attr('x',that.stateOffset)
             .attr('y',function(a:string,b:number){
-                    return 4+(that.offsetX*b);})
-            .attr('width','5px')
-            .attr('height','12px')
-            .attr('rx','2px')
-            .attr('ry','2px')
+                    return that.rectYOffset+(that.offsetY*b);})
+            .attr('width',that.statesWidth)
+            .attr('height',that.statesHeight)
+            .attr('rx',that.statesRx)
+            .attr('ry',that.statesRy)
             .attr('id',(uuid:string) => 'state'+uuid)
-            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-8,uuid.length)] || "None"])
+            .attr('fill',(uuid:string) => that.colormap[that.dfgraph.states[uuid.substring(uuid.length-uuidLength,uuid.length)] || "None"])
             .classed('states',true);
     }
 
@@ -296,9 +323,9 @@ export class Minimap {
 
         groups.append('rect')
         .attr('x',0)
-        .attr('y',(a:string,b:number)=>0+b*15)
+        .attr('y',(a:string,b:number)=>0+b*that.offsetY)
         .attr('width',500)
-        .attr('height',15)
+        .attr('height',that.offsetY)
         .attr('fill','transparent')
         .on('click',function()
          {
@@ -310,7 +337,7 @@ export class Minimap {
         groups.append('circle')
           .transition(minitran)
           .attr('cx', this.svgOffsetX)
-          .attr('cy',(a:string,b:number)=> 10+this.offsetX*b)
+          .attr('cy',(a:string,b:number)=> that.edgeYOffset+this.offsetY*b)
           .attr('r',this.radius);
 
         that.mapEdges(that);
@@ -329,7 +356,7 @@ export class Minimap {
 
         let textclick = function(){
             let id = d3.select(this).attr('id');
-            id = id.substring(4,id.length);
+            id = id.substring(this.idSubstr.length,id.length);
             let parent = d3.select('#node'+id);
             let node = parent.select('circle');
             that.elementActivate(parent,node);
@@ -349,12 +376,12 @@ export class Minimap {
             .attr("y",function(node:string){
                     let curroffset = decoffset;
                     decoffset = decoffset + that.outTagsLength(node);
-                    return 4 + curroffset * 15
+                    return that.rectYOffset + curroffset * that.offsetY
                     })
             .attr("width",50)
-            .attr('height',(node:string) => 15*that.outTagsLength(node)-4)
-            .attr('rx',3)
-            .attr('ry',3);
+            .attr('height',(node:string) => that.offsetY*that.outTagsLength(node)-that.rectYOffset)
+            .attr('rx',that.nodesRx)
+            .attr('ry',that.nodesRy);
 
             decoffset = 0;
 
@@ -388,9 +415,9 @@ export class Minimap {
                     let nodeLength = that.outTagsLength(node);
                     decoffset = decoffset + nodeLength;
                     if(nodeLength > 1){
-                        return 15+(that.offsetX*curroffset)+(that.offsetX/(nodeLength));
+                        return that.offsetY+(that.offsetY*curroffset)+(that.offsetY/(nodeLength));
                     }
-                    return 15+(that.offsetX*curroffset);
+                    return that.offsetY+(that.offsetY*curroffset);
                     })
             .on('click',textclick)
             .each(function(a:any){
@@ -413,7 +440,7 @@ export class Minimap {
             .append('rect')
             .attr('x',that.stateOffset)
             .attr('y',function(a:string,b:number){
-                    return 4+(that.offsetX*b);})
+                    return that.rectYOffset+(that.offsetY*b);})
             .attr('width','5px')
             .attr('height','12px')
             .attr('rx','2px')
@@ -439,7 +466,7 @@ export class Minimap {
             .append('tspan')
             .text(function(a:any){
             if(a[0]){
-                return a[0].length > 10 ? a[0].substring(0,7)+".." : a[0];
+                return a[0].length > that.textEllide ? a[0].substring(0,7)+".." : a[0];
             }
                 return "";
             })
@@ -451,7 +478,7 @@ export class Minimap {
         .on('click',textclick)
         .attr('id',(a:Array<string>)=> 'text'+a[0])
         .attr('x',this.textOffset+this.svgOffsetX)
-        .attr('y',(a:Array<string>,b:number)=> 15+this.offsetX*b)
+        .attr('y',(a:Array<string>,b:number)=> that.offsetY+this.offsetY*b)
         .each(function(a:any){
             $(this).empty();
             d3.select(this)
@@ -461,7 +488,7 @@ export class Minimap {
             .append('tspan')
             .text(function(a:any){
             if(a[0]){
-                return (a[0].length > 10 ? a[0].substring(0,7)+".." : a[0]);
+                return (a[0].length > that.textEllide ? a[0].substring(0,7)+".." : a[0]);
             }
             return "";
             })
@@ -499,9 +526,9 @@ export class Minimap {
              }
              else{ edgelist[sourceId] = [destinationId]; }
              let sourceX = that.svgOffsetX;
-             let sourceY = 10+that.offsetX*that.orderFixed.indexOf(edge['source']);
+             let sourceY = that.edgeYOffset+that.offsetX*that.orderFixed.indexOf(edge['source']);
              let destinationX = that.svgOffsetX;
-             let destinationY = 10+that.offsetX*that.orderFixed.indexOf(edge['destination']);
+             let destinationY = that.edgeYOffset+that.offsetX*that.orderFixed.indexOf(edge['destination']);
 
              d3.select(sourceId).append('g')
              .attr('transform','translate(0,0)')
@@ -509,7 +536,7 @@ export class Minimap {
              .append('path')
              .classed('source',true)
              .attr('d','M'+ sourceX +' ' + sourceY + 'h 8')
-             .attr('stroke-width',2).attr('fill','none')
+             .attr('stroke-width',that.strokeWidth).attr('fill','none')
              .attr('stroke',"black");
 
              d3.select(destinationId).append('g')
@@ -518,7 +545,7 @@ export class Minimap {
              .append('path')
              .classed('destination',true)
              .attr('d','M'+ destinationX +' ' + destinationY + 'h -8')
-             .attr('stroke-width',2)
+             .attr('stroke-width',that.strokeWidth)
              .attr('fill','none')
              .attr('stroke',"black");
 
