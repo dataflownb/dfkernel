@@ -270,7 +270,7 @@ export class Graph {
         //Shouldn't need the old way of referencing
         //that.minimap.update_edges();
         //celltoolbar.CellToolbar.rebuild_all();
-    };
+    }
 
 
     update_order = function(neworder:any){
@@ -324,8 +324,8 @@ export class Graph {
     /** @method recursively yield all downstream deps */
     all_downstream(this:Graph,uuid: string | number){
         let that:Graph = this;
-        let visited = new Array();// Array<string> = [];
-        let res = new Array();//: Array<string> = [];
+        let visited:Array<string> = [];// Array<string> = [];
+        let res:Array<string> = [];//: Array<string> = [];
         let downlinks = (this.downlinks[uuid] || []).slice(0);
         while(downlinks.length > 0){
             let cid = downlinks.pop();
@@ -354,19 +354,19 @@ export class Graph {
         }
         that.downstream_lists[uuid] = res;
         return res;
-    };
+    }
 
 
     all_upstream_cell_ids(cid: any) {
         let uplinks = this.get_imm_upstreams(cid);
-        let all_cids = new Array();
+        let all_cids:Array<string> = [];
         while (uplinks.length > 0) {
-            let up_cid = uplinks.pop();
+            let up_cid = uplinks.pop() || '';
             all_cids.setadd(up_cid);
             uplinks = uplinks.concat(this.get_imm_upstreams(up_cid));
         }
         return all_cids;
-    };
+    }
 
 
      /** @method updates all downstream links with downstream updates passed from kernel */
@@ -380,7 +380,7 @@ export class Graph {
             }
         });
         that.downstream_lists = {};
-    };
+    }
 
     /** @method update_code_dict */
     update_cell_contents(this:Graph,cell_contents:any){
@@ -406,13 +406,13 @@ export class Graph {
             that.upstream_list[uuid] = all_ups;
     //        cell.update_df_list(cell,all_ups,'upstream');
         }
-    };
+    }
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
     get_all_upstreams(uuid: string | number) {
         // @ts-ignore
         return this.upstream_list[uuid];
-    };
+    }
 
     /** @method returns upstreams for a cell with a given uuid */
     get_upstreams(this:Graph,uuid: string | number){
@@ -422,7 +422,7 @@ export class Graph {
                return uplink === item ? item : uplink+item;}) || [];
             return arr.concat(links);
         },[]);
-    };
+    }
 
 
 
@@ -434,7 +434,7 @@ export class Graph {
             return Object.keys(this.uplinks[uuid]);
         }
         return [];
-    };
+    }
 
     get_imm_upstream_names(this:Graph,uuid: string | number | undefined) {
         let arr: never[] = [];
@@ -445,7 +445,7 @@ export class Graph {
             Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid]);
         });
         return arr;
-    };
+    }
 
     get_imm_upstream_pairs(uuid: string | number | undefined) {
         let arr: never[] = [];
@@ -456,18 +456,18 @@ export class Graph {
             Array.prototype.push.apply(arr, that.uplinks[uuid][up_uuid].map(function(v) { return [v, up_uuid];}));
         });
         return arr;
-    };
+    }
 
 
     /** @method returns downstreams for a cell with a given uuid */
     get_downstreams(uuid: string | number) {
         return this.downlinks[uuid];
-    };
+    }
 
     /** @method returns the cached all upstreams for a cell with a given uuid */
     get_internal_nodes(uuid: string | number) {
         return this.internal_nodes[uuid] || [];
-    };
+    }
 
     /** @method returns all nodes for a cell*/
     get_nodes(this:Graph,uuid: string){
@@ -478,7 +478,7 @@ export class Graph {
             }
         }
         return [];
-    };
+    }
 
     /** @method returns all cells on kernel side*/
     get_cells = function(this:Graph){

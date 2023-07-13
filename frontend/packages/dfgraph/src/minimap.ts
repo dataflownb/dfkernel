@@ -8,12 +8,12 @@ import $ from "jquery";
 export class Minimap {
 
 
-    radius : Number;
-    offset_x : Number;
-    svg_offset_x : Number;
-    svg_offset_y : Number;
-    text_offset : Number;
-    state_offset : Number;
+    radius : number;
+    offset_x : number;
+    svg_offset_x : number;
+    svg_offset_y : number;
+    text_offset : number;
+    state_offset : number;
     cells : { [name:string]: string};
     edges : any;
     parentdiv : any;
