@@ -1,4 +1,4 @@
-import { CellModel, AttachmentsCellModel, RawCellModel, MarkdownCellModel, CodeCellModel } from "@jupyterlab/cells";
+import { AttachmentsCellModel, CellModel, CodeCellModel, MarkdownCellModel, RawCellModel } from "@jupyterlab/cells";
 // import { IOutputAreaModel } from "@jupyterlab/outputarea";
 // import { JSONObject } from "@lumino/coreutils";
 

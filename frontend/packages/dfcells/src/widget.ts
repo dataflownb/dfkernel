@@ -1,5 +1,5 @@
 import { Kernel, KernelMessage } from "@jupyterlab/services";
-import { Cell, CodeCell, MarkdownCell, AttachmentsCell, RawCell, ICellModel, IAttachmentsCellModel, IInputPrompt } from "@jupyterlab/cells";
+import { AttachmentsCell, Cell, CodeCell, IAttachmentsCellModel, ICellModel, IInputPrompt, MarkdownCell, RawCell } from "@jupyterlab/cells";
 import { DataflowInputArea, DataflowInputPrompt } from "./inputarea";
 import { IOutputPrompt } from "@jupyterlab/outputarea";
 import { DataflowOutputArea, DataflowOutputPrompt } from "@dfnotebook/dfoutputarea";
@@ -27,9 +27,9 @@ function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Ce
 
   // find the input area widget
   const { id } = input;
-  let input_idx = -1;
+  let inputIdx = -1;
   panel.widgets.forEach((widget, idx) => {
-    if (widget.id === id) { input_idx = idx; }
+    if (widget.id === id) { inputIdx = idx; }
   });
 
   const dfInput = new DataflowInputArea({
@@ -40,7 +40,7 @@ function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Ce
   })
   dfInput.addClass(CELL_INPUT_AREA_CLASS);
 
-  panel.insertWidget(input_idx, dfInput);
+  panel.insertWidget(inputIdx, dfInput);
   input.dispose()
   //@ts-expect-error
   cell._input = dfInput;
@@ -53,9 +53,9 @@ function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
 
   // find the output area widget
   const { id } = output;
-  let output_idx = -1;
+  let outputIdx = -1;
   panel.widgets.forEach((widget, idx) => {
-    if (widget.id === id) { output_idx = idx; }
+    if (widget.id === id) { outputIdx = idx; }
   });
 
   const dfOutput = new DataflowOutputArea({
@@ -77,7 +77,7 @@ function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
   //@ts-expect-error
   dfOutput.outputLengthChanged.connect(cell._outputLengthHandler, cell);  
 
-  panel.insertWidget(output_idx, dfOutput);
+  panel.insertWidget(outputIdx, dfOutput);
   output.dispose();
   //@ts-expect-error
   cell._output = dfOutput;
@@ -267,15 +267,15 @@ export namespace DataflowCodeCell {
       let uplinks = content.links;
       let cells = content.cells;
       let downlinks = content.imm_downstream_deps;
-      let all_ups = content.upstream_deps;
-      let internal_nodes = content.internal_nodes;
-      let sess_id = sessionContext.session.id;
+      let allUps = content.upstream_deps;
+      let internalNodes = content.internal_nodes;
+      let sessId = sessionContext.session.id;
       //Set information about the graph based on sessionid
-      GraphManager.graphs[sess_id].update_cell_contents(dfData?.code_dict);
-      GraphManager.graphs[sess_id].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,all_ups,internal_nodes);
+      GraphManager.graphs[sessId].update_cell_contents(dfData?.code_dict);
+      GraphManager.graphs[sessId].update_graph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
       GraphManager.update_dep_views(false);
        if (content.update_downstreams) {
-                    GraphManager.graphs[sess_id].update_down_links(content.update_downstreams);
+                    GraphManager.graphs[sessId].update_down_links(content.update_downstreams);
       }
 
       if (recordTiming) {

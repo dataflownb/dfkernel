@@ -1,4 +1,4 @@
-import { InputPrompt, ICellModel, InputArea, IInputPrompt } from "@jupyterlab/cells"
+import { ICellModel, IInputPrompt, InputArea, InputPrompt } from "@jupyterlab/cells"
 
 export class DataflowInputArea extends InputArea {
     // kind of annoying as model still needs to be set later
