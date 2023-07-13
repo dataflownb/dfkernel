@@ -248,7 +248,7 @@ export class Minimap {
         let that = this;
         if(uuid in this.outputTags){
             if(this.dfgraph.getNodes(uuid).length == 0){ return [''+that.fixed_identifier+uuid]; }
-            return this.outputTags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixed_identifier+uuid));
+            return this.outputTags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixedIdentifier+uuid));
         }
         return this.dfgraph.getNodes(uuid);
    }

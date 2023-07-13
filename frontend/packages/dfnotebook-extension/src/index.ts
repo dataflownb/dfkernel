@@ -380,7 +380,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 if(cell?.cell_type != "code"){return;}
                 cellContents[cellId] = cell.source;
                 outputTags[cellId] =
-                (cell?.outputs).flatMap((output:any) => (output?.metadata?.outputTag ?? []));
+                (cell?.outputs).flatMap((output:any) => (output?.metadata?.output_tag ?? []));
                 });
                 let cells = Object.keys(outputTags);
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]={};return dict;},{});
