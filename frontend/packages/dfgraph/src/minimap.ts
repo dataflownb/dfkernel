@@ -226,13 +226,14 @@ export class Minimap {
     updateActiveByID = function(activeid:string){
             let sourceNode = null;
             let src = null;
+            let that = this;
             if(this.mode == 'nodes'){
                 let deps = this.dfgraph.getNodes(activeid);
                 let addSpecifier = deps.length > 0 ? deps[0] : "";
                 if (deps.length > 0 && deps[0] == undefined){
                 addSpecifier = "";
                 }
-                sourceNode = d3.select('#node'+addSpecifier+this.fixedIdentifier+activeid).classed('move_right',true).classed('active',true);
+                sourceNode = d3.select('#node'+addSpecifier+that.fixedIdentifier+activeid).classed('move_right',true).classed('active',true);
                 src = sourceNode.select('circle');
             }
             else{
@@ -247,7 +248,7 @@ export class Minimap {
    {
         let that = this;
         if(uuid in this.outputTags){
-            if(this.dfgraph.getNodes(uuid).length == 0){ return [''+that.fixed_identifier+uuid]; }
+            if(this.dfgraph.getNodes(uuid).length == 0){ return [''+that.fixedIdentifier+uuid]; }
             return this.outputTags[uuid].map((tag:string) => ((tag ? tag : '')+that.fixedIdentifier+uuid));
         }
         return this.dfgraph.getNodes(uuid);
