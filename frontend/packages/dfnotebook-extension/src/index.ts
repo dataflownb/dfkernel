@@ -6,8 +6,8 @@
  */
 
 import {
-  ILayoutRestorer,
   ILabShell,
+  ILayoutRestorer,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
@@ -45,12 +45,12 @@ import {
   INotebookTracker,
   INotebookWidgetFactory,
   Notebook,
+  NotebookActions,
+  NotebookModelFactory,
   NotebookPanel,
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  NotebookActions,
-  NotebookModelFactory,
 } from '@jupyterlab/notebook';
 import {
   IObservableList,
@@ -82,15 +82,15 @@ import { DisposableSet } from '@lumino/disposable';
 import { Panel} from '@lumino/widgets';
 
 import {
-  DataflowNotebookModelFactory,
-  DataflowNotebookWidgetFactory,
-  DataflowNotebookPanel,
+  DataflowNotebook,
   DataflowNotebookActions,
-  IDataflowNotebookModelFactory,  
-  IDataflowNotebookContentFactory,
-  IDataflowNotebookWidgetFactory,
   DataflowNotebookModel,
-  DataflowNotebook
+  DataflowNotebookModelFactory,
+  DataflowNotebookPanel,  
+  DataflowNotebookWidgetFactory,
+  IDataflowNotebookContentFactory,
+  IDataflowNotebookModelFactory,
+  IDataflowNotebookWidgetFactory
 } from '@dfnotebook/dfnotebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { PageConfig } from '@jupyterlab/coreutils';
@@ -384,7 +384,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                 });
                 let cells = Object.keys(outputTags);
                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]={};return dict;},{});
-                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]=[];return dict;},{});;
+                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]=[];return dict;},{});
                 Object.keys(cellContents).map(function(cellId){
                     let regex = /\w+\$[a-f0-9]{8}/g
                     let references = (cellContents[cellId].match(regex)) || [];
