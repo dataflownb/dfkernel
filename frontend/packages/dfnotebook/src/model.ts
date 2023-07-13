@@ -14,8 +14,8 @@ import { UUID } from '@lumino/coreutils';
 
 import {
   DataflowCodeCellModel,
-  DataflowRawCellModel,
-  DataflowMarkdownCellModel
+  DataflowMarkdownCellModel,
+  DataflowRawCellModel
 } from '@dfnotebook/dfcells';
 import { IModelDB } from '@jupyterlab/observables';
 

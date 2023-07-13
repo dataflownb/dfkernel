@@ -6,7 +6,7 @@ import {
   MarkdownCell,
   RawCell,
 } from '@jupyterlab/cells';
-import { StaticNotebook, Notebook } from '@jupyterlab/notebook';
+import { Notebook, StaticNotebook } from '@jupyterlab/notebook';
 
 import {
   DataflowCell,
