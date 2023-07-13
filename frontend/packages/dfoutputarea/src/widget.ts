@@ -1,4 +1,4 @@
-import { OutputArea, IOutputPrompt, OutputPrompt } from "@jupyterlab/outputarea";
+import { IOutputPrompt, OutputArea, OutputPrompt } from "@jupyterlab/outputarea";
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { ISessionContext } from '@jupyterlab/apputils';
 import { Kernel, KernelMessage } from "@jupyterlab/services";
