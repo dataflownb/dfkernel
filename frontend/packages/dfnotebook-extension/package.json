@@ -117,7 +117,7 @@
   "jupyterlab": {
     "extension": true,
     "schemaDir": "schema",
-    "outputDir": "../../dfnotebook-extension/labextension",
+    "outputDir": "../../dfnotebook/labextension",
     "disabledExtensions": [
       "@jupyterlab/notebook-extension:tracker"
     ]

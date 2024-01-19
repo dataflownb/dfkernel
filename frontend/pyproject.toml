@@ -6,11 +6,36 @@ requires = [
 ]
 build-backend = "hatchling.build"
 
+[project]
+name = "dfnotebook"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter :: JupyterLab :: 3",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "dfkernel>=3.0.0-alpha.1",
+]
+dynamic = ["version", "description", "authors", "urls", "keywords"]
+
 [tool.hatch.version]
 source = "nodejs"
 
 [tool.hatch.build]
-artifacts = ["dfnotebook-extension/labextension"]
+artifacts = ["dfnotebook/labextension"]
 
 [tool.hatch.metadata.hooks.nodejs]
 fields = ["description", "authors", "urls"]
@@ -22,11 +47,11 @@ allow-direct-references = true
 exclude = [".github"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"dfnotebook-extension/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
+"dfnotebook/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
 "install.json" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension/install.json"
 
 [tool.hatch.build.hooks.version]
-path = "dfnotebook-extension/_version.py"
+path = "dfnotebook/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = [
@@ -34,15 +59,15 @@ dependencies = [
 ]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "dfnotebook-extension/labextension/static/style.js",
-    "dfnotebook-extension/labextension/package.json",
+    "dfnotebook/labextension/static/style.js",
+    "dfnotebook/labextension/package.json",
 ]
 skip-if-exists = [
-    "dfnotebook-extension/labextension/static/style.js",
+    "dfnotebook/labextension/static/style.js",
 ]
 
 [tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
-build_dir = "dfnotebook-extension/labextension"
+build_dir = "dfnotebook/labextension"
 build_cmd = "install:extension"
 npm = ["jlpm"]
 
@@ -67,28 +92,3 @@ tag_template = "v{new_version}"
 [[tool.tbump.file]]
 src = "pyproject.toml"
 version_template = "version = \"{major}.{minor}.{patch}{channel}{release}\""
-
-[project]
-name = "dfnotebook-extension"
-readme = "README.md"
-license = { file = "LICENSE" }
-requires-python = ">=3.7"
-classifiers = [
-    "Framework :: Jupyter",
-    "Framework :: Jupyter :: JupyterLab",
-    "Framework :: Jupyter :: JupyterLab :: 3",
-    "Framework :: Jupyter :: JupyterLab :: Extensions",
-    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-dependencies = [
-    "dfkernel @ git+https://github.com/dataflownb/dfkernel.git@9005725016811c44602c21ccc782d31e74a076b7"
-]
-dynamic = ["version", "description", "authors", "urls", "keywords"]
