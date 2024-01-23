@@ -23,87 +23,101 @@ Dataflow notebooks seek to elevate *outputs* as memorable waypoints during explo
 
 ## Requirements
 
-* JupyterLab >= 2.0
+- JupyterLab >= 4.0.0
 
 ## Install
 
 This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel) 
-for the backend and a NPM package named `dfnotebook-extension`
-for the frontend extension.
+for the backend and a Jupyter extension named `dfnotebook` for the frontend.
 
-Note: You will need NodeJS to install the extension. (If using conda, this can be done via `conda install nodejs`.)
+To install the kernel, kernel:
 
 ```bash
 pip install dfkernel
-jupyter labextension uninstall @jupyterlab/notebook-extension --no-build
-jupyter labextension install @dfnotebook/dfnotebook-extension
-jupyter lab build
 ```
 
-## Troubleshooting
-
-If you are not seeing the frontend, check the frontend is installed:
+To install the extension, execute:
 
 ```bash
-jupyter labextension list
+pip install dfnotebook
 ```
 
-If it is installed, try:
+## Uninstall
+
+To remove the extension, execute:
 
 ```bash
-jupyter lab clean
-jupyter lab build
+pip uninstall dfnotebook
 ```
 
 ## Contributing
 
-### Install
+### Development install
+
+Note: You will need NodeJS to build the extension package.
 
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
 `yarn` or `npm` in lieu of `jlpm` below.
 
 ```bash
-# Clone the [dfkernel](https://github.com/dataflownb/dfkernel) repo to your local environment
-# Move to dfkernel directory
-
-pip install -e .
-
-# Clone the dfnotebook-extension repo to your local environment
-# Move to dfnotebook-extension directory
-
-# Install dependencies
-jlpm
-# Build Typescript source
-jlpm build
-# uninstall the standard notebook-extension
-jupyter labextension uninstall @jupyterlab/notebook-extension --no-build
+# Clone the repo to your local environment
+# Change directory to the dfnotebook directory
+# Install package in development mode
+pip install -e "."
 # Link your development version of the extension with JupyterLab
-jupyter labextension link dfoutputarea --no-build
-jupyter labextension link dfcells --no-build
-jupyter labextension link dfnotebook --no-build
-jupyter labextension install dfnotebook-extension
-# Rebuild Typescript source after making changes
+jupyter labextension develop . --overwrite
+# Rebuild extension Typescript source after making changes
 jlpm build
-# Rebuild JupyterLab after making any changes
-jupyter lab build
 ```
 
-You can watch the source directory and run JupyterLab in watch mode to watch for changes in the extension's source and automatically rebuild the extension and application.
+You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
 
 ```bash
-# Watch the source directory in another terminal tab
+# Watch the source directory in one terminal, automatically rebuilding when needed
 jlpm watch
-# Run jupyterlab in watch mode in one terminal tab
-jupyter lab --watch
+# Run JupyterLab in another terminal
+jupyter lab
 ```
 
-Now every change will be built locally and bundled into JupyterLab. Be sure to refresh your browser page after saving file changes to reload the extension (note: you'll need to wait for webpack to finish, which can take 10s+ at times).
+With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
 
-### Uninstall
+By default, the `jlpm build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
 
 ```bash
-jupyter labextension uninstall @dfnotebook/dfnotebook-extension --no-build
-jupyter labextension install @jupyterlab/notebook-extension
-pip uninstall dfkernel
+jupyter lab build --minimize=False
 ```
+
+### Development uninstall
+
+```bash
+pip uninstall dfnotebook
+```
+
+In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
+command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
+folder is located. Then you can remove the symlink named `@dfnotebook/dfnotebook-extension` within that folder.
+
+### Testing the extension
+
+#### Frontend tests
+
+This extension is using [Jest](https://jestjs.io/) for JavaScript code testing.
+
+To execute them, execute:
+
+```sh
+jlpm
+jlpm test
+```
+
+#### Integration tests
+
+This extension uses [Playwright](https://playwright.dev/docs/intro) for the integration tests (aka user level tests).
+More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jupyterlab/tree/master/galata) is used to handle testing the extension in JupyterLab.
+
+More information are provided within the [ui-tests](./ui-tests/README.md) README.
+
+### Packaging the extension
+
+See [RELEASE](RELEASE.md)
