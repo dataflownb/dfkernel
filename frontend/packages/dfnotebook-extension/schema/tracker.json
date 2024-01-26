@@ -20,6 +20,171 @@
       }
     ]
   },
+  "title": "Dataflow Notebook",
+  "description": "Dataflow Notebook settings.",
+  "definitions": {
+    "kernelStatusConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "showOnStatusBar": {
+          "type": "boolean",
+          "title": "Show kernel status on toolbar or status bar.",
+          "description": "If `true`, the kernel status progression will be displayed in the status bar otherwise it will be in the toolbar.",
+          "default": false
+        },
+        "showProgress": {
+          "type": "boolean",
+          "title": "Show execution progress.",
+          "default": true
+        }
+      }
+    }
+  },
+  "properties": {
+    "codeCellConfig": {
+      "title": "Code Cell Configuration",
+      "description": "The configuration for all code cells; it will override the CodeMirror default configuration.",
+      "type": "object",
+      "default": {
+        "lineNumbers": false,
+        "lineWrap": false
+      }
+    },
+    "defaultCell": {
+      "title": "Default cell type",
+      "description": "The default type (markdown, code, or raw) for new cells",
+      "type": "string",
+      "enum": ["code", "markdown", "raw"],
+      "default": "code"
+    },
+    "autoStartDefaultKernel": {
+      "title": "Automatically Start Preferred Kernel",
+      "description": "Whether to automatically start the preferred kernel.",
+      "type": "boolean",
+      "default": false
+    },
+    "inputHistoryScope": {
+      "type": "string",
+      "default": "global",
+      "enum": ["global", "session"],
+      "title": "Input History Scope",
+      "description": "Whether the line history for standard input (e.g. the ipdb prompt) should kept separately for different kernel sessions (`session`) or combined (`global`)."
+    },
+    "kernelShutdown": {
+      "title": "Shut down kernel",
+      "description": "Whether to shut down or not the kernel when closing a notebook.",
+      "type": "boolean",
+      "default": false
+    },
+    "markdownCellConfig": {
+      "title": "Markdown Cell Configuration",
+      "description": "The configuration for all markdown cells; it will override the CodeMirror default configuration.",
+      "type": "object",
+      "default": {
+        "lineNumbers": false,
+        "matchBrackets": false
+      }
+    },
+    "rawCellConfig": {
+      "title": "Raw Cell Configuration",
+      "description": "The configuration for all raw cells; it will override the CodeMirror default configuration.",
+      "type": "object",
+      "default": {
+        "lineNumbers": false,
+        "matchBrackets": false
+      }
+    },
+    "scrollPastEnd": {
+      "title": "Scroll past last cell",
+      "description": "Whether to be able to scroll so the last cell is at the top of the panel",
+      "type": "boolean",
+      "default": true
+    },
+    "recordTiming": {
+      "title": "Recording timing",
+      "description": "Should timing data be recorded in cell metadata",
+      "type": "boolean",
+      "default": false
+    },
+    "overscanCount": {
+      "title": "Number of cells to render outside de the viewport",
+      "description": "In 'full' windowing mode, this is the number of cells above and below the viewport.",
+      "type": "number",
+      "default": 1,
+      "minimum": 1
+    },
+    "maxNumberOutputs": {
+      "title": "The maximum number of output cells to be rendered in the output area.",
+      "description": "Defines the maximum number of output cells to be rendered in the output area for cells with many outputs. The output area will have a head and the remaining outputs will be trimmed and not displayed unless the user clicks on the information message. Set to 0 to have the complete display.",
+      "type": "number",
+      "default": 50
+    },
+    "scrollHeadingToTop": {
+      "title": "Scroll heading to top",
+      "description": "Whether to scroll heading to the document top when selecting it in the table of contents. Starting with JupyterLab 4.1 this setting will be enabled by default.",
+      "type": "boolean",
+      "default": false
+    },
+    "showEditorForReadOnlyMarkdown": {
+      "title": "Show editor for read-only Markdown cells",
+      "description": "Should an editor be shown for read-only markdown",
+      "type": "boolean",
+      "default": true
+    },
+    "kernelStatus": {
+      "title": "Kernel status icon configuration",
+      "description": "Defines the position and components of execution progress indicator.",
+      "$ref": "#/definitions/kernelStatusConfig",
+      "default": {
+        "showOnStatusBar": false,
+        "showProgress": true
+      }
+    },
+    "documentWideUndoRedo": {
+      "title": "Enable undo/redo actions at the notebook document level.",
+      "description": "Enables the undo/redo actions at the notebook document level; aka undoing within a cell may undo the latest notebook change that happen in another cell. This is deprecated and will be removed in 5.0.0.",
+      "type": "boolean",
+      "default": false
+    },
+    "showHiddenCellsButton": {
+      "type": "boolean",
+      "title": "Show hidden cells button if collapsed",
+      "description": "If set to true, a button is shown below collapsed headings, indicating how many cells are hidden beneath the collapsed heading.",
+      "default": true
+    },
+    "renderingLayout": {
+      "title": "Rendering Layout",
+      "description": "Global setting to define the rendering layout in notebooks. 'default' or 'side-by-side' are supported.",
+      "enum": ["default", "side-by-side"],
+      "default": "default"
+    },
+    "sideBySideLeftMarginOverride": {
+      "title": "Side-by-side left margin override",
+      "description": "Side-by-side left margin override.",
+      "type": "string",
+      "default": "10px"
+    },
+    "sideBySideRightMarginOverride": {
+      "title": "Side-by-side right margin override",
+      "description": "Side-by-side right margin override.",
+      "type": "string",
+      "default": "10px"
+    },
+    "sideBySideOutputRatio": {
+      "title": "Side-by-side output ratio",
+      "description": "For the side-by-side rendering, the side-by-side output ratio defines the width of the output vs the input. Set 1 for same size, > 1 for larger output, < 1 for smaller output.",
+      "type": "number",
+      "default": 1,
+      "minimum": 0
+    },
+    "windowingMode": {
+      "title": "Windowing mode",
+      "description": "'defer': Improve loading time - Wait for idle CPU cycles to attach out of viewport cells - 'full': Best performance with side effects - Attach to the DOM only cells in viewport - 'none': Worst performance without side effects - Attach all cells to the viewport",
+      "enum": ["defer", "full", "none"],
+      "default": "defer"
+    }
+  },
   "additionalProperties": false,
   "type": "object"
 }

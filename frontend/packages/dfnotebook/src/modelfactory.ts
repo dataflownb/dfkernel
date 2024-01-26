@@ -3,21 +3,13 @@
 
 import { DataflowNotebookModel } from './model';
 import { INotebookModel, NotebookModelFactory } from '@jupyterlab/notebook';
-import { IModelDB } from '@jupyterlab/observables';
+import type { ISharedNotebook } from '@jupyter/ydoc';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 /**
  * A model factory for notebooks.
  */
 export class DataflowNotebookModelFactory extends NotebookModelFactory {
-  /**
-   * Construct a new notebook model factory.
-   */
-  constructor(options: NotebookModelFactory.IOptions) {
-    super({contentFactory: new DataflowNotebookModel.ContentFactory({
-      codeCellContentFactory: options.codeCellContentFactory}), 
-      ...options});
-  }
 
   /**
    * Create a new model for a given path.
@@ -27,18 +19,12 @@ export class DataflowNotebookModelFactory extends NotebookModelFactory {
    * @returns A new document model.
    */
   createNew(
-    languagePreference?: string,
-    modelDB?: IModelDB,
-    isInitialized?: boolean,
-    collaborationEnabled?: boolean
+    options: DocumentRegistry.IModelOptions<ISharedNotebook> = {}
   ): INotebookModel {
-    const contentFactory = this.contentFactory;
     return new DataflowNotebookModel({
-      languagePreference,
-      contentFactory,
-      collaborationEnabled: collaborationEnabled && this.collaborative,
-      modelDB,
-      isInitialized,
+      languagePreference: options.languagePreference,
+      sharedModel: options.sharedModel,
+      collaborationEnabled: options.collaborationEnabled && this.collaborative,
       //@ts-ignore
       disableDocumentWideUndoRedo: this._disableDocumentWideUndoRedo
     });

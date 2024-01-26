@@ -3,6 +3,7 @@
 
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { DataflowNotebook } from './widget';
+import { Token } from '@lumino/coreutils';
 /**
  * A namespace for `DataflowNotebookPanel` statics.
  */
@@ -24,7 +25,13 @@ export namespace DataflowNotebookPanel {
   }
 
   /**
-   * Default content factory for the notebook panel.
+   * The notebook renderer token.
    */
-  export const defaultContentFactory: ContentFactory = new ContentFactory();
+  export const IContentFactory = new Token<IContentFactory>(
+    '@dfnotebook/dfnotebook:IContentFactory',
+    `A factory object that creates new dataflow notebooks.
+    Use this if you want to create and host dataflow notebooks in your own UI elements.`
+  )
 }
+
+

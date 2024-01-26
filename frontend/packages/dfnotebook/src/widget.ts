@@ -11,11 +11,8 @@ import { Notebook, StaticNotebook } from '@jupyterlab/notebook';
 import {
   DataflowCell,
   DataflowCodeCell,
-  DataflowCodeCellModel,
   DataflowMarkdownCell,
-  DataflowMarkdownCellModel,
   DataflowRawCell,
-  DataflowRawCellModel  
 } from '@dfnotebook/dfcells';
 
 /**
@@ -35,14 +32,8 @@ export namespace DataflowStaticNotebook {
      * notebook content factory is used.
      */
     createCodeCell(
-      options: CodeCell.IOptions,
-      parent: StaticNotebook
-    ): CodeCell {
-      if (! (options.model instanceof DataflowCodeCellModel)) {
-        options.contentFactory = StaticNotebook.defaultContentFactory;
-        return new CodeCell(options).initializeState();
-      }
-      
+      options: CodeCell.IOptions    
+    ): CodeCell {      
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
@@ -58,13 +49,7 @@ export namespace DataflowStaticNotebook {
      */
     createMarkdownCell(
       options: MarkdownCell.IOptions,
-      parent: StaticNotebook
     ): MarkdownCell {
-      if (! (options.model instanceof DataflowMarkdownCellModel)) {
-        options.contentFactory = StaticNotebook.defaultContentFactory;
-        return new MarkdownCell(options).initializeState()
-      }
-
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
@@ -78,30 +63,16 @@ export namespace DataflowStaticNotebook {
      * If no cell content factory is passed in with the options, the one on the
      * notebook content factory is used.
      */
-    createRawCell(options: RawCell.IOptions, parent: StaticNotebook): RawCell {
-      if (! (options.model instanceof DataflowRawCellModel)) {
-        options.contentFactory = StaticNotebook.defaultContentFactory;
-        return new RawCell(options).initializeState()
-      }
-
+    createRawCell(options: RawCell.IOptions): RawCell {
       if (!options.contentFactory) {
         options.contentFactory = this;
       }
       return new DataflowRawCell(options).initializeState();
     }
   }
-
-  /**
-   * Default content factory for the static notebook widget.
-   */
-  export const defaultContentFactory: StaticNotebook.IContentFactory = new ContentFactory();
 }
 
-export class DataflowNotebook extends Notebook {
-  constructor(options: Notebook.IOptions) {
-    super({contentFactory: DataflowNotebook.defaultContentFactory, ...options});
-  }
-}
+export class DataflowNotebook extends Notebook { }
 
 export namespace DataflowNotebook {
   /**
@@ -112,6 +83,4 @@ export namespace DataflowNotebook {
    * methods that create notebook content.
    */
   export class ContentFactory extends DataflowStaticNotebook.ContentFactory {}
-
-  export const defaultContentFactory: Notebook.IContentFactory = new ContentFactory();
 }

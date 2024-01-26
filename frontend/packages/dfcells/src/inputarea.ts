@@ -3,7 +3,7 @@ import { ICellModel, IInputPrompt, InputArea, InputPrompt } from "@jupyterlab/ce
 export class DataflowInputArea extends InputArea {
     // kind of annoying as model still needs to be set later
     constructor(options: InputArea.IOptions) {
-        super({contentFactory: DataflowInputArea.defaultContentFactory, ...options});
+        super(options);
         (this.prompt as DataflowInputPrompt).model = this.model;
     }
 
@@ -19,7 +19,7 @@ export class DataflowInputArea extends InputArea {
     }
 
     public addTag(value: string | null) {
-        this.model?.metadata.set('tag', value);
+        this.model?.setMetadata('tag', value);
         this.prompt.updatePromptNode(this.prompt.executionCount);
     }
 }
@@ -35,8 +35,6 @@ export namespace DataflowInputArea {
         }
     }
 
-    export const defaultContentFactory = new ContentFactory({});
-
 }
 
 export class DataflowInputPrompt extends InputPrompt {
@@ -46,8 +44,8 @@ export class DataflowInputPrompt extends InputPrompt {
     }
 
     public updatePromptNode(value: string | null) {
-        if (this.model?.metadata.get('tag')) {
-            this.node.textContent = `[${this.model.metadata.get('tag')}]:`;
+        if (this.model?.getMetadata('tag')) {
+            this.node.textContent = `[${this.model.getMetadata('tag')}]:`;
         } else if (value === null) {
             this.node.textContent = ' ';
         } else {

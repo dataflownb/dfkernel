@@ -3,8 +3,14 @@
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
 
-@import './collapser.css';
-@import './headerfooter.css';
-@import './inputarea.css';
-@import './placeholder.css';
-@import './widget.css';
+.jp-InputPrompt {
+    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-Placeholder-prompt {
+    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-OutputArea-prompt {
+    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}

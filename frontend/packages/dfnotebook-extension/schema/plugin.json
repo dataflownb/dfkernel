@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "@dfnotebook/dfnotebook-extension",
+  "description": "@dfnotebook/dfnotebook-extension settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}

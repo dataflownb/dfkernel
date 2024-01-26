@@ -4,16 +4,16 @@
 import {
   Dialog,
   ISessionContext,
-  sessionContextDialogs,
+  ISessionContextDialogs,
   showDialog
 } from '@jupyterlab/apputils';
 
+import { signalToPromise } from '@jupyterlab/coreutils';
 import * as nbformat from '@jupyterlab/nbformat';
 import { KernelMessage } from '@jupyterlab/services';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
-import { ArrayExt, each, toArray } from '@lumino/algorithm';
 import { JSONObject } from '@lumino/coreutils';
-import { ElementExt } from '@lumino/domutils';
+import { findIndex } from '@lumino/algorithm';
 import { ISignal, Signal } from '@lumino/signaling';
 import { KernelError, Notebook } from '@jupyterlab/notebook';
 import { Cell, CodeCell, ICodeCellModel, MarkdownCell } from '@jupyterlab/cells';
@@ -26,6 +26,13 @@ import { DataflowCodeCell } from '@dfnotebook/dfcells';
  * The actions set the widget `mode` to `'command'` unless otherwise specified.
  * The actions will preserve the selection on the notebook widget unless
  * otherwise specified.
+ * 
+ * #### Dataflow Notebook Notes
+ * Most of this code is copied directly from 
+ * @jupyterlab/notebook/actions.tsx
+ * The main change is that we modify the runCell method and need
+ * everything to be able to call this.
+ * 
  */
 export class DataflowNotebookActions {
   /**
@@ -85,8 +92,9 @@ export namespace DataflowNotebookActions {
    * Run the selected cell(s).
    *
    * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
+   * @param sessionContext - The client session object.
+   * @param sessionDialogs - The session dialogs.
+   * @param translator - The application translator.
    *
    * #### Notes
    * The last selected cell will be activated, but not scrolled into view.
@@ -96,25 +104,33 @@ export namespace DataflowNotebookActions {
    */
   export function run(
     notebook: Notebook,
-    sessionContext?: ISessionContext
+    sessionContext?: ISessionContext,
+    sessionDialogs?: ISessionContextDialogs,
+    translator?: ITranslator
   ): Promise<boolean> {
     if (!notebook.model || !notebook.activeCell) {
       return Promise.resolve(false);
     }
 
     const state = Private.getState(notebook);
-    const promise = Private.runSelected(notebook, sessionContext);
+    const promise = Private.runSelected(
+      notebook,
+      sessionContext,
+      sessionDialogs,
+      translator
+    );
 
     Private.handleRunState(notebook, state, false);
     return promise;
   }
 
-  /**
+    /**
    * Run the selected cell(s) and advance to the next cell.
    *
    * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
+   * @param sessionContext - The client session object.
+   * @param sessionDialogs - The session dialogs.
+   * @param translator - The application translator.
    *
    * #### Notes
    * The existing selection will be cleared.
@@ -124,207 +140,263 @@ export namespace DataflowNotebookActions {
    * If the last selected cell is the last cell, a new code cell
    * will be created in `'edit'` mode.  The new cell creation can be undone.
    */
-  export function runAndAdvance(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    if (!notebook.model || !notebook.activeCell) {
-      return Promise.resolve(false);
-    }
-
-    const state = Private.getState(notebook);
-    const promise = Private.runSelected(notebook, sessionContext);
-    const model = notebook.model;
-
-    if (notebook.activeCellIndex === notebook.widgets.length - 1) {
-      const cell = model.contentFactory.createCell(
-        notebook.notebookConfig.defaultCell,
-        {}
-      );
-
-      // Do not use push here, as we want an widget insertion
-      // to make sure no placeholder widget is rendered.
-      model.cells.insert(notebook.widgets.length, cell);
-      notebook.activeCellIndex++;
-      notebook.mode = 'edit';
-    } else {
-      notebook.activeCellIndex++;
-    }
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
-
-  /**
-   * Run the selected cell(s) and insert a new code cell.
-   *
-   * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
-   *
-   * #### Notes
-   * An execution error will prevent the remaining code cells from executing.
-   * All markdown cells will be rendered.
-   * The widget mode will be set to `'edit'` after running.
-   * The existing selection will be cleared.
-   * The cell insert can be undone.
-   * The new cell will be scrolled into view.
-   */
-  export function runAndInsert(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    if (!notebook.model || !notebook.activeCell) {
-      return Promise.resolve(false);
-    }
-
-    if (!Private.isNotebookRendered(notebook)) {
-      return Promise.resolve(false);
-    }
-    const state = Private.getState(notebook);
-    const promise = Private.runSelected(notebook, sessionContext);
-    const model = notebook.model;
-    const cell = model.contentFactory.createCell(
-      notebook.notebookConfig.defaultCell,
-      {}
-    );
-
-    model.cells.insert(notebook.activeCellIndex + 1, cell);
-    notebook.activeCellIndex++;
-    notebook.mode = 'edit';
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
-
-  /**
-   * Run all of the cells in the notebook.
-   *
-   * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
-   *
-   * #### Notes
-   * The existing selection will be cleared.
-   * An execution error will prevent the remaining code cells from executing.
-   * All markdown cells will be rendered.
-   * The last cell in the notebook will be activated and scrolled into view.
-   */
-  export function runAll(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    if (!notebook.model || !notebook.activeCell) {
-      return Promise.resolve(false);
-    }
-
-    const state = Private.getState(notebook);
-
-    notebook.widgets.forEach(child => {
-      notebook.select(child);
-    });
-
-    const promise = Private.runSelected(notebook, sessionContext);
-
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
-
-  export function renderAllMarkdown(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    if (!notebook.model || !notebook.activeCell) {
-      return Promise.resolve(false);
-    }
-    const previousIndex = notebook.activeCellIndex;
-    const state = Private.getState(notebook);
-    notebook.widgets.forEach((child, index) => {
-      if (child.model.type === 'markdown') {
-        notebook.select(child);
-        // This is to make sure that the activeCell
-        // does not get executed
-        notebook.activeCellIndex = index;
+    export async function runAndAdvance(
+      notebook: Notebook,
+      sessionContext?: ISessionContext,
+      sessionDialogs?: ISessionContextDialogs,
+      translator?: ITranslator
+    ): Promise<boolean> {
+      if (!notebook.model || !notebook.activeCell) {
+        return Promise.resolve(false);
       }
-    });
-    if (notebook.activeCell.model.type !== 'markdown') {
-      return Promise.resolve(true);
+  
+      const state = Private.getState(notebook);
+      const promise = Private.runSelected(
+        notebook,
+        sessionContext,
+        sessionDialogs,
+        translator
+      );
+      const model = notebook.model;
+  
+      if (notebook.activeCellIndex === notebook.widgets.length - 1) {
+        // Do not use push here, as we want an widget insertion
+        // to make sure no placeholder widget is rendered.
+        model.sharedModel.insertCell(notebook.widgets.length, {
+          cell_type: notebook.notebookConfig.defaultCell,
+          metadata:
+            notebook.notebookConfig.defaultCell === 'code'
+              ? {
+                  // This is an empty cell created by user, thus is trusted
+                  trusted: true
+                }
+              : {}
+        });
+        notebook.activeCellIndex++;
+        if (notebook.activeCell?.inViewport === false) {
+          await signalToPromise(notebook.activeCell.inViewportChanged, 200).catch(
+            () => {
+              // no-op
+            }
+          );
+        }
+        notebook.mode = 'edit';
+      } else {
+        notebook.activeCellIndex++;
+      }
+  
+      Private.handleRunState(notebook, state, true);
+      return promise;
     }
-    const promise = Private.runSelected(notebook, sessionContext);
-    notebook.activeCellIndex = previousIndex;
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
-
-  /**
-   * Run all of the cells before the currently active cell (exclusive).
-   *
-   * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
-   *
-   * #### Notes
-   * The existing selection will be cleared.
-   * An execution error will prevent the remaining code cells from executing.
-   * All markdown cells will be rendered.
-   * The currently active cell will remain selected.
-   */
-  export function runAllAbove(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    const { activeCell, activeCellIndex, model } = notebook;
-
-    if (!model || !activeCell || activeCellIndex < 1) {
-      return Promise.resolve(false);
+  
+    /**
+     * Run the selected cell(s) and insert a new code cell.
+     *
+     * @param notebook - The target notebook widget.
+     * @param sessionContext - The client session object.
+     * @param sessionDialogs - The session dialogs.
+     * @param translator - The application translator.
+     *
+     * #### Notes
+     * An execution error will prevent the remaining code cells from executing.
+     * All markdown cells will be rendered.
+     * The widget mode will be set to `'edit'` after running.
+     * The existing selection will be cleared.
+     * The cell insert can be undone.
+     * The new cell will be scrolled into view.
+     */
+    export async function runAndInsert(
+      notebook: Notebook,
+      sessionContext?: ISessionContext,
+      sessionDialogs?: ISessionContextDialogs,
+      translator?: ITranslator
+    ): Promise<boolean> {
+      if (!notebook.model || !notebook.activeCell) {
+        return Promise.resolve(false);
+      }
+  
+      const state = Private.getState(notebook);
+      const promise = Private.runSelected(
+        notebook,
+        sessionContext,
+        sessionDialogs,
+        translator
+      );
+      const model = notebook.model;
+      model.sharedModel.insertCell(notebook.activeCellIndex + 1, {
+        cell_type: notebook.notebookConfig.defaultCell,
+        metadata:
+          notebook.notebookConfig.defaultCell === 'code'
+            ? {
+                // This is an empty cell created by user, thus is trusted
+                trusted: true
+              }
+            : {}
+      });
+      notebook.activeCellIndex++;
+      if (notebook.activeCell?.inViewport === false) {
+        await signalToPromise(notebook.activeCell.inViewportChanged, 200).catch(
+          () => {
+            // no-op
+          }
+        );
+      }
+      notebook.mode = 'edit';
+      Private.handleRunState(notebook, state, true);
+      return promise;
     }
-
-    const state = Private.getState(notebook);
-
-    notebook.activeCellIndex--;
-    notebook.deselectAll();
-    for (let i = 0; i < notebook.activeCellIndex; ++i) {
-      notebook.select(notebook.widgets[i]);
+  
+    /**
+     * Run all of the cells in the notebook.
+     *
+     * @param notebook - The target notebook widget.
+     * @param sessionContext - The client session object.
+     * @param sessionDialogs - The session dialogs.
+     * @param translator - The application translator.
+     *
+     * #### Notes
+     * The existing selection will be cleared.
+     * An execution error will prevent the remaining code cells from executing.
+     * All markdown cells will be rendered.
+     * The last cell in the notebook will be activated and scrolled into view.
+     */
+    export function runAll(
+      notebook: Notebook,
+      sessionContext?: ISessionContext,
+      sessionDialogs?: ISessionContextDialogs,
+      translator?: ITranslator
+    ): Promise<boolean> {
+      if (!notebook.model || !notebook.activeCell) {
+        return Promise.resolve(false);
+      }
+  
+      const state = Private.getState(notebook);
+  
+      notebook.widgets.forEach(child => {
+        notebook.select(child);
+      });
+  
+      const promise = Private.runSelected(
+        notebook,
+        sessionContext,
+        sessionDialogs,
+        translator
+      );
+  
+      Private.handleRunState(notebook, state, true);
+      return promise;
     }
-
-    const promise = Private.runSelected(notebook, sessionContext);
-
-    notebook.activeCellIndex++;
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
-
-  /**
-   * Run all of the cells after the currently active cell (inclusive).
-   *
-   * @param notebook - The target notebook widget.
-   *
-   * @param sessionContext - The optional client session object.
-   *
-   * #### Notes
-   * The existing selection will be cleared.
-   * An execution error will prevent the remaining code cells from executing.
-   * All markdown cells will be rendered.
-   * The last cell in the notebook will be activated and scrolled into view.
-   */
-  export function runAllBelow(
-    notebook: Notebook,
-    sessionContext?: ISessionContext
-  ): Promise<boolean> {
-    if (!notebook.model || !notebook.activeCell) {
-      return Promise.resolve(false);
+  
+    export function renderAllMarkdown(notebook: Notebook): Promise<boolean> {
+      if (!notebook.model || !notebook.activeCell) {
+        return Promise.resolve(false);
+      }
+      const previousIndex = notebook.activeCellIndex;
+      const state = Private.getState(notebook);
+      notebook.widgets.forEach((child, index) => {
+        if (child.model.type === 'markdown') {
+          notebook.select(child);
+          // This is to make sure that the activeCell
+          // does not get executed
+          notebook.activeCellIndex = index;
+        }
+      });
+      if (notebook.activeCell.model.type !== 'markdown') {
+        return Promise.resolve(true);
+      }
+      const promise = Private.runSelected(notebook);
+      notebook.activeCellIndex = previousIndex;
+      Private.handleRunState(notebook, state, true);
+      return promise;
     }
-
-    const state = Private.getState(notebook);
-
-    notebook.deselectAll();
-    for (let i = notebook.activeCellIndex; i < notebook.widgets.length; ++i) {
-      notebook.select(notebook.widgets[i]);
+  
+    /**
+     * Run all of the cells before the currently active cell (exclusive).
+     *
+     * @param notebook - The target notebook widget.
+     * @param sessionContext - The client session object.
+     * @param sessionDialogs - The session dialogs.
+     * @param translator - The application translator.
+     *
+     * #### Notes
+     * The existing selection will be cleared.
+     * An execution error will prevent the remaining code cells from executing.
+     * All markdown cells will be rendered.
+     * The currently active cell will remain selected.
+     */
+    export function runAllAbove(
+      notebook: Notebook,
+      sessionContext?: ISessionContext,
+      sessionDialogs?: ISessionContextDialogs,
+      translator?: ITranslator
+    ): Promise<boolean> {
+      const { activeCell, activeCellIndex, model } = notebook;
+  
+      if (!model || !activeCell || activeCellIndex < 1) {
+        return Promise.resolve(false);
+      }
+  
+      const state = Private.getState(notebook);
+  
+      notebook.activeCellIndex--;
+      notebook.deselectAll();
+      for (let i = 0; i < notebook.activeCellIndex; ++i) {
+        notebook.select(notebook.widgets[i]);
+      }
+  
+      const promise = Private.runSelected(
+        notebook,
+        sessionContext,
+        sessionDialogs,
+        translator
+      );
+  
+      notebook.activeCellIndex++;
+      Private.handleRunState(notebook, state, true);
+      return promise;
     }
-
-    const promise = Private.runSelected(notebook, sessionContext);
-
-    Private.handleRunState(notebook, state, true);
-    return promise;
-  }
+  
+    /**
+     * Run all of the cells after the currently active cell (inclusive).
+     *
+     * @param notebook - The target notebook widget.
+     * @param sessionContext - The client session object.
+     * @param sessionDialogs - The session dialogs.
+     * @param translator - The application translator.
+     *
+     * #### Notes
+     * The existing selection will be cleared.
+     * An execution error will prevent the remaining code cells from executing.
+     * All markdown cells will be rendered.
+     * The last cell in the notebook will be activated and scrolled into view.
+     */
+    export function runAllBelow(
+      notebook: Notebook,
+      sessionContext?: ISessionContext,
+      sessionDialogs?: ISessionContextDialogs,
+      translator?: ITranslator
+    ): Promise<boolean> {
+      if (!notebook.model || !notebook.activeCell) {
+        return Promise.resolve(false);
+      }
+  
+      const state = Private.getState(notebook);
+  
+      notebook.deselectAll();
+      for (let i = notebook.activeCellIndex; i < notebook.widgets.length; ++i) {
+        notebook.select(notebook.widgets[i]);
+      }
+  
+      const promise = Private.runSelected(
+        notebook,
+        sessionContext,
+        sessionDialogs,
+        translator
+      );
+  
+      Private.handleRunState(notebook, state, true);
+      return promise;
+    }  
 }
 
 /**
@@ -370,33 +442,12 @@ namespace Private {
     wasFocused: boolean;
 
     /**
-     * The active cell before the action.
+     * The active cell id before the action.
+     *
+     * We cannot rely on the Cell widget or model as it may be
+     * discarded by action such as move.
      */
-    activeCell: Cell | null;
-  }
-
-  export function isNotebookRendered(notebook: Notebook): boolean {
-    const translator = notebook.translator;
-    const trans = translator.load('jupyterlab');
-
-    if (notebook.remainingCellToRenderCount !== 0) {
-      showDialog({
-        body: trans.__(
-          `Notebook is still rendering and has for now (%1) remaining cells to render.
-
-Please wait for the complete rendering before invoking that action.`,
-          notebook.remainingCellToRenderCount
-        ),
-        buttons: [Dialog.okButton({ label: trans.__('Ok') })]
-      }).catch(reason => {
-        console.error(
-          'An error occurred when displaying notebook rendering warning',
-          reason
-        );
-      });
-      return false;
-    }
-    return true;
+    activeCellId: string | null;
   }
 
   /**
@@ -405,7 +456,7 @@ Please wait for the complete rendering before invoking that action.`,
   export function getState(notebook: Notebook): IState {
     return {
       wasFocused: notebook.node.contains(document.activeElement),
-      activeCell: notebook.activeCell
+      activeCellId: notebook.activeCell?.model.id ?? null
     };
   }
 
@@ -417,14 +468,16 @@ Please wait for the complete rendering before invoking that action.`,
     state: IState,
     scrollIfNeeded = false
   ): void {
-    const { activeCell, node } = notebook;
+    const { activeCell, activeCellIndex } = notebook;
 
     if (state.wasFocused || notebook.mode === 'edit') {
       notebook.activate();
     }
 
     if (scrollIfNeeded && activeCell) {
-      ElementExt.scrollIntoViewIfNeeded(node, activeCell.node);
+      notebook.scrollToItem(activeCellIndex, 'auto', 0).catch(reason => {
+        // no-op
+      });
     }
   }
 
@@ -439,20 +492,27 @@ Please wait for the complete rendering before invoking that action.`,
     if (state.wasFocused || notebook.mode === 'edit') {
       notebook.activate();
     }
-    if (scroll && state.activeCell) {
-      // Scroll to the top of the previous active cell output.
-      const rect = state.activeCell.inputArea.node.getBoundingClientRect();
-
-      notebook.scrollToPosition(rect.bottom, 45);
+    const { activeCell, activeCellIndex } = notebook;
+    if (scroll && activeCell) {
+      notebook.scrollToItem(activeCellIndex, 'smart', 0).catch(reason => {
+        // no-op
+      });
     }
   }
 
   /**
    * Run the selected cells.
+   *
+   * @param notebook Notebook
+   * @param sessionContext Notebook session context
+   * @param sessionDialogs Session dialogs
+   * @param translator Application translator
    */
   export function runSelected(
     notebook: Notebook,
-    sessionContext?: ISessionContext
+    sessionContext?: ISessionContext,
+    sessionDialogs?: ISessionContextDialogs,
+    translator?: ITranslator
   ): Promise<boolean> {
     notebook.mode = 'command';
 
@@ -471,7 +531,9 @@ Please wait for the complete rendering before invoking that action.`,
     notebook.deselectAll();
 
     return Promise.all(
-      selected.map(child => runCell(notebook, child, sessionContext))
+      selected.map(child =>
+        runCell(notebook, child, sessionContext, sessionDialogs, translator)
+      )
     )
       .then(results => {
         if (notebook.isDisposed) {
@@ -512,13 +574,15 @@ Please wait for the complete rendering before invoking that action.`,
       });
   }
 
+
   /**
    * Run a cell.
    */
-  function runCell(
+  async function runCell(
     notebook: Notebook,
     cell: Cell,
     sessionContext?: ISessionContext,
+    sessionDialogs?: ISessionContextDialogs,
     translator?: ITranslator
   ): Promise<boolean> {
     translator = translator || nullTranslator;
@@ -532,47 +596,60 @@ Please wait for the complete rendering before invoking that action.`,
       case 'code':
         if (sessionContext) {
           if (sessionContext.isTerminating) {
-            void showDialog({
+            await showDialog({
               title: trans.__('Kernel Terminating'),
               body: trans.__(
                 'The kernel for %1 appears to be terminating. You can not run any cell for now.',
                 sessionContext.session?.path
               ),
-              buttons: [Dialog.okButton({ label: trans.__('Ok') })]
+              buttons: [Dialog.okButton()]
             });
             break;
           }
           if (sessionContext.pendingInput) {
-            void showDialog({
+            await showDialog({
               title: trans.__('Cell not executed due to pending input'),
               body: trans.__(
                 'The cell has not been executed to avoid kernel deadlock as there is another pending input! Submit your pending input and try again.'
               ),
-              buttons: [Dialog.okButton({ label: trans.__('Ok') })]
+              buttons: [Dialog.okButton()]
             });
-            return Promise.resolve(false);
+            return false;
           }
           if (sessionContext.hasNoKernel) {
-            void sessionContextDialogs.selectKernel(sessionContext);
-            return Promise.resolve(false);
+            const shouldSelect = await sessionContext.startKernel();
+            if (shouldSelect && sessionDialogs) {
+              await sessionDialogs.selectKernel(sessionContext);
+            }
           }
+
+          if (sessionContext.hasNoKernel) {
+            cell.model.sharedModel.transact(() => {
+              (cell.model as ICodeCellModel).clearExecution();
+            });
+            return true;
+          }
+
           const deletedCells = notebook.model?.deletedCells ?? [];
+
+          // !!! DATAFLOW NOTEBOOK SPECIFIC CODE !!!
           const codeDict: { [key: string]: string } = {};
           const cellIdWidgetMap: { [key: string]: any } = {};
           const outputTags: { [key: string]: string[] } = {};
           const inputTags: { [key: string]: string } = {};
 	        if (notebook.model) {
-            each(notebook.model.cells, (c: ICodeCellModel, index) => {
+            for (let index = 0; index < notebook.model.cells.length; index++) {
+              const c = notebook.model.cells.get(index);
               const child = notebook.widgets[index] as DataflowCodeCell;
               if (c.type === 'code') {
                 // FIXME replace with utility function (see dfcells/widget)
                 const cId = c.id.replace(/-/g, '').substring(0, 8);
-                const inputTag = c.metadata.get('tag');
+                const inputTag = c.getMetadata('tag');
                 if (inputTag) {
                   // FIXME need to check for duplicates!
                   inputTags[inputTag as string] = cId;
                 }
-                codeDict[cId] = c.value.text;
+                codeDict[cId] = c.sharedModel.getSource();
                 cellIdWidgetMap[cId] = child;
                 let cellOutputTags: string[] = [];
                 for (let i = 0; i < child.outputArea.model.length; ++i) {
@@ -583,7 +660,7 @@ Please wait for the complete rendering before invoking that action.`,
                 }
                 outputTags[cId] = cellOutputTags;
               }
-            });
+            };
           }
           // console.log('codeDict:', codeDict);
           // console.log('cellIdWidgetMap:', cellIdWidgetMap);
@@ -599,16 +676,27 @@ Please wait for the complete rendering before invoking that action.`,
             auto_update_flags: {}, // this.notebook.get_auto_update_flags(),
             force_cached_flags: {} // this.notebook.get_force_cached_flags()})
           };
+          // !!! END DATAFLOW NOTEBOOK SPECIFIC CODE !!!
           executionScheduled.emit({ notebook, cell });
-          return DataflowCodeCell.execute(cell as DataflowCodeCell, sessionContext, {
-            deletedCells,
-            recordTiming: notebook.notebookConfig.recordTiming,
-          },
+
+          let ran = false;
+          try {
+
+            // !!! DATAFLOW NOTEBOOK CODE !!!
+            const reply = await DataflowCodeCell.execute(
+              cell as DataflowCodeCell,
+              sessionContext,
+              {
+                deletedCells,
+                recordTiming: notebook.notebookConfig.recordTiming
+              },
               dfData,
               cellIdWidgetMap,
-              )
-            .then(reply => {
-              deletedCells.splice(0, deletedCells.length);
+            );
+            // !!! END DATAFLOW NOTEBOOK CODE !!!
+            deletedCells.splice(0, deletedCells.length);
+
+            ran = (() => {
               if (cell.isDisposed) {
                 return false;
               }
@@ -627,23 +715,30 @@ Please wait for the complete rendering before invoking that action.`,
               } else {
                 throw new KernelError(reply.content);
               }
-            })
-            .catch(reason => {
-              if (cell.isDisposed || reason.message.startsWith('Canceled')) {
-                return false;
-              }
-              executed.emit({ notebook, cell, success: false, error: reason });
+            })();
+          } catch (reason) {
+            if (cell.isDisposed || reason.message.startsWith('Canceled')) {
+              ran = false;
+            } else {
+              executed.emit({
+                notebook,
+                cell,
+                success: false,
+                error: reason
+              });
               throw reason;
-            })
-            .then(ran => {
-              if (ran) {
-                executed.emit({ notebook, cell, success: true });
-              }
+            }
+          }
 
-              return ran;
-            });
+          if (ran) {
+            executed.emit({ notebook, cell, success: true });
+          }
+
+          return ran;
         }
-        (cell.model as ICodeCellModel).clearExecution();
+        cell.model.sharedModel.transact(() => {
+          (cell.model as ICodeCellModel).clearExecution();
+        }, false);
         break;
       default:
         break;
@@ -677,20 +772,35 @@ Please wait for the complete rendering before invoking that action.`,
     const replace = setNextInput.replace;
 
     if (replace) {
-      cell.model.value.text = text;
+      cell.model.sharedModel.setSource(text);
       return;
     }
 
     // Create a new code cell and add as the next cell.
-    const newCell = notebook.model!.contentFactory.createCodeCell({});
+    const notebookModel = notebook.model!.sharedModel;
     const cells = notebook.model!.cells;
-    const index = ArrayExt.firstIndexOf(toArray(cells), cell.model);
+    const index = findIndex(cells, model => model === cell.model);
 
-    newCell.value.text = text;
+    // While this cell has no outputs and could be trusted following the letter
+    // of Jupyter trust model, its content comes from kernel and hence is not
+    // necessarily controlled by the user; if we set it as trusted, a user
+    // executing cells in succession could end up with unwanted trusted output.
     if (index === -1) {
-      cells.push(newCell);
+      notebookModel.insertCell(notebookModel.cells.length, {
+        cell_type: 'code',
+        source: text,
+        metadata: {
+          trusted: false
+        }
+      });
     } else {
-      cells.insert(index + 1, newCell);
+      notebookModel.insertCell(index + 1, {
+        cell_type: 'code',
+        source: text,
+        metadata: {
+          trusted: false
+        }
+      });
     }
   }
 
@@ -711,5 +821,5 @@ Please wait for the complete rendering before invoking that action.`,
         }
         return cellJSON;
       });
-  }  
+  }
 }

@@ -8,7 +8,8 @@ import { ISessionContext } from "@jupyterlab/apputils";
 import { JSONObject } from "@lumino/coreutils";
 import { Panel } from "@lumino/widgets";
 
-import { Manager as GraphManager } from '@dfnotebook/dfgraph';
+// FIXME need to add this back when dfgraph is working
+// import { Manager as GraphManager } from '@dfnotebook/dfgraph';
 /**
  * The CSS class added to the cell input area.
  */
@@ -19,55 +20,74 @@ const CELL_INPUT_AREA_CLASS = 'jp-Cell-inputArea';
  */
 const CELL_OUTPUT_AREA_CLASS = 'jp-Cell-outputArea';
 
-function setInputArea<T extends ICellModel = ICellModel>(cell: Cell, options: Cell.IOptions<T>) {
+function setInputArea<T extends ICellModel = ICellModel>(cell: Cell) {
   // FIXME may be able to get panel via (this.layout as PanelLayout).widgets?
   //@ts-expect-error
-  const panel = cell._inputWrapper as Panel;
+  const inputWrapper = cell._inputWrapper as Panel;
   const input = cell.inputArea;
 
   // find the input area widget
-  const { id } = input;
   let inputIdx = -1;
-  panel.widgets.forEach((widget, idx) => {
-    if (widget.id === id) { inputIdx = idx; }
-  });
+  if (input) {
+    const { id } = input;
+    inputWrapper.widgets.forEach((widget, idx) => {
+      if (widget.id === id) { inputIdx = idx; }
+    });
+  }
 
   const dfInput = new DataflowInputArea({
     model: cell.model,
     contentFactory: cell.contentFactory,
-    updateOnShow: options.updateEditorOnShow,
-    placeholder: options.placeholder
+    editorOptions: { config: cell.editorConfig}
   })
   dfInput.addClass(CELL_INPUT_AREA_CLASS);
 
-  panel.insertWidget(inputIdx, dfInput);
-  input.dispose()
+  inputWrapper.insertWidget(inputIdx, dfInput);
+  input?.dispose()
   //@ts-expect-error
   cell._input = dfInput;
 }
 
-function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
+function setOutputArea(cell: CodeCell) {
   //@ts-expect-error
-  const panel = cell._outputWrapper as Panel;
+  const outputWrapper = cell._outputWrapper as Panel;
   const output = cell.outputArea;
 
   // find the output area widget
   const { id } = output;
   let outputIdx = -1;
-  panel.widgets.forEach((widget, idx) => {
+  outputWrapper.widgets.forEach((widget, idx) => {
     if (widget.id === id) { outputIdx = idx; }
   });
 
   const dfOutput = new DataflowOutputArea({
     model: cell.model.outputs,
-    rendermime: options.rendermime,
+    rendermime: output.rendermime,
     contentFactory: cell.contentFactory,
-    maxNumberOutputs: options.maxNumberOutputs
+    maxNumberOutputs: output.maxNumberOutputs,
+    //@ts-expect-error
+    translator: output._translator,
+    promptOverlay: true,
+    //@ts-expect-error
+    inputHistoryScope: output._inputHistoryScope
   }, 
   // FIXME move this to a function to unify with the code below and in dfnotebook/actions.tsx  
   cell.model.id.replace(/-/g, '').substring(0, 8));
 
   dfOutput.addClass(CELL_OUTPUT_AREA_CLASS);
+
+  output.toggleScrolling.disconnect(() => {
+    cell.outputsScrolled = !cell.outputsScrolled;
+  });
+  dfOutput.toggleScrolling.connect(() => {
+    cell.outputsScrolled = !cell.outputsScrolled;
+  });
+
+  // output.initialize.disconnect();
+  // dfOutput.initialize.connect(() => {
+  //   this.updatePromptOverlayIcon();
+  // });
+
 
   output.outputLengthChanged.disconnect(
     //@ts-expect-error
@@ -77,18 +97,18 @@ function setOutputArea(cell: CodeCell, options: CodeCell.IOptions) {
   //@ts-expect-error
   dfOutput.outputLengthChanged.connect(cell._outputLengthHandler, cell);  
 
-  panel.insertWidget(outputIdx, dfOutput);
+  outputWrapper.insertWidget(outputIdx, dfOutput);
   output.dispose();
   //@ts-expect-error
   cell._output = dfOutput;
 }
 
 export class DataflowCell<T extends ICellModel = ICellModel> extends Cell<T> {
-    constructor(options: Cell.IOptions<T>) {
-        super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+    protected initializeDOM(): void {
+        super.initializeDOM();
+        setInputArea(this)
+        this.addClass('df-cell');
     }
-
 }
 
 export namespace DataflowCell {
@@ -110,31 +130,39 @@ export namespace DataflowCell {
 }
 
 export class DataflowMarkdownCell extends MarkdownCell {
-    constructor(options: MarkdownCell.IOptions) {
-        super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+    protected initializeDOM(): void {
+      super.initializeDOM();
+      setInputArea(this)
+      this.addClass('df-cell');
     }
+
 }
 
 export class DataflowRawCell extends RawCell {
-    constructor(options: RawCell.IOptions) {
-        super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+    protected initializeDOM(): void {
+      super.initializeDOM();
+      setInputArea(this)
+      this.addClass('df-cell');
     }
+
 }
 
 export abstract class DataflowAttachmentsCell<T extends IAttachmentsCellModel> extends AttachmentsCell<T> {
-    constructor(options: Cell.IOptions<T>) {
-        super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+    protected initializeDOM(): void {
+        super.initializeDOM();
+        setInputArea(this)
+        this.addClass('df-cell');
     }
+
 }
 
 export class DataflowCodeCell extends CodeCell {
-    constructor(options: CodeCell.IOptions) {
-        super({contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setInputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
-        setOutputArea(this, {contentFactory: DataflowCell.defaultContentFactory, ...options});
+    protected initializeDOM(): void {
+        super.initializeDOM();
+        setInputArea(this);
+        setOutputArea(this);
+        this.setPromptToId();
+        this.addClass('df-cell');
     }
 
     public setPromptToId() {
@@ -144,7 +172,7 @@ export class DataflowCodeCell extends CodeCell {
 
     initializeState(): this {
         super.initializeState();
-        this.setPromptToId()
+        this.setPromptToId();
         return this;
     }
 
@@ -172,20 +200,24 @@ export namespace DataflowCodeCell {
     cellIdWidgetMap?: {[key:string]: CodeCell}
   ): Promise<KernelMessage.IExecuteReplyMsg | void> {
     const model = cell.model;
-    const code = model.value.text;
+    const code = model.sharedModel.getSource();
     if (!code.trim() || !sessionContext.session?.kernel) {
-      model.clearExecution();
+      model.sharedModel.transact(() => {
+        model.clearExecution();
+      }, false);
       return;
     }
-    const cellId = { cellId: model.id };
+    const cellId = { cellId: model.sharedModel.getId() };
     metadata = {
-      ...model.metadata.toJSON(),
+      ...model.metadata,
       ...metadata,
       ...cellId
     };
     const { recordTiming } = metadata;
-    model.clearExecution();
-    cell.outputHidden = false;
+    model.sharedModel.transact(() => {
+      model.clearExecution();
+      cell.outputHidden = false;
+    }, false);
     cell.setPrompt('*');
     model.trusted = true;
     let future:
@@ -224,15 +256,15 @@ export namespace DataflowCodeCell {
           const value = msg.header.date || new Date().toISOString();
           const timingInfo: any = Object.assign(
             {},
-            model.metadata.get('execution')
+            model.getMetadata('execution')
           );
           timingInfo[`iopub.${label}`] = value;
-          model.metadata.set('execution', timingInfo);
+          model.setMetadata('execution', timingInfo);
           return true;
         };
         cell.outputArea.future.registerMessageHook(recordTimingHook);
       } else {
-        model.metadata.delete('execution');
+        model.deleteMetadata('execution');
       }
 
       const clearOutput = (msg: KernelMessage.IIOPubMessage) => {
@@ -244,7 +276,7 @@ export namespace DataflowCodeCell {
               const cellId = executionCount.toString(16).padStart(8, '0');
               if (cellIdWidgetMap) {
                 const cellWidget = cellIdWidgetMap[cellId];
-                cellWidget.model.value.text = (msg as KernelMessage.IExecuteInputMsg).content.code;
+                cellWidget.model.sharedModel.setSource((msg as KernelMessage.IExecuteInputMsg).content.code);
                 const outputArea = cellWidget.outputArea;
                 outputArea.model.clear();
               }
@@ -261,27 +293,10 @@ export namespace DataflowCodeCell {
       future = cell.outputArea.future;
       const msg = (await msgPromise)!;
       model.executionCount = msg.content.execution_count;
-      console.log(msg);
-      let content = (msg.content as any)
-      let nodes = content.nodes;
-      let uplinks = content.links;
-      let cells = content.cells;
-      let downlinks = content.imm_downstream_deps;
-      let allUps = content.upstream_deps;
-      let internalNodes = content.internal_nodes;
-      let sessId = sessionContext.session.id;
-      //Set information about the graph based on sessionid
-      GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
-      GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      GraphManager.updateDepViews(false);
-       if (content.update_downstreams) {
-                    GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
-      }
-
       if (recordTiming) {
         const timingInfo = Object.assign(
           {},
-          model.metadata.get('execution') as any
+          model.getMetadata('execution') as any
         );
         const started = msg.metadata.started as string;
         // Started is not in the API, but metadata IPyKernel sends
@@ -292,8 +307,28 @@ export namespace DataflowCodeCell {
         const finished = msg.header.date as string;
         timingInfo['shell.execute_reply'] =
           finished || new Date().toISOString();
-        model.metadata.set('execution', timingInfo);
+        model.setMetadata('execution', timingInfo);
       }
+
+      // FIXME: UNCOMMENT FOR DFGRAPH
+
+      // console.log(msg);
+      // let content = (msg.content as any)
+      // let nodes = content.nodes;
+      // let uplinks = content.links;
+      // let cells = content.cells;
+      // let downlinks = content.imm_downstream_deps;
+      // let allUps = content.upstream_deps;
+      // let internalNodes = content.internal_nodes;
+      // let sessId = sessionContext.session.id;
+      // //Set information about the graph based on sessionid
+      // GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
+      // GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
+      // GraphManager.updateDepViews(false);
+      //  if (content.update_downstreams) {
+      //               GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+      // }
+
       return msg;
     } catch (e) {
       // If we started executing, and the cell is still indicating this
