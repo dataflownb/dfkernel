@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/dfcells",
-  "version": "0.2.0",
+  "version": "0.4.0-a0",
   "description": "Dataflow Notebook Cells",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
