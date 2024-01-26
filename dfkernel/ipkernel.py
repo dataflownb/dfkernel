@@ -10,10 +10,7 @@ import sys
 import time
 import inspect
 
-from ipython_genutils.py3compat import safe_unicode
 from traitlets import Type
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import unicode_type
 from ipykernel.jsonutil import json_clean
 
 try:
@@ -73,7 +70,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         """handle an execute_request"""
         try:
             content = parent[u'content']
-            code = py3compat.cast_unicode_py2(content[u'code'])
+            code = content[u'code']
             silent = content[u'silent']
             store_history = content.get(u'store_history', not silent)
             user_expressions = content.get('user_expressions', {})
@@ -340,8 +337,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
             reply_content.update({
                 u'traceback': shell._last_traceback or [],
-                u'ename': unicode_type(type(err).__name__),
-                u'evalue': safe_unicode(err),
+                u'ename': str(type(err).__name__),
+                u'evalue': str(err),
             })
 
             # FIXME: deprecated piece for ipyparallel (remove in 5.0):

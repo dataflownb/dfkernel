@@ -28,8 +28,6 @@ from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
 from IPython.core.history import HistoryManager
 from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import unicode_type
 from dfkernel.dflink import LinkedResult
 from dfkernel.displayhook import ZMQShellDisplayHook
 from dfkernel.safe_attr import safe_attr
@@ -441,8 +439,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         exc_content = {
             u'traceback' : stb,
-            u'ename' : unicode_type(etype.__name__),
-            u'evalue' : py3compat.safe_unicode(evalue),
+            u'ename' : str(etype.__name__),
+            u'evalue' : str(evalue),
             u'execution_count': self.uuid,
         }
 
