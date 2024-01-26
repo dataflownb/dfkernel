@@ -1,25 +1,32 @@
-import { IOutputPrompt, OutputArea, OutputPrompt } from "@jupyterlab/outputarea";
+import {
+  IOutputPrompt,
+  OutputArea,
+  OutputPrompt
+} from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { ISessionContext } from '@jupyterlab/apputils';
-import { Kernel, KernelMessage } from "@jupyterlab/services";
+import { Kernel, KernelMessage } from '@jupyterlab/services';
 import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
-import { Panel, Widget } from "@lumino/widgets";
+import { Panel, Widget } from '@lumino/widgets';
 
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions, cellId: string) {
-    super({contentFactory: DataflowOutputArea.defaultContentFactory, ...options});
+    super({
+      contentFactory: DataflowOutputArea.defaultContentFactory,
+      ...options
+    });
     this.cellId = cellId;
   }
 
   /**
-  * The cellIdWidgetMap is a hack to map outputs to other cells.
-  */
-   static cellIdWidgetMap: { [key:string]: Widget } | undefined;
+   * The cellIdWidgetMap is a hack to map outputs to other cells.
+   */
+  static cellIdWidgetMap: { [key: string]: Widget } | undefined;
 
   /*
-  * The cell's id
-  */
+   * The cell's id
+   */
   cellId: string;
 
   get future(): Kernel.IShellFuture<
@@ -29,14 +36,13 @@ export class DataflowOutputArea extends OutputArea {
     return super.future;
   }
 
-
   set future(
     value: Kernel.IShellFuture<
       KernelMessage.IExecuteRequestMsg,
       KernelMessage.IExecuteReplyMsg
     >
   ) {
-    super.future = value
+    super.future = value;
     super.future.onIOPub = this.onIOPub;
   }
 
@@ -52,7 +58,7 @@ export class DataflowOutputArea extends OutputArea {
         output = { ...msg.content, output_type: msgType };
         if (output.execution_count) {
           const cellId = output.execution_count.toString(16).padStart(8, '0');
-          if(msgType === 'stream') {
+          if (msgType === 'stream') {
             delete output.execution_count;
           }
           if (cellId !== this.cellId) {
@@ -74,7 +80,7 @@ export class DataflowOutputArea extends OutputArea {
         break;
       }
     }
-  };  
+  };
 
   protected createOutputItem(model: IOutputModel): Widget | null {
     const panel = super.createOutputItem(model) as Panel;
@@ -95,10 +101,8 @@ export class DataflowOutputPrompt extends OutputPrompt {
     } else if (this.executionCount === null) {
       this.node.textContent = '';
     } else {
-      const cellId = this.executionCount
-          .toString(16)
-          .padStart(8, '0');
-          // .substr(0, 3);
+      const cellId = this.executionCount.toString(16).padStart(8, '0');
+      // .substr(0, 3);
       this.node.textContent = `[${cellId}]:`;
     }
   }
@@ -130,7 +134,7 @@ export namespace DataflowOutputArea {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdWidgetMap?: {[key:string]: Widget}
+    cellIdWidgetMap?: { [key: string]: Widget }
   ): Promise<KernelMessage.IExecuteReplyMsg | undefined> {
     // Override the default for `stop_on_error`.
     let stopOnError = true;
@@ -166,7 +170,7 @@ export namespace DataflowOutputArea {
   /**
    * The default implementation of `IContentFactory`.
    */
-   export class ContentFactory extends OutputArea.ContentFactory {
+  export class ContentFactory extends OutputArea.ContentFactory {
     /**
      * Create the output prompt for the widget.
      */

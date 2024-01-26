@@ -4,13 +4,13 @@
 |----------------------------------------------------------------------------*/
 
 .jp-InputPrompt {
-    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
 }
 
 .jp-Placeholder-prompt {
-    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
 }
 
 .jp-CodeCell.jp-mod-outputsScrolled .jp-OutputArea-prompt {
-    --jp-cell-prompt-width: var(--df-cell-prompt-width);
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
 }

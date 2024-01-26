@@ -14,7 +14,7 @@
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
-    "sourceMap":true,
+    "sourceMap": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": false,

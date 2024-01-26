@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
-    "types": ["graphlib","d3-graphviz"]
+    "types": ["graphlib", "d3-graphviz"]
   },
   "include": ["src/*"]
 }

@@ -6,7 +6,6 @@
  */
 
 import {
-  // ILabShell,
   ILayoutRestorer,
   IRouter,
   JupyterFrontEnd,
@@ -20,26 +19,20 @@ import {
   ISessionContext,
   ISessionContextDialogs,
   IToolbarWidgetRegistry,
-  // MainAreaWidget,
   SessionContextDialogs,
   showDialog,
-  Toolbar,
-  // ToolbarButton
+  Toolbar
 } from '@jupyterlab/apputils';
+// FIXME Add back in when dfgraph is updated
 // import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
-// import { CellBarExtension } from '@jupyterlab/cell-toolbar';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
-import {
-  IEditorExtensionRegistry,
-} from '@jupyterlab/codemirror';
+import { IEditorExtensionRegistry } from '@jupyterlab/codemirror';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
 import { DocumentRegistry, IDocumentWidget } from '@jupyterlab/docregistry';
 import { IDefaultFileBrowser } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
-import {
-  IMainMenu,
-} from '@jupyterlab/mainmenu';
+import { IMainMenu } from '@jupyterlab/mainmenu';
 import * as nbformat from '@jupyterlab/nbformat';
 import {
   ExecutionIndicator,
@@ -52,11 +45,9 @@ import {
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  ToolbarItems,
+  ToolbarItems
 } from '@jupyterlab/notebook';
-import {
-  IObservableList,
-} from '@jupyterlab/observables';
+import { IObservableList } from '@jupyterlab/observables';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import {
@@ -85,17 +76,15 @@ import {
   UUID
 } from '@lumino/coreutils';
 import { DisposableSet } from '@lumino/disposable';
-import { Panel} from '@lumino/widgets';
+import { Panel } from '@lumino/widgets';
 
 import {
   DataflowNotebook,
   DataflowNotebookActions,
   DataflowNotebookModel,
   DataflowNotebookModelFactory,
-  DataflowNotebookPanel,  
+  DataflowNotebookPanel,
   DataflowNotebookWidgetFactory,
-  // IDataflowNotebookContentFactory,
-  // IDataflowNotebookModelFactory,
   IDataflowNotebookWidgetFactory
 } from '@dfnotebook/dfnotebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
@@ -290,7 +279,6 @@ namespace CommandIDs {
   export const tocRunCells = 'toc:run-cells';
 
   export const tagCell = 'notebook:tag-cell';
-
 }
 
 /**
@@ -321,9 +309,10 @@ const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
   description: 'Provides the notebook widget tracker.',
   provides: INotebookTracker,
   requires: [
-    INotebookWidgetFactory, 
+    INotebookWidgetFactory,
     IDataflowNotebookWidgetFactory,
-    IEditorExtensionRegistry],
+    IEditorExtensionRegistry
+  ],
   optional: [
     ICommandPalette,
     IDefaultFileBrowser,
@@ -374,21 +363,7 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
     autoStart: true
   };
 
-
-// /**
-//  * The dataflow notebook model factory provider.
-//  */
-// const modelFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookModelFactory.IFactory> = {
-//   id: '@dfnotebook/dfnotebook-extension:model-factory',
-//   provides: IDataflowNotebookModelFactory,
-//   requires: [
-//     IDataflowNotebookWidgetFactory
-//   ],
-//   optional: [ISettingRegistry],
-//   activate: activateDataflowModelFactory,
-//   autoStart: true,
-// }
-
+// FIXME Add back when dfgraph is updated
 // /**
 //  * Initialization for the Dfnb GraphManager for working with multiple graphs.
 //  */
@@ -465,7 +440,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 //             });
 //       });
 
-
 //       shell.currentChanged.connect((_, change) => {
 //       //@ts-ignore
 //         let sessId = change['newValue']?.sessionContext?.session?.id;
@@ -478,7 +452,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 //   }
 
 // }
-
 
 // /**
 //  * Initialization data for the Dfnb Depviewer extension.
@@ -520,7 +493,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 //                   GraphManager.depview.createDepDiv();
 //                 }
 
-
 //               }
 //               // Activate the widget
 //               app.shell.activateById(widget.id);
@@ -555,7 +527,6 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 //           palette.addItem({ command, category: 'Tutorial' });
 //         }
 //     };
-
 
 // /**
 //  * Initialization data for the Minimap extension.
@@ -649,62 +620,15 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 //     };
 
 
-// const cellToolbar: JupyterFrontEndPlugin<void> = {
-//   id: '@dfnotebook/dfnotebook-extension:cell-toolbar',
-//   autoStart: true,
-//   activate: async (
-//     app: JupyterFrontEnd,
-//     settingRegistry: ISettingRegistry | null,
-//     toolbarRegistry: IToolbarWidgetRegistry | null,
-//     translator: ITranslator | null
-//   ) => {
-//     const cellToolbarId = '@jupyterlab/cell-toolbar-extension:plugin';
-//     const toolbarItems =
-//       settingRegistry && toolbarRegistry
-//         ? createToolbarFactory(
-//             toolbarRegistry,
-//             settingRegistry,
-//             CellBarExtension.FACTORY_NAME,
-//             cellToolbarId,
-//             translator ?? nullTranslator
-//           )
-//         : undefined;
-
-//     app.docRegistry.addWidgetExtension(
-//       DATAFLOW_FACTORY,
-//       new CellBarExtension(app.commands, toolbarItems)
-//     );
-//   },
-//   optional: [ISettingRegistry, IToolbarWidgetRegistry, ITranslator]
-// };
-
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
-  // contentFactoryPlugin,
   widgetFactoryPlugin,
-  // modelFactoryPlugin,
-  trackerPlugin,
-  // cellToolbar,
+  trackerPlugin
   // DepViewer,
   // MiniMap,
   // GraphManagerPlugin
-]
+];
 export default plugins;
-
-// function activateDataflowModelFactory(
-//   app: JupyterFrontEnd,
-//   widgetFactory: DataflowNotebookWidgetFactory.IFactory,
-//   settingRegistry: ISettingRegistry | null
-// ): DataflowNotebookModelFactory.IFactory {
-//   const registry = app.docRegistry;
-//   // FIXME need to connect settings changes to this modelFactory?
-//   const modelFactory = new DataflowNotebookModelFactory({
-//     disableDocumentWideUndoRedo:
-//       widgetFactory.notebookConfig.disableDocumentWideUndoRedo
-//   });
-//   registry.addModelFactory(modelFactory);
-//   return modelFactory;
-// }
 
 /**
  * Activate the notebook widget factory.
@@ -741,15 +665,20 @@ function activateDataflowWidgetFactory(
   toolbarRegistry.addFactory<NotebookPanel>(DATAFLOW_FACTORY, 'save', panel =>
     DocToolbarItems.createSaveButton(commands, panel.context.fileChanged)
   );
-  toolbarRegistry.addFactory<NotebookPanel>(DATAFLOW_FACTORY, 'cellType', panel =>
-    ToolbarItems.createCellTypeItem(panel, translator)
+  toolbarRegistry.addFactory<NotebookPanel>(
+    DATAFLOW_FACTORY,
+    'cellType',
+    panel => ToolbarItems.createCellTypeItem(panel, translator)
   );
-  toolbarRegistry.addFactory<NotebookPanel>(DATAFLOW_FACTORY, 'kernelName', panel =>
-    Toolbar.createKernelNameItem(
-      panel.sessionContext,
-      sessionContextDialogs,
-      translator
-    )
+  toolbarRegistry.addFactory<NotebookPanel>(
+    DATAFLOW_FACTORY,
+    'kernelName',
+    panel =>
+      Toolbar.createKernelNameItem(
+        panel.sessionContext,
+        sessionContextDialogs,
+        translator
+      )
   );
 
   toolbarRegistry.addFactory<NotebookPanel>(
@@ -807,14 +736,6 @@ function activateDataflowWidgetFactory(
   return factory;
 }
 
-// FIXME if we set the model factory on the docRegistry first
-// we can prevent the setting in activateNotebookHandler
-// also need a way to modify the app commands for run...
-// then may be able to get rid of all this code...
-/**
- * Activate the notebook handler extension.
- */
-
 /**
  * Activate the notebook handler extension.
  */
@@ -822,7 +743,7 @@ function activateNotebookHandler(
   app: JupyterFrontEnd,
   factory: NotebookWidgetFactory.IFactory,
   dfFactory: DataflowNotebookWidgetFactory.IFactory,
-  // dfModelFactory: DataflowNotebookModelFactory.IFactory,  
+  // dfModelFactory: DataflowNotebookModelFactory.IFactory,
   extensions: IEditorExtensionRegistry,
   palette: ICommandPalette | null,
   defaultBrowser: IDefaultFileBrowser | null,
@@ -1007,9 +928,12 @@ function activateNotebookHandler(
     // (factory as NotebookWidgetFactory).kernel = "dfpython3";
     void restorer.restore(tracker, {
       command: 'docmanager:open',
-      args: panel => ({ 
-        path: panel.context.path, 
-        factory: (panel.context.model instanceof DataflowNotebookModel) ? DATAFLOW_FACTORY : FACTORY 
+      args: panel => ({
+        path: panel.context.path,
+        factory:
+          panel.context.model instanceof DataflowNotebookModel
+            ? DATAFLOW_FACTORY
+            : FACTORY
       }),
       // use notebook or dfnotebook prefix on name here...
       name: panel => panel.context.path,
@@ -1036,7 +960,6 @@ function activateNotebookHandler(
 
   addCommands(app, tracker, translator, sessionDialogs, isEnabled);
 
-
   if (palette) {
     populatePalette(palette, translator);
   }
@@ -1047,7 +970,7 @@ function activateNotebookHandler(
 
   // !!! DATAFLOW NOTEBOOK CHANGE !!!
   // Make this a function that can be called by both...
-  function connectWidgetCreated(factory : NotebookWidgetFactory.IFactory) {
+  function connectWidgetCreated(factory: NotebookWidgetFactory.IFactory) {
     factory.widgetCreated.connect((sender, widget) => {
       // If the notebook panel does not have an ID, assign it one.
       widget.id = widget.id || `notebook-${++id}`;
@@ -1082,7 +1005,10 @@ function activateNotebookHandler(
    * Update the setting values.
    */
   // !!! DATAFLOW NOTEOBOK UPDATE TO PASS FACTORY IN HERE !!!
-  function updateConfig(factory: NotebookWidgetFactory.IFactory, settings: ISettingRegistry.ISettings): void {
+  function updateConfig(
+    factory: NotebookWidgetFactory.IFactory,
+    settings: ISettingRegistry.ISettings
+  ): void {
     const code = {
       ...StaticNotebook.defaultEditorConfig.code,
       ...(settings.get('codeCellConfig').composite as JSONObject)
@@ -1181,14 +1107,12 @@ function activateNotebookHandler(
       type: 'notebook'
     });
     if (model !== undefined) {
-      console.log("KERNEL NAME:", kernelName);
       const widget = (await commands.execute('docmanager:open', {
         path: model.path,
         // !!! DATAFLOW NOTEBOOK CHANGE (ONE LINE) !!!
-        factory: kernelName == "dfpython3" ? DATAFLOW_FACTORY : FACTORY,
+        factory: kernelName == 'dfpython3' ? DATAFLOW_FACTORY : FACTORY,
         kernel: { id: kernelId, name: kernelName }
       })) as unknown as IDocumentWidget;
-      console.log("WIDGET:", widget);
       widget.isUntitled = true;
       return widget;
     }
@@ -2647,7 +2571,7 @@ function addCommands(
       }
 
       current.content.extendContiguousSelectionTo(lastIndex);
-  
+
       // !!! DATAFLOW NOTEBOOK CHANGE !!!
       if (current.content instanceof DataflowNotebook) {
         void DataflowNotebookActions.run(
@@ -2679,12 +2603,11 @@ function addCommands(
       }
 
       const inputArea = cell.inputArea as DataflowInputArea;
-      const value = prompt("Tag this cell please:", "");
+      const value = prompt('Tag this cell please:', '');
       inputArea.addTag(value);
     }
   });
   // !!! END DATAFLOW NOTEBOOK CHANGE !!!
-
 }
 
 /**

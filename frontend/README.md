@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfnotebook-extension/blob/master/LICENSE)
 
 This package is part of the [Dataflow Notebooks](https://dataflownb.github.io) project and provides the Dataflow Notebook interface for JupyterLab, and is intended to be used with the [dfkernel](https://github.com/dataflownb/dfkernel) kernel.
-Dataflow notebooks seek to elevate *outputs* as memorable waypoints during exploratory computation. To that end,
+Dataflow notebooks seek to elevate _outputs_ as memorable waypoints during exploratory computation. To that end,
 
 - Cell identifiers are **persistent** across sessions and are random UUIDs to signal they do not depend on top-down order.
 - As with standard IPython, outputs are designated by being written as expressions or assignments on the **last line** of a cell.
@@ -11,9 +11,9 @@ Dataflow notebooks seek to elevate *outputs* as memorable waypoints during explo
 - Variable names **can be reused** across cells.
 - Cells are executed as closures so only the outputs are accessible from other cells.
 - An output can then be referenced in three ways:
-    1. unscoped: `foo` refers to the most recent execution output named `foo`
-    2. persistent: `foo$ba012345` refers to output `foo` from cell `ba012345`
-    3. tagged: `foo$bar` refers to output `foo` from the cell tagged as `bar`
+  1. unscoped: `foo` refers to the most recent execution output named `foo`
+  2. persistent: `foo$ba012345` refers to output `foo` from cell `ba012345`
+  3. tagged: `foo$bar` refers to output `foo` from the cell tagged as `bar`
 - All output references are transformed to **persistent** names upon execution.
 - Output references implicitly define a dataflow in a directed acyclic graph, and the kernel automatically executes dependencies.
 
@@ -27,7 +27,7 @@ Dataflow notebooks seek to elevate *outputs* as memorable waypoints during explo
 
 ## Install
 
-This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel) 
+This extension uses a Jupyter kernel named [`dfkernel`](https://github.com/dataflownb/dfkernel)
 for the backend and a Jupyter extension named `dfnotebook` for the frontend.
 
 To install the kernel, kernel:

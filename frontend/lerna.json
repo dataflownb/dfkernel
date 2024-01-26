@@ -1,8 +1,6 @@
 {
-    "npmClient": "jlpm",
-    "version": "independent",
-    "useWorkspaces": true,
-    "packages": [
-        "packages/*"
-    ]
+  "npmClient": "jlpm",
+  "version": "independent",
+  "useWorkspaces": true,
+  "packages": ["packages/*"]
 }

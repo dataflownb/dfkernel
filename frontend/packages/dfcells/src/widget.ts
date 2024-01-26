@@ -1,12 +1,24 @@
-import { Kernel, KernelMessage } from "@jupyterlab/services";
-import { AttachmentsCell, Cell, CodeCell, IAttachmentsCellModel, ICellModel, IInputPrompt, MarkdownCell, RawCell } from "@jupyterlab/cells";
-import { DataflowInputArea, DataflowInputPrompt } from "./inputarea";
-import { IOutputPrompt } from "@jupyterlab/outputarea";
-import { DataflowOutputArea, DataflowOutputPrompt } from "@dfnotebook/dfoutputarea";
-import { IChangedArgs } from "@jupyterlab/coreutils";
-import { ISessionContext } from "@jupyterlab/apputils";
-import { JSONObject } from "@lumino/coreutils";
-import { Panel } from "@lumino/widgets";
+import { Kernel, KernelMessage } from '@jupyterlab/services';
+import {
+  AttachmentsCell,
+  Cell,
+  CodeCell,
+  IAttachmentsCellModel,
+  ICellModel,
+  IInputPrompt,
+  MarkdownCell,
+  RawCell
+} from '@jupyterlab/cells';
+import { DataflowInputArea, DataflowInputPrompt } from './inputarea';
+import { IOutputPrompt } from '@jupyterlab/outputarea';
+import {
+  DataflowOutputArea,
+  DataflowOutputPrompt
+} from '@dfnotebook/dfoutputarea';
+import { IChangedArgs } from '@jupyterlab/coreutils';
+import { ISessionContext } from '@jupyterlab/apputils';
+import { JSONObject } from '@lumino/coreutils';
+import { Panel } from '@lumino/widgets';
 
 // FIXME need to add this back when dfgraph is working
 // import { Manager as GraphManager } from '@dfnotebook/dfgraph';
@@ -15,7 +27,7 @@ import { Panel } from "@lumino/widgets";
  */
 const CELL_INPUT_AREA_CLASS = 'jp-Cell-inputArea';
 
- /**
+/**
  * The CSS class added to the cell output area.
  */
 const CELL_OUTPUT_AREA_CLASS = 'jp-Cell-outputArea';
@@ -31,19 +43,21 @@ function setInputArea<T extends ICellModel = ICellModel>(cell: Cell) {
   if (input) {
     const { id } = input;
     inputWrapper.widgets.forEach((widget, idx) => {
-      if (widget.id === id) { inputIdx = idx; }
+      if (widget.id === id) {
+        inputIdx = idx;
+      }
     });
   }
 
   const dfInput = new DataflowInputArea({
     model: cell.model,
     contentFactory: cell.contentFactory,
-    editorOptions: { config: cell.editorConfig}
-  })
+    editorOptions: { config: cell.editorConfig }
+  });
   dfInput.addClass(CELL_INPUT_AREA_CLASS);
 
   inputWrapper.insertWidget(inputIdx, dfInput);
-  input?.dispose()
+  input?.dispose();
   //@ts-expect-error
   cell._input = dfInput;
 }
@@ -57,22 +71,26 @@ function setOutputArea(cell: CodeCell) {
   const { id } = output;
   let outputIdx = -1;
   outputWrapper.widgets.forEach((widget, idx) => {
-    if (widget.id === id) { outputIdx = idx; }
+    if (widget.id === id) {
+      outputIdx = idx;
+    }
   });
 
-  const dfOutput = new DataflowOutputArea({
-    model: cell.model.outputs,
-    rendermime: output.rendermime,
-    contentFactory: cell.contentFactory,
-    maxNumberOutputs: output.maxNumberOutputs,
-    //@ts-expect-error
-    translator: output._translator,
-    promptOverlay: true,
-    //@ts-expect-error
-    inputHistoryScope: output._inputHistoryScope
-  }, 
-  // FIXME move this to a function to unify with the code below and in dfnotebook/actions.tsx  
-  cell.model.id.replace(/-/g, '').substring(0, 8));
+  const dfOutput = new DataflowOutputArea(
+    {
+      model: cell.model.outputs,
+      rendermime: output.rendermime,
+      contentFactory: cell.contentFactory,
+      maxNumberOutputs: output.maxNumberOutputs,
+      //@ts-expect-error
+      translator: output._translator,
+      promptOverlay: true,
+      //@ts-expect-error
+      inputHistoryScope: output._inputHistoryScope
+    },
+    // FIXME move this to a function to unify with the code below and in dfnotebook/actions.tsx
+    cell.model.id.replace(/-/g, '').substring(0, 8)
+  );
 
   dfOutput.addClass(CELL_OUTPUT_AREA_CLASS);
 
@@ -88,14 +106,13 @@ function setOutputArea(cell: CodeCell) {
   //   this.updatePromptOverlayIcon();
   // });
 
-
   output.outputLengthChanged.disconnect(
     //@ts-expect-error
     cell._outputLengthHandler,
     cell
   );
   //@ts-expect-error
-  dfOutput.outputLengthChanged.connect(cell._outputLengthHandler, cell);  
+  dfOutput.outputLengthChanged.connect(cell._outputLengthHandler, cell);
 
   outputWrapper.insertWidget(outputIdx, dfOutput);
   output.dispose();
@@ -104,92 +121,91 @@ function setOutputArea(cell: CodeCell) {
 }
 
 export class DataflowCell<T extends ICellModel = ICellModel> extends Cell<T> {
-    protected initializeDOM(): void {
-        super.initializeDOM();
-        setInputArea(this)
-        this.addClass('df-cell');
-    }
+  protected initializeDOM(): void {
+    super.initializeDOM();
+    setInputArea(this);
+    this.addClass('df-cell');
+  }
 }
 
 export namespace DataflowCell {
-    export class ContentFactory extends Cell.ContentFactory {
-        /**
-         * Create an input prompt.
-         */
-        createInputPrompt(): IInputPrompt {
-            return new DataflowInputPrompt();
-        }
-    
-        /**
-         * Create the output prompt for the widget.
-         */
-        createOutputPrompt(): IOutputPrompt {
-            return new DataflowOutputPrompt();
-        }
+  export class ContentFactory extends Cell.ContentFactory {
+    /**
+     * Create an input prompt.
+     */
+    createInputPrompt(): IInputPrompt {
+      return new DataflowInputPrompt();
     }
+
+    /**
+     * Create the output prompt for the widget.
+     */
+    createOutputPrompt(): IOutputPrompt {
+      return new DataflowOutputPrompt();
+    }
+  }
 }
 
 export class DataflowMarkdownCell extends MarkdownCell {
-    protected initializeDOM(): void {
-      super.initializeDOM();
-      setInputArea(this)
-      this.addClass('df-cell');
-    }
-
+  protected initializeDOM(): void {
+    super.initializeDOM();
+    setInputArea(this);
+    this.addClass('df-cell');
+  }
 }
 
 export class DataflowRawCell extends RawCell {
-    protected initializeDOM(): void {
-      super.initializeDOM();
-      setInputArea(this)
-      this.addClass('df-cell');
-    }
-
+  protected initializeDOM(): void {
+    super.initializeDOM();
+    setInputArea(this);
+    this.addClass('df-cell');
+  }
 }
 
-export abstract class DataflowAttachmentsCell<T extends IAttachmentsCellModel> extends AttachmentsCell<T> {
-    protected initializeDOM(): void {
-        super.initializeDOM();
-        setInputArea(this)
-        this.addClass('df-cell');
-    }
-
+export abstract class DataflowAttachmentsCell<
+  T extends IAttachmentsCellModel
+> extends AttachmentsCell<T> {
+  protected initializeDOM(): void {
+    super.initializeDOM();
+    setInputArea(this);
+    this.addClass('df-cell');
+  }
 }
 
 export class DataflowCodeCell extends CodeCell {
-    protected initializeDOM(): void {
-        super.initializeDOM();
-        setInputArea(this);
-        setOutputArea(this);
+  protected initializeDOM(): void {
+    super.initializeDOM();
+    setInputArea(this);
+    setOutputArea(this);
+    this.setPromptToId();
+    this.addClass('df-cell');
+  }
+
+  public setPromptToId() {
+    // FIXME move this to a function to unify with the code in dfnotebook/actions.tsx
+    this.setPrompt(`${this.model.id.replace(/-/g, '').substring(0, 8) || ''}`);
+  }
+
+  initializeState(): this {
+    super.initializeState();
+    this.setPromptToId();
+    return this;
+  }
+
+  protected onStateChanged(model: ICellModel, args: IChangedArgs<any>): void {
+    super.onStateChanged(model, args);
+    switch (args.name) {
+      case 'executionCount':
         this.setPromptToId();
-        this.addClass('df-cell');
+        break;
+      default:
+        break;
     }
-
-    public setPromptToId() {
-      // FIXME move this to a function to unify with the code in dfnotebook/actions.tsx
-      this.setPrompt(`${this.model.id.replace(/-/g, '').substring(0, 8) || ''}`);
-    }
-
-    initializeState(): this {
-        super.initializeState();
-        this.setPromptToId();
-        return this;
-    }
-
-    protected onStateChanged(model: ICellModel, args: IChangedArgs<any>): void {
-        super.onStateChanged(model, args);
-        switch (args.name) {
-            case 'executionCount':
-                this.setPromptToId();
-                break;
-            default:
-                break;
-        }
-    }
+  }
 }
 
 export namespace DataflowCodeCell {
- /**
+  /**
    * Execute a cell given a client session.
    */
   export async function execute(
@@ -197,7 +213,7 @@ export namespace DataflowCodeCell {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdWidgetMap?: {[key:string]: CodeCell}
+    cellIdWidgetMap?: { [key: string]: CodeCell }
   ): Promise<KernelMessage.IExecuteReplyMsg | void> {
     const model = cell.model;
     const code = model.sharedModel.getSource();
@@ -228,12 +244,12 @@ export namespace DataflowCodeCell {
       | undefined;
     try {
       const msgPromise = DataflowOutputArea.execute(
-          code,
-          cell.outputArea,
-          sessionContext,
-          metadata,
-          dfData,
-          cellIdWidgetMap
+        code,
+        cell.outputArea,
+        sessionContext,
+        metadata,
+        dfData,
+        cellIdWidgetMap
       );
       // cell.outputArea.future assigned synchronously in `execute`
       if (recordTiming) {
@@ -270,13 +286,15 @@ export namespace DataflowCodeCell {
       const clearOutput = (msg: KernelMessage.IIOPubMessage) => {
         switch (msg.header.msg_type) {
           case 'execute_input':
-            const executionCount = (msg as KernelMessage.IExecuteInputMsg).content
-                .execution_count;
+            const executionCount = (msg as KernelMessage.IExecuteInputMsg)
+              .content.execution_count;
             if (executionCount !== null) {
               const cellId = executionCount.toString(16).padStart(8, '0');
               if (cellIdWidgetMap) {
                 const cellWidget = cellIdWidgetMap[cellId];
-                cellWidget.model.sharedModel.setSource((msg as KernelMessage.IExecuteInputMsg).content.code);
+                cellWidget.model.sharedModel.setSource(
+                  (msg as KernelMessage.IExecuteInputMsg).content.code
+                );
                 const outputArea = cellWidget.outputArea;
                 outputArea.model.clear();
               }

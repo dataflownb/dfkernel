@@ -5,11 +5,7 @@
     "main": [
       {
         "id": "jp-mainmenu-edit",
-        "items": [
-          {"command": "notebook:tag-cell",
-            "rank": 9
-          }
-        ]
+        "items": [{ "command": "notebook:tag-cell", "rank": 9 }]
       }
     ],
     "context": [

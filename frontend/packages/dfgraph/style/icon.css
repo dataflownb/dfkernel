@@ -1,94 +1,98 @@
 div.icon_status {
-    display: inline-block;
-    cursor: auto;
-    color: #333;
-    padding-left: 4px;
-    padding-right: 1px;
-    padding-top: 0.4ex;
-    width : 1em;
+  display: inline-block;
+  cursor: auto;
+  color: #333;
+  padding-left: 4px;
+  padding-right: 1px;
+  padding-top: 0.4ex;
+  width: 1em;
 
-    font-family: FontAwesome;
-    font-style: normal;
-    font-weight: normal;
-    text-decoration: inherit;
-    font-size: 1.4em;
-
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: inherit;
+  font-size: 1.4em;
 }
 
 .new-cell::before {
-    content: "\f055";
+  content: '\f055';
 }
 
 .edited-new::before {
-  content: "\f055";
+  content: '\f055';
 }
 
 .success-cell::before {
-  content: "\f058";
+  content: '\f058';
 }
 
-.edited-success::before, .edited-error::before, .edited-saved-success::before, .edited-saved-error::before {
-  content: "\f06a";
+.edited-success::before,
+.edited-error::before,
+.edited-saved-success::before,
+.edited-saved-error::before {
+  content: '\f06a';
 }
 
 .error-cell::before {
-  content: "\f057";
+  content: '\f057';
 }
 
-.saved-success::before, .saved-success::before {
-  content: "\f058";
+.saved-success::before,
+.saved-success::before {
+  content: '\f058';
 }
 
 .executing::before {
-  content: "\f017";
+  content: '\f017';
 }
 
-.saved-error::before, .saved-error::before {
-  content: "\f057";
+.saved-error::before,
+.saved-error::before {
+  content: '\f057';
 }
 
 .df-verified::before {
-  color : #008800;
+  color: #008800;
 }
 
 .df-unverified::before {
-  color : #eac234;
+  color: #eac234;
 }
 
 .df-error::before {
-  color : #ff0000;
+  color: #ff0000;
 }
 
 div.prompt_container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-start;
-    text-align: right;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: right;
 }
 
 div.code_cell div.input_prompt {
-    min-width: 17ex;
-    width: 9vw;
+  min-width: 17ex;
+  width: 9vw;
 }
 
 div.output_prompt {
-    min-width : 17ex;
-    width: 9vw;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+  min-width: 17ex;
+  width: 9vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 div.out_prompt_overlay {
-    min-width : 20ex;
+  min-width: 20ex;
 }
 
 div.output_area div.prompt {
-    min-width: 17ex;
-    width: 9vw;
+  min-width: 17ex;
+  width: 9vw;
 }
 
 .run_this_cell {
-    display: none;
+  display: none;
 }
