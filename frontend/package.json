@@ -1,6 +1,6 @@
 {
     "name": "@dfnotebook/top",
-    "version": "0.4.0-a0",
+    "version": "0.4.0-a.0",
     "description": "A JupyterLab extension for running dataflow notebooks",
     "keywords": [
         "jupyter",

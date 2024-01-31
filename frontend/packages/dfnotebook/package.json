@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/dfnotebook",
-  "version": "0.4.0-a0",
+  "version": "0.4.0-a.0",
   "description": "Dataflow Notebook",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
@@ -62,7 +62,7 @@
     "watch:src": "tsc -w --sourceMap"
   },
   "dependencies": {
-    "@dfnotebook/dfcells": "^0.2.0",
+    "@dfnotebook/dfcells": ">0.4.0-a",
     "@jupyter/ydoc": "^1.1.1",
     "@jupyterlab/apputils": "^4.1.11",
     "@jupyterlab/cells": "^4.0.11",
