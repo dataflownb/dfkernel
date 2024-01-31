@@ -482,16 +482,16 @@ export class Graph {
   getImmUpstreamPairs(uuid: string | number | undefined) {
     let arr: never[] = [];
     let that: Graph = this;
-    // @ts-ignore
-    this.getImmUpstreams(uuid).forEach(function (upUuid) {
-      // @ts-ignore
-      Array.prototype.push.apply(
-        arr,
-        that.uplinks[uuid][upUuid].map(function (v) {
-          return [v, upUuid];
-        })
-      );
-    });
+    if (uuid !== undefined) {
+      this.getImmUpstreams(uuid.toString()).forEach(function (upUuid) {
+        Array.prototype.push.apply(
+          arr,
+          that.uplinks[uuid][upUuid].map(function (v : any) {
+            return [v, upUuid];
+          })
+        );
+      });
+    }
     return arr;
   }
 
