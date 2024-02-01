@@ -65,7 +65,7 @@
   "dependencies": {
     "@hpcc-js/wasm": "^2.15.3",
     "@lumino/widgets": "^2.3.1",
-    "@types/d3": "^7.1.0",
+    "@types/d3": "^7.4.3",
     "@types/d3-graphviz": "^2.6.10",
     "@types/graphlib": "^2.1.8",
     "@types/graphlib-dot": "^0.6.1",
@@ -73,7 +73,7 @@
     "@types/node": "^17.0.22",
     "@types/resize-observer-browser": "^0.1.7",
     "codemirror": "^5.55.0",
-    "d3": "^7.3.0",
+    "d3": "^7.8.5",
     "d3-graphviz": "^5.2.0",
     "graphlib": "^2.1.8",
     "graphlib-dot": "^0.6.4",

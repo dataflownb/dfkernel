@@ -51,6 +51,7 @@ export class DepView {
   widget: any;
   tracker: any;
   order: any;
+  graphtran: any;
 
   constructor(dfgraph?: any, parentdiv?: any, labelstyles?: string) {
     //Flags
@@ -89,6 +90,7 @@ export class DepView {
     this.activeCell = '';
 
     this.dfgraph = dfgraph;
+    this.graphtran = null;
     //console.log(NotebookTools);
 
     this.dotgraph = [];
@@ -381,7 +383,10 @@ export class DepView {
     });
 
     that.dotgraph = Writer.write(g);
-    let graphtran = d3.transition().duration(1500).ease(d3.easeLinear);
+
+    //FIXME: Something weird is going on here with the transitions if you declare them at the start they fail
+    //but if you declare them here there is a large delay before the transition happens
+    that.graphtran = d3.transition().duration(750).ease(d3.easeLinear);
 
     //FIXME: Not ideal way to be set this up, graphviz requires a set number of pixels for width and height
     graphviz('#svg-div')
@@ -390,10 +395,8 @@ export class DepView {
         that.updateCellLists();
         that.doneRendering = true;
       })
-      .renderDot(that.dotgraph)
-      //FIXME: Transition appears to be fine if you do a ts-ignore
-      //@ts-ignore
-      .transition(graphtran);
+      .transition(that.graphtran)
+      .renderDot(that.dotgraph);
 
     let dotURL = URL.createObjectURL(
       new Blob([that.dotgraph], { type: 'text/plain;charset=utf-8' })
