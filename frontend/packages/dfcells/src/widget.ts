@@ -21,7 +21,7 @@ import { JSONObject } from '@lumino/coreutils';
 import { Panel } from '@lumino/widgets';
 
 // FIXME need to add this back when dfgraph is working
-// import { Manager as GraphManager } from '@dfnotebook/dfgraph';
+import { Manager as GraphManager } from '@dfnotebook/dfgraph';
 /**
  * The CSS class added to the cell input area.
  */
@@ -328,24 +328,21 @@ export namespace DataflowCodeCell {
         model.setMetadata('execution', timingInfo);
       }
 
-      // FIXME: UNCOMMENT FOR DFGRAPH
-
-      // console.log(msg);
-      // let content = (msg.content as any)
-      // let nodes = content.nodes;
-      // let uplinks = content.links;
-      // let cells = content.cells;
-      // let downlinks = content.imm_downstream_deps;
-      // let allUps = content.upstream_deps;
-      // let internalNodes = content.internal_nodes;
-      // let sessId = sessionContext.session.id;
-      // //Set information about the graph based on sessionid
-      // GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
-      // GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      // GraphManager.updateDepViews(false);
-      //  if (content.update_downstreams) {
-      //               GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
-      // }
+      let content = (msg.content as any)
+      let nodes = content.nodes;
+      let uplinks = content.links;
+      let cells = content.cells;
+      let downlinks = content.imm_downstream_deps;
+      let allUps = content.upstream_deps;
+      let internalNodes = content.internal_nodes;
+      let sessId = sessionContext.session.id;
+      //Set information about the graph based on sessionid
+      GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
+      GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
+      GraphManager.updateDepViews(false);
+       if (content.update_downstreams) {
+                    GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+      }
 
       return msg;
     } catch (e) {

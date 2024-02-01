@@ -96,7 +96,9 @@ class GraphManager {
 
   revertStale = function (uuid: string) {
     this.graphs[this.currentGraph].updateFresh(uuid, true);
-    this.minimap.updateStates();
+    if(this.miniWidget.isOpen){
+        this.minimap.updateStates();
+    }
   };
 
   getStale = function (uuid: string) {
