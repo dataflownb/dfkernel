@@ -40,7 +40,7 @@
         "develop": "jupyter labextension develop --overwrite .",
         "install": "lerna bootstrap",
         "install:extension": "lerna run install:extension",
-        "install:develop": "jlpm install & jlpm build & jlpm develop",
+        "install:develop": "jlpm install && jlpm build && jlpm develop",
         "lint": "jlpm && jlpm prettier && jlpm eslint && jlpm stylelint",
         "lint:check": "jlpm prettier:check && jlpm eslint:check && jlpm stylelint:check",
         "prettier": "prettier --write \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
