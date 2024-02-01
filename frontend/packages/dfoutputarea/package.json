@@ -80,7 +80,7 @@
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.0.0",
-    "@jupyterlab/testutils": "^3.6.3",
+    "@jupyterlab/testutils": "^4.0.0",
     "@types/jest": "^26.0.10",
     "@types/json-schema": "^7.0.11",
     "@types/react": "^18.0.26",
