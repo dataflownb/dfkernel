@@ -8,6 +8,7 @@ from operator import attrgetter
 import json
 from typing import Any
 import itertools
+import re
 
 class DataflowRef:
     __slots__ = ['start_pos','end_pos','name','cell_id','cell_tag','ref_qualifier']
@@ -264,8 +265,17 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
                 cell_ref += ':'
                 dollar_pos = dollar_pos[0], t.end
             elif t.type == 2 and positions_mesh(dollar_pos[1], t.start): # NUMBER
-                cell_ref += t.string
-                dollar_pos = dollar_pos[0], t.end
+                t_string = t.string
+                t_end = t.end
+                while (
+                    not re.match(r"[0-9a-f]+$", t_string)
+                    and (t_end[0] > t.start[0] or t_end[1] > t.start[1])
+                    and t_end[1] > 0
+                ):
+                    t_string = t_string[:-1]
+                    t_end = (t_end[0], t_end[1] - 1)
+                cell_ref += t_string
+                dollar_pos = dollar_pos[0], t_end
                 just_started = False
             elif t.type == 1 and positions_mesh(dollar_pos[1], t.start): # NAME
                 cell_ref += t.string
