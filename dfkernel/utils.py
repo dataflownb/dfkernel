@@ -213,6 +213,10 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
             self.visit(node.value)
             self.scope.pop()
 
+        def visit_NamedExpr(self, node):
+            self.visit(node.value)
+            self.visit(node.target)
+
     tree = ast.parse(s)
     linker = DataflowLinker()
     linker.visit(tree)
