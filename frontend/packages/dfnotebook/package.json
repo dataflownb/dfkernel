@@ -93,7 +93,8 @@
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.0.0",
-    "@jupyterlab/testutils": "^4.0.0",
+    "@jupyterlab/testing": "^4.0.0",
+    "@jupyterlab/testutils": "^4.0.12",
     "@types/jest": "^29.2.0",
     "@types/json-schema": "^7.0.11",
     "@types/react": "^18.0.26",
@@ -115,7 +116,7 @@
     "stylelint-config-standard": "^34.0.0",
     "stylelint-csstree-validator": "^3.0.0",
     "stylelint-prettier": "^4.0.0",
-    "ts-jest": "^26.3.0",
+    "ts-jest": "^29",
     "typedoc": "~0.21.2",
     "typescript": "~5.0.2",
     "yjs": "^13.5.40"

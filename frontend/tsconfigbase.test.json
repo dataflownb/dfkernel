@@ -2,7 +2,6 @@
   "$schema": "http://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
-    "composite": true,
     "declaration": true,
     "esModuleInterop": true,
     "incremental": true,
@@ -19,7 +18,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": false,
     "target": "ES2018",
-    "types": []
-  },
-  "include": ["src/*"]
+    "types": ["jest"],
+    "verbatimModuleSyntax": false
+  }
 }
