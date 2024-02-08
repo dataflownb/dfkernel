@@ -35,6 +35,7 @@
         "build": "lerna run build",
         "build:lib": "lerna run build:lib",
         "build:lib:prod": "lerna run build:lib:prod",
+        "build:test": "lerna run build:test",
         "clean": "lerna run clean",
         "clean:slate": "python clean.py",
         "develop": "jupyter labextension develop --overwrite .",
