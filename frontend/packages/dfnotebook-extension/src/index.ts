@@ -26,7 +26,6 @@ import {
   ToolbarButton,
   Toolbar
 } from '@jupyterlab/apputils';
-// FIXME Add back in when dfgraph is updated
 import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
@@ -427,7 +426,6 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             (nbPanel.content as any).model._cells.changed.connect(() =>{
                 GraphManager.updateOrder((nbPanel.content as any).model.cells.model.cells.map((cell:any) => cell.id));
             });
-
             nbPanel.content.activeCellChanged.connect(() =>{
                 let prevActive = GraphManager.getActive();
                 if(typeof prevActive == 'object'){
