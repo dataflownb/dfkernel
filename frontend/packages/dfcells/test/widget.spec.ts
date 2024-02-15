@@ -875,9 +875,11 @@ describe('cells/widget', () => {
       });
 
       beforeEach(async () => {
-        sessionContext = await createSessionContext();
+        sessionContext = await createSessionContext({'kernelPreference':
+        {'name':'DFPython3'}});
         await (sessionContext as SessionContext).initialize();
         await sessionContext.session?.kernel?.info;
+        await sessionContext.session?.id;
       });
 
       afterEach(() => {
