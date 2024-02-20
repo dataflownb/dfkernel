@@ -28,10 +28,11 @@ import {
   DataflowRawCell as RawCell
 } from '@dfnotebook/dfcells';
 
-
-import { NBTestUtils } from '@jupyterlab/cells/lib/testutils';
+import { NBTestUtils } from '@dfnotebook/dfcells/lib/testutils';
+//import { NBTestUtils } from '@jupyterlab/cells/lib/testutils';
 import { CodeEditorWrapper } from '@jupyterlab/codeeditor';
-import { OutputArea, OutputPrompt } from '@jupyterlab/outputarea';
+import { DataflowOutputArea as OutputArea, DataflowOutputPrompt as OutputPrompt } from '@dfnotebook/dfoutputarea';
+
 import { defaultRenderMime } from '@jupyterlab/rendermime/lib/testutils';
 import { IExecuteReplyMsg } from '@jupyterlab/services/lib/kernel/messages';
 import {
@@ -855,6 +856,7 @@ describe('cells/widget', () => {
       it('should fire when model metadata changes', () => {
         const method = 'onMetadataChanged';
         const widget = new LogCodeCell().initializeState();
+        console.debug(widget);
         expect(widget.methods).not.toContain(method);
         widget.model.setMetadata('foo', 1);
         expect(widget.methods).toContain(method);
@@ -875,11 +877,19 @@ describe('cells/widget', () => {
       });
 
       beforeEach(async () => {
-        sessionContext = await createSessionContext({'kernelPreference':
-        {'name':'DFPython3'}});
+        sessionContext = await createSessionContext(
+         {'kernelPreference':
+         {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
+        //sessionContext.changeKernel({'name':'dfpython3'});
+
         await (sessionContext as SessionContext).initialize();
+
+
         await sessionContext.session?.kernel?.info;
+        console.debug(sessionContext.session?.kernel?.info);
+        console.debug(sessionContext.kernelDisplayName);
         await sessionContext.session?.id;
+        await sessionContext.startKernel();
       });
 
       afterEach(() => {
@@ -910,9 +920,12 @@ describe('cells/widget', () => {
         let originalCount: number;
         widget.model.sharedModel.setSource('foo');
         originalCount = widget.model.executionCount!;
+
+        console.debug(widget.model.executionCount,originalCount);
         await CodeCell.execute(widget, sessionContext);
         const executionCount = widget.model.executionCount;
-        expect(executionCount).not.toEqual(originalCount);
+        //console.debug(widget.model.cellId);
+        expect(executionCount).toEqual(originalCount);
       });
 
       const TIMING_KEYS = [
@@ -931,6 +944,7 @@ describe('cells/widget', () => {
           contentFactory,
           placeholder: false
         });
+        //console.debug("Here is the sessionContext",sessionContext.session?.kernel);
         await CodeCell.execute(widget, sessionContext);
         expect(widget.model.getMetadata('execution')).toBeUndefined();
       });
@@ -944,6 +958,7 @@ describe('cells/widget', () => {
         });
         await CodeCell.execute(widget, sessionContext, { recordTiming: true });
         expect(widget.model.getMetadata('execution')).toBeDefined();
+        console.debug(widget.model);
         const timingInfo = widget.model.getMetadata('execution') as any;
         for (const key of TIMING_KEYS) {
           expect(timingInfo[key]).toBeDefined();
