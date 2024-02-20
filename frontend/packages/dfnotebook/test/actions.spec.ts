@@ -3,16 +3,24 @@
 
 import { ISessionContext, SessionContext } from '@jupyterlab/apputils';
 import { createSessionContext } from '@jupyterlab/apputils/lib/testutils';
-import { CodeCell, MarkdownCell, RawCell } from '@jupyterlab/cells';
+//import { CodeCell, MarkdownCell, RawCell } from '@jupyterlab/cells';
+import { DataflowCodeCell as CodeCell, DataflowMarkdownCell as MarkdownCell, DataflowRawCell as RawCell } from '@dfnotebook/dfcells';
 import { CodeEditor } from '@jupyterlab/codeeditor';
 import { CellType, IMimeBundle } from '@jupyterlab/nbformat';
 import {
   KernelError,
-  Notebook,
-  NotebookActions,
+//  Notebook,
+//  NotebookActions,
   NotebookModel,
-  StaticNotebook
+//  StaticNotebook
 } from '@jupyterlab/notebook';
+import {
+//  KernelError,
+  DataflowNotebook as Notebook,
+  DataflowNotebookActions as NotebookActions,
+//  NotebookModel,
+  DataflowStaticNotebook as StaticNotebook
+} from '@dfnotebook/dfnotebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { ISharedCodeCell } from '@jupyter/ydoc';
 import {
@@ -101,7 +109,7 @@ describe('@jupyterlab/notebook', () => {
         widget.select(next);
         cell.model.outputs.clear();
         next.rendered = false;
-        NotebookActions.executed.connect((_, args) => {
+        NotebookActions.executed.connect((_:any, args:any) => {
           const { success } = args;
           emitted += 1;
           if (!success) {
@@ -119,7 +127,7 @@ describe('@jupyterlab/notebook', () => {
         let emitted = 0;
         let failed = 0;
         let cellError: KernelError | null | undefined = null;
-        NotebookActions.executed.connect((_, args) => {
+        NotebookActions.executed.connect((_:any, args:any) => {
           const { success, error } = args;
           emitted += 1;
           if (!success) {
@@ -658,7 +666,7 @@ describe('@jupyterlab/notebook', () => {
           emitted += 1;
         });
         cell.model.outputs.clear();
-        return NotebookActions.run(widget, sessionContext).then(result => {
+        return NotebookActions.run(widget, sessionContext).then((result: any) => {
           expect(result).toBe(true);
           expect(widget.model!.deletedCells.length).toBe(0);
           expect(emitted).toBe(1);

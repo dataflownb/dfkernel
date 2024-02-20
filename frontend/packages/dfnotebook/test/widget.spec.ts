@@ -2,20 +2,31 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  Cell,
-  CodeCell,
+  //Cell,
+  //CodeCell,
   CodeCellModel,
-  MarkdownCell,
+  //MarkdownCell,
   MarkdownCellModel,
-  RawCell,
+  //RawCell,
   RawCellModel
 } from '@jupyterlab/cells';
 import {
+  DataflowCell as Cell,
+  DataflowCodeCell as CodeCell,
+  DataflowMarkdownCell as MarkdownCell,
+  DataflowRawCell as RawCell
+  } from '@dfnotebook/dfcells';
+import {
   INotebookModel,
-  Notebook,
+  Notebook as NotebookType,
   NotebookModel,
-  StaticNotebook
+  StaticNotebook as StaticNotebookType
 } from '@jupyterlab/notebook';
+import {
+  DataflowNotebook as Notebook,
+  DataflowStaticNotebook as StaticNotebook
+} from '@dfnotebook/dfnotebook';
+
 import {
   framePromise,
   JupyterServer,
@@ -60,7 +71,7 @@ function createWidget(): LogStaticNotebook {
   return widget;
 }
 
-class LogStaticNotebook extends StaticNotebook {
+class LogStaticNotebook extends StaticNotebookType {
   methods: string[] = [];
 
   protected onUpdateRequest(msg: Message): void {
@@ -92,7 +103,7 @@ class LogStaticNotebook extends StaticNotebook {
   }
 }
 
-class LogNotebook extends Notebook {
+class LogNotebook extends NotebookType {
   events: string[] = [];
 
   methods: string[] = [];
@@ -180,7 +191,7 @@ describe('@jupyter/notebook', () => {
         const widget = new StaticNotebook(options);
         const model = new NotebookModel();
         let called = false;
-        widget.modelChanged.connect((sender, args) => {
+        widget.modelChanged.connect((sender:any, args:any) => {
           expect(sender).toBe(widget);
           expect(args).toBeUndefined();
           called = true;

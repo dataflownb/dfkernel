@@ -7,9 +7,14 @@ import { initNotebookContext } from '@jupyterlab/notebook/lib/testutils';
 import { JupyterServer } from '@jupyterlab/testing';
 import {
   INotebookModel,
-  NotebookPanel,
-  NotebookWidgetFactory
+  //NotebookPanel,
+  //NotebookWidgetFactory
 } from '@jupyterlab/notebook';
+import {
+  //INotebookModel,
+  DataflowNotebookPanel as NotebookPanel,
+  DataflowNotebookWidgetFactory as NotebookWidgetFactory
+} from '@dfnotebook/dfnotebook';
 import * as utils from './utils';
 
 const rendermime = utils.defaultRenderMime();

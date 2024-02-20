@@ -1,7 +1,7 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { CodeCell, MarkdownCell } from '@jupyterlab/cells';
+import { DataflowCodeCell as CodeCell, DataflowMarkdownCell as MarkdownCell } from '@dfnotebook/dfcells';
 import { Context } from '@jupyterlab/docregistry';
 import { KernelMessage } from '@jupyterlab/services';
 import {
