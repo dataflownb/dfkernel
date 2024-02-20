@@ -1029,6 +1029,8 @@ function activateNotebookHandler(
 
     factory.editorConfig = { code, markdown, raw };
     factory.notebookConfig = {
+      enableKernelInitNotification: settings.get('enableKernelInitNotification')
+        .composite as boolean,
       showHiddenCellsButton: settings.get('showHiddenCellsButton')
         .composite as boolean,
       scrollPastEnd: settings.get('scrollPastEnd').composite as boolean,
