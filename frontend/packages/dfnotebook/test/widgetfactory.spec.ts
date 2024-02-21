@@ -14,7 +14,7 @@ import {
   //INotebookModel,
   DataflowNotebookPanel as NotebookPanel,
   DataflowNotebookWidgetFactory as NotebookWidgetFactory
-} from '@dfnotebook/dfnotebook';
+} from '../src';
 import * as utils from './utils';
 
 const rendermime = utils.defaultRenderMime();

@@ -25,7 +25,7 @@ import {
 import {
   DataflowNotebook as Notebook,
   DataflowStaticNotebook as StaticNotebook
-} from '@dfnotebook/dfnotebook';
+} from '../src';
 
 import {
   framePromise,
@@ -51,12 +51,12 @@ afterAll(async () => {
 const contentFactory = utils.createNotebookFactory();
 const editorConfig = utils.defaultEditorConfig;
 const rendermime = utils.defaultRenderMime();
-const notebookConfig: StaticNotebook.INotebookConfig = {
-  ...StaticNotebook.defaultNotebookConfig,
+const notebookConfig: StaticNotebookType.INotebookConfig = {
+  ...StaticNotebookType.defaultNotebookConfig,
   windowingMode: 'none'
 };
 
-const options: Notebook.IOptions = {
+const options: NotebookType.IOptions = {
   rendermime,
   contentFactory,
   mimeTypeService: utils.mimeTypeService,
@@ -166,29 +166,29 @@ describe('@jupyter/notebook', () => {
   describe('StaticNotebook', () => {
     describe('#constructor()', () => {
       it('should create a notebook widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget).toBeInstanceOf(StaticNotebook);
       });
 
       it('should add the `jp-Notebook` class', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.hasClass('jp-Notebook')).toBe(true);
       });
 
       it('should accept an optional render', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.contentFactory).toBe(contentFactory);
       });
 
       it('should accept an optional editor config', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.editorConfig).toBe(editorConfig);
       });
     });
 
     describe('#modelChanged', () => {
       it('should be emitted when the model changes', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         const model = new NotebookModel();
         let called = false;
         widget.modelChanged.connect((sender:any, args:any) => {
@@ -203,7 +203,7 @@ describe('@jupyter/notebook', () => {
 
     describe('#modelContentChanged', () => {
       it('should be emitted when a cell is added', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         widget.model = new NotebookModel();
         let called = false;
         widget.modelContentChanged.connect(() => {
@@ -214,7 +214,7 @@ describe('@jupyter/notebook', () => {
       });
 
       it('should be emitted when metadata is set', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         widget.model = new NotebookModel();
         let called = false;
         widget.modelContentChanged.connect(() => {
@@ -227,19 +227,19 @@ describe('@jupyter/notebook', () => {
 
     describe('#model', () => {
       it('should get the model for the widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.model).toBeNull();
       });
 
       it('should set the model for the widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         const model = new NotebookModel();
         widget.model = model;
         expect(widget.model).toBe(model);
       });
 
       it('should emit the `modelChanged` signal', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         const model = new NotebookModel();
         widget.model = model;
         let called = false;
@@ -251,7 +251,7 @@ describe('@jupyter/notebook', () => {
       });
 
       it('should be a no-op if the value does not change', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         const model = new NotebookModel();
         widget.model = model;
         let called = false;
@@ -371,14 +371,14 @@ describe('@jupyter/notebook', () => {
 
     describe('#rendermime', () => {
       it('should be the rendermime instance used by the widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.rendermime).toBe(rendermime);
       });
     });
 
     describe('#contentFactory', () => {
       it('should be the cell widget contentFactory used by the widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.contentFactory).toBeInstanceOf(
           StaticNotebook.ContentFactory
         );
@@ -387,7 +387,7 @@ describe('@jupyter/notebook', () => {
 
     describe('#editorConfig', () => {
       it('should be the cell widget contentFactory used by the widget', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.editorConfig).toBe(options.editorConfig);
       });
 
@@ -413,7 +413,7 @@ describe('@jupyter/notebook', () => {
 
     describe('#codeMimetype', () => {
       it('should get the mime type for code cells', () => {
-        const widget = new StaticNotebook(options);
+        const widget = new StaticNotebookType(options);
         expect(widget.codeMimetype).toBe('text/plain');
       });
 

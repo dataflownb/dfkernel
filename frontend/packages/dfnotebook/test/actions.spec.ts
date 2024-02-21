@@ -10,17 +10,18 @@ import { CellType, IMimeBundle } from '@jupyterlab/nbformat';
 import {
   KernelError,
 //  Notebook,
-//  NotebookActions,
+  NotebookActions,
   NotebookModel,
-//  StaticNotebook
+  StaticNotebook as StaticNotebookType
 } from '@jupyterlab/notebook';
 import {
 //  KernelError,
   DataflowNotebook as Notebook,
-  DataflowNotebookActions as NotebookActions,
+  //FIXME: A ton of properties do not exist on
+  //DataflowNotebookActions as NotebookActions,
 //  NotebookModel,
-  DataflowStaticNotebook as StaticNotebook
-} from '@dfnotebook/dfnotebook';
+  //DataflowStaticNotebook as StaticNotebook
+} from '../src';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { ISharedCodeCell } from '@jupyter/ydoc';
 import {
@@ -75,7 +76,7 @@ describe('@jupyterlab/notebook', () => {
         contentFactory: utils.createNotebookFactory(),
         mimeTypeService: utils.mimeTypeService,
         notebookConfig: {
-          ...StaticNotebook.defaultNotebookConfig,
+          ...StaticNotebookType.defaultNotebookConfig,
           windowingMode: 'none'
         }
       });

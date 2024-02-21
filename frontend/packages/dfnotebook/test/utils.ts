@@ -5,16 +5,16 @@ import { Context, DocumentRegistry } from '@jupyterlab/docregistry';
 import { INotebookContent } from '@jupyterlab/nbformat';
 import {
   INotebookModel,
-  //Notebook,
-  //NotebookPanel,
+  Notebook as NotebookType,
+  NotebookPanel as NotebookPanelType,
   //NotebookWidgetFactory
 } from '@jupyterlab/notebook';
 import {
   //INotebookModel,
   DataflowNotebook as Notebook,
-  DataflowNotebookPanel as NotebookPanel,
+//  DataflowNotebookPanel as NotebookPanel,
   DataflowNotebookWidgetFactory as NotebookWidgetFactory
-} from '@dfnotebook/dfnotebook';
+} from '../src';
 //import { NBTestUtils } from '@jupyterlab/notebook/lib/testutils';
 import { NBTestUtils } from '@dfnotebook/dfnotebook/lib/testutils';
 import * as defaultContent45 from './default-45.json';
@@ -32,14 +32,14 @@ export const EMPTY_CONTENT: INotebookContent = emptyContent;
 /**
  * Create a default notebook content factory.
  */
-export function createNotebookFactory(): Notebook.IContentFactory {
+export function createNotebookFactory(): NotebookType.IContentFactory {
   return NBTestUtils.createNotebookFactory();
 }
 
 /**
  * Create a default notebook panel content factory.
  */
-export function createNotebookPanelFactory(): NotebookPanel.IContentFactory {
+export function createNotebookPanelFactory(): NotebookPanelType.IContentFactory {
   return NBTestUtils.createNotebookPanelFactory();
 }
 
@@ -55,7 +55,7 @@ export function createNotebook(): Notebook {
  */
 export function createNotebookPanel(
   context: Context<INotebookModel>
-): NotebookPanel {
+): NotebookPanelType {
   return NBTestUtils.createNotebookPanel(context);
 }
 
@@ -76,7 +76,7 @@ export function defaultRenderMime(): any {
 }
 
 export function createNotebookWidgetFactory(
-  toolbarFactory?: (widget: NotebookPanel) => DocumentRegistry.IToolbarItem[]
+  toolbarFactory?: (widget: NotebookPanelType) => DocumentRegistry.IToolbarItem[]
 ): NotebookWidgetFactory {
   return NBTestUtils.createNotebookWidgetFactory(toolbarFactory);
 }
