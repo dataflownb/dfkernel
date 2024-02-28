@@ -62,8 +62,12 @@ class DataflowHistoryManager(object):
                 self.force_cached_flags[key] = False;
 
     def update_codes(self, code_dict):
+        existing_keys = set(self.code_cache.keys())
+        deleted_keys = existing_keys.difference(code_dict.keys())
         for key, val in code_dict.items():
             self.update_code(key, val)
+        for key in deleted_keys:
+            self.update_code(key, '')
 
     def update_auto_update(self, flags):
         self.auto_update_flags.update(flags)
