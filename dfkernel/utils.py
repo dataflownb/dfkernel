@@ -36,7 +36,7 @@ class DataflowRef:
     def __str__(self):
         qualifier = self.ref_qualifier if self.ref_qualifier is not None else ''
         if self.cell_tag:
-            cell_tag = f'{self.cell_tag}:'
+            cell_tag = f'{self.cell_tag}$'
         else:
             cell_tag = ''
         return f'{self.name}${qualifier}{cell_tag}{self.cell_id}'
@@ -243,16 +243,21 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
 
     """
     References can look like:
-      * df or df$tag or df$f1f1f1 or df$tag:f1f1f1
-      * df$^ or df$^f1f1f1 or df$^tag or df$^tag:f1f1f1
-      * df$= or df$=f1f1f1 or df$=tag or df$=tag:f1f1f1
-      * df$~tag or df$~tag:f1f1f1
+      * df or df$tag or df$f1f1f1 or df$tag$f1f1f1
+      * df$^ or df$^f1f1f1 or df$^tag or df$^tag$f1f1f1
+      * df$= or df$=f1f1f1 or df$=tag or df$=tag$f1f1f1
+      * df$~tag or df$~tag$f1f1f1
 
     FIXME Do we need tilde?
     """
     for t in tokenize.generate_tokens(s_stream.readline):
         if t.string == '$':
-            if last_token is not None and positions_mesh(last_token.end, t.start):
+            if dollar_pos is not None and t.end[1] - t.start[1] == 1 and positions_mesh(dollar_pos[1], t.start):
+                # second $ sign for tags
+                cell_ref += t.string
+                dollar_pos = dollar_pos[0], t.end
+                just_started = False
+            elif last_token is not None and positions_mesh(last_token.end, t.start):
                 dollar_pos = last_token.start, t.end
                 var_name = last_token.string
                 just_started = True
@@ -261,9 +266,6 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
                 ref_qualifier = t.string
                 dollar_pos = dollar_pos[0], t.end
                 just_started = False
-            elif t.string == ':' and t.end[1] - t.start[1] == 1 and positions_mesh(dollar_pos[1], t.start):
-                cell_ref += ':'
-                dollar_pos = dollar_pos[0], t.end
             elif t.type == 2 and positions_mesh(dollar_pos[1], t.start): # NUMBER
                 t_string = t.string
                 t_end = t.end
@@ -282,8 +284,8 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
                 dollar_pos = dollar_pos[0], t.end                
                 just_started = False
             else: # DONE
-                if ':' in cell_ref:
-                    cell_tag, cell_id = cell_ref.split(':')
+                if '$' in cell_ref:
+                    cell_tag, cell_id = cell_ref.split('$')
                 elif cell_ref in input_tags:
                     cell_tag = cell_ref
                     cell_id = input_tags[cell_ref]
