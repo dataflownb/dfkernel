@@ -69,10 +69,12 @@ def update_refs(refs, dataflow_state, execution_count, input_tags):
                 if ref.ref_qualifier == '^':
                     ref.cell_tag = None
                 else:
-                    raise ValueError(f"Cell with tag '{ref.cell_tag}' does not exist")
+                    pass
+                    # raise ValueError(f"Cell with tag '{ref.cell_tag}' does not exist")
             else:
                 if ref.ref_qualifier == '=' and ref.cell_id and ref.cell_id != input_tags[ref.cell_tag]:
-                    raise ValueError(f"Tag '{ref.cell_tag}' no longer references cell '{ref.cell_id}'. Consider removing the = qualifier.")
+                    pass
+                    # raise ValueError(f"Tag '{ref.cell_tag}' no longer references cell '{ref.cell_id}'. Consider removing the = qualifier.")
                 else:
                     if ref.cell_id and ref.cell_id != input_tags[ref.cell_tag]:
                         if ref.ref_qualifier == '^':
