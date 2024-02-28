@@ -487,15 +487,15 @@ class DataflowState:
             if link.startswith(id_start):
                 if cell_start:
                     results.extend(link + '$' + input_tag
-                                   for input_tag in input_tags
-                                   if input_tag.startswith(cell_start))
+                                   for input_tag, cell_id in input_tags.items()
+                                   if input_tag.startswith(cell_start) and cell_id in cell_ids)
                     results.extend(link + '$' + cell_id
                                    for cell_id in cell_ids
                                    if cell_id.startswith(cell_start))
                 else:
                     if cell_start is None:
                         results.append(link)
-                    results.extend(link + '$' + input_tag for input_tag in input_tags)
+                    results.extend(link + '$' + input_tag for input_tag, cell_id in input_tags.items() if cell_id in cell_ids)
                     results.extend(link + '$' + cell_id for cell_id in cell_ids)
         return results
 
