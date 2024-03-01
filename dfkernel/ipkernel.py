@@ -147,17 +147,23 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             # FIXME for debugging
             uuid = "1"
             execution_count = 1
+        dollar_converted = False
+        orig_code = code
         try:
             code = convert_dollar(
                 code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags
             )
+            dollar_converted = True
             code = ground_refs(
                 code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags
             )
             code = convert_identifier(code, dollar_replacer)
+            dollar_converted = False
         except SyntaxError as e:
             # ignore this for now, catch it in do_execute
             # print(e)
+            if dollar_converted:
+                code = orig_code
             pass
 
         # print("FIRST CODE:", code)
