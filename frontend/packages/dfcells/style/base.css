@@ -1,0 +1,16 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+.jp-InputPrompt {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-Placeholder-prompt {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-CodeCell.jp-mod-outputsScrolled .jp-OutputArea-prompt {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
