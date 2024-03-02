@@ -6,6 +6,7 @@
  */
 
 import {
+  ILabShell,
   ILayoutRestorer,
   IRouter,
   JupyterFrontEnd,
@@ -21,10 +22,12 @@ import {
   IToolbarWidgetRegistry,
   SessionContextDialogs,
   showDialog,
+  MainAreaWidget,
+  ToolbarButton,
   Toolbar
 } from '@jupyterlab/apputils';
 // FIXME Add back in when dfgraph is updated
-// import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
+import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
 import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { IEditorExtensionRegistry } from '@jupyterlab/codemirror';
@@ -367,266 +370,268 @@ const widgetFactoryPlugin: JupyterFrontEndPlugin<DataflowNotebookWidgetFactory.I
 // /**
 //  * Initialization for the Dfnb GraphManager for working with multiple graphs.
 //  */
-// const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
-//   id: 'dfnb-graph',
-//   autoStart: true,
-//   requires: [ICommandPalette,INotebookTracker],
-//   activate: (app: JupyterFrontEnd, palette: ICommandPalette,nbTrackers:INotebookTracker) => {
-//    // Create a blank content widget inside of a MainAreaWidget
-//       console.log("GraphManager is active");
-//       let shell = app.shell as ILabShell;
+const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-graph',
+  autoStart: true,
+  requires: [ICommandPalette,INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette,nbTrackers:INotebookTracker) => {
+   // Create a blank content widget inside of a MainAreaWidget
+      console.log("GraphManager is active");
+      let shell = app.shell as ILabShell;
 
-//       nbTrackers.widgetAdded.connect((sender,nbPanel) => {
-//             const session = nbPanel.sessionContext;
-//             GraphManager.setTracker(nbTrackers);
-//             session.ready.then(() =>
-//             {
-//                 let outputTags: {[index: string]:any}  = {};
-//                 let cellContents: {[index: string]:any} = {};
-//                 let cellList = (nbPanel.model?.toJSON() as any)?.cells;
+      nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+            GraphManager.setTracker(nbTrackers);
+            session.ready.then(() =>
+            {
+                let outputTags: {[index: string]:any}  = {};
+                let cellContents: {[index: string]:any} = {};
+                let cellList = (nbPanel.model?.toJSON() as any)?.cells;
 
-//                 cellList.map(function(cell:any)
-//                 {
-//                 let cellId = cell.id.replace(/-/g, '').substr(0, 8) as string;
-//                 if(cell?.cell_type != "code"){return;}
-//                 cellContents[cellId] = cell.source;
-//                 outputTags[cellId] =
-//                 (cell?.outputs).flatMap((output:any) => (output?.metadata?.output_tag ?? []));
-//                 });
-//                 let cells = Object.keys(outputTags);
-//                 let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]={};return dict;},{});
-//                 let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]=[];return dict;},{});
-//                 Object.keys(cellContents).map(function(cellId){
-//                     let regex = /\w+\$[a-f0-9]{8}/g
-//                     let references = (cellContents[cellId].match(regex)) || [];
-//                     references.map(function(reference:string){
-//                        let ref = reference.split('$');
-//                        if (ref[1] in uplinks[cellId]){
-//                          uplinks[cellId][ref[1]].push(ref[0]);
-//                        }
-//                        else{
-//                          uplinks[cellId][ref[1]] = [ref[0]]
-//                        }
-//                        downlinks[ref[1]].push(cellId);
-//                     });
-//                 })
-//                 let sessId = session?.session?.id || "None";
-//                 if(!(sessId in Object.keys(GraphManager.graphs))){
-//                     //@ts-ignore
-//                     GraphManager.graphs[sessId] = new Graph({'cells':cells,'nodes':outputTags,'internalNodes':outputTags,'uplinks':uplinks,'downlinks':downlinks,'cellContents':cellContents});
-//                     GraphManager.updateGraph(sessId);
-//                     let cellOrder = cellList.map((c:any) => c.id);
-//                     GraphManager.updateOrder(cellOrder);
-//                 }
-//                 console.log(sessId);
-//             });
-//             (nbPanel.content as any).model._cells._cellOrder._changed.connect(() =>{
-//                 GraphManager.updateOrder((nbPanel.content as any).model._cells._cellOrder._array);
-//             });
-//             nbPanel.content.activeCellChanged.connect(() =>{
-//                 let prevActive = GraphManager.getActive();
-//                 if(prevActive && prevActive != "None"){
-//                     let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
-//                     if(prevActive.value.text != GraphManager.getText(uuid)){
-//                         GraphManager.markStale(uuid);
-//                     }
-//                     else if(GraphManager.getStale(uuid) == 'Stale'){
-//                         GraphManager.revertStale(uuid);
-//                     }
-//                 }
-//                 //Have to get this off the model the same way that actions.tsx does
-//                 let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
-//                 GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
-//             });
-//       });
+                cellList.map(function(cell:any)
+                {
+                let cellId = cell.id.replace(/-/g, '').substr(0, 8) as string;
+                if(cell?.cell_type != "code"){return;}
+                cellContents[cellId] = cell.source;
+                outputTags[cellId] =
+                (cell?.outputs).flatMap((output:any) => (output?.metadata?.output_tag ?? []));
+                });
+                let cells = Object.keys(outputTags);
+                let uplinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]={};return dict;},{});
+                let downlinks : {[index: string]:any} = cells.reduce((dict:{[index: string]:any},cellId:string)=>{dict[cellId]=[];return dict;},{});
+                Object.keys(cellContents).map(function(cellId){
+                    let regex = /\w+\$[a-f0-9]{8}/g
+                    let references = (cellContents[cellId].match(regex)) || [];
+                    references.map(function(reference:string){
+                       let ref = reference.split('$');
+                       if (ref[1] in uplinks[cellId]){
+                         uplinks[cellId][ref[1]].push(ref[0]);
+                       }
+                       else{
+                         uplinks[cellId][ref[1]] = [ref[0]]
+                       }
+                       downlinks[ref[1]].push(cellId);
+                    });
+                })
+                let sessId = session?.session?.id || "None";
+                if(!(sessId in Object.keys(GraphManager.graphs))){
+                    //@ts-ignore
+                    GraphManager.graphs[sessId] = new Graph({'cells':cells,'nodes':outputTags,'internalNodes':outputTags,'uplinks':uplinks,'downlinks':downlinks,'cellContents':cellContents});
+                    GraphManager.updateGraph(sessId);
+                    let cellOrder = cellList.map((c:any) => c.id);
+                    GraphManager.updateOrder(cellOrder);
+                }
+                console.log(sessId);
+            });
 
-//       shell.currentChanged.connect((_, change) => {
-//       //@ts-ignore
-//         let sessId = change['newValue']?.sessionContext?.session?.id;
+            (nbPanel.content as any).model._cells.changed.connect(() =>{
+                GraphManager.updateOrder((nbPanel.content as any).model.cells.model.cells.map((cell:any) => cell.id));
+            });
 
-//         if(sessId in GraphManager.graphs){
-//             GraphManager.updateActiveGraph();
-//         }
-//         });
+            nbPanel.content.activeCellChanged.connect(() =>{
+                let prevActive = GraphManager.getActive();
+                if(typeof prevActive == 'object'){
+                    let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
+                    if(prevActive.sharedModel.source != GraphManager.getText(uuid)){
+                        GraphManager.markStale(uuid);
+                    }
+                    else if(GraphManager.getStale(uuid) == 'Stale'){
+                        GraphManager.revertStale(uuid);
+                    }
+                }
+                //Have to get this off the model the same way that actions.tsx does
+                let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
+                GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
+            });
+      });
 
-//   }
+      shell.currentChanged.connect((_, change) => {
+      //@ts-ignore
+        let sessId = change['newValue']?.sessionContext?.session?.id;
 
-// }
+        if(sessId in GraphManager.graphs){
+            GraphManager.updateActiveGraph();
+        }
+        });
+
+  }
+
+}
 
 // /**
 //  * Initialization data for the Dfnb Depviewer extension.
 //  */
-// const DepViewer: JupyterFrontEndPlugin<void> = {
-//   id: 'dfnb-depview',
-//   autoStart: true,
-//   requires: [ICommandPalette, INotebookTracker],
-//   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
+const DepViewer: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-depview',
+  autoStart: true,
+  requires: [ICommandPalette, INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
-//   // Create a blank content widget inside of a MainAreaWidget
-//       const newWidget = () => {
-//           const content = new ViewerWidget();
-//           //GraphManager uses flags from the ViewerWidget
-//           GraphManager.depWidget = content;
-//           const widget = new MainAreaWidget({ content });
-//           widget.id = 'dfnb-depview';
-//           widget.title.label = 'Dependency Viewer';
-//           widget.title.closable = true;
-//           // Add a div to the panel
-//           let panel = document.createElement('div');
-//           panel.setAttribute('id','depview');
-//           content.node.appendChild(panel);
-//           return widget;
-//       }
-//       let widget = newWidget();
-//           function openDepViewer(){
-//               if (widget.isDisposed) {
-//                 widget = newWidget();
-//                 GraphManager.depview.isCreated = false;
-//               }
-//               if (!widget.isAttached) {
-//                 // Attach the widget to the main work area if it's not there
-//                 app.shell.add(widget, 'main',{
-//                     mode: 'split-right',
-//                     activate: false
-//                 });
-//                 if (!GraphManager.depview.isCreated){
-//                   GraphManager.depview.createDepDiv();
-//                 }
+  // Create a blank content widget inside of a MainAreaWidget
+      const newWidget = () => {
+          const content = new ViewerWidget();
+          //GraphManager uses flags from the ViewerWidget
+          GraphManager.depWidget = content;
+          const widget = new MainAreaWidget({ content });
+          widget.id = 'dfnb-depview';
+          widget.title.label = 'Dependency Viewer';
+          widget.title.closable = true;
+          // Add a div to the panel
+          let panel = document.createElement('div');
+          panel.setAttribute('id','depview');
+          content.node.appendChild(panel);
+          return widget;
+      }
+      let widget = newWidget();
+          function openDepViewer(){
+              if (widget.isDisposed) {
+                widget = newWidget();
+                GraphManager.depview.isCreated = false;
+              }
+              if (!widget.isAttached) {
+                // Attach the widget to the main work area if it's not there
+                app.shell.add(widget, 'main',{
+                    mode: 'split-right',
+                    activate: false
+                });
+                if (!GraphManager.depview.isCreated){
+                  GraphManager.depview.createDepDiv();
+                }
 
-//               }
-//               // Activate the widget
-//               app.shell.activateById(widget.id);
-//               GraphManager.depview.isOpen = true;
-//               GraphManager.depview.startGraphCreation();
-//             }
+              }
+              // Activate the widget
+              app.shell.activateById(widget.id);
+              GraphManager.depview.isOpen = true;
+              GraphManager.depview.startGraphCreation();
+            }
 
-//           nbTrackers.widgetAdded.connect((sender,nbPanel) => {
-//             const session = nbPanel.sessionContext;
-//               session.ready.then(() => {
-//                 if(session.session?.kernel?.name == 'dfpython3'){
+          nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+              session.ready.then(() => {
+                if(session.session?.kernel?.name == 'dfpython3'){
 
-//                     const button = new ToolbarButton({
-//                         className: 'open-dep-view',
-//                         label: 'Open Dependency Viewer',
-//                         onClick: openDepViewer,
-//                         tooltip: 'Opens the Dependency Viewer',
-//                     });
-//                     nbPanel.toolbar.insertItem(10, 'Open Dependency Viewer', button);
-//                 }
-//               });
-//            });
+                    const button = new ToolbarButton({
+                        className: 'open-dep-view',
+                        label: 'Open Dependency Viewer',
+                        onClick: openDepViewer,
+                        tooltip: 'Opens the Dependency Viewer',
+                    });
+                    nbPanel.toolbar.insertItem(10, 'Open Dependency Viewer', button);
+                }
+              });
+           });
 
-//           // Add an application command
-//           const command: string = 'depview:open';
-//           app.commands.addCommand(command, {
-//             label: 'Open Dependency Viewer',
-//             execute: () => openDepViewer,
-//           });
+          // Add an application command
+          const command: string = 'depview:open';
+          app.commands.addCommand(command, {
+            label: 'Open Dependency Viewer',
+            execute: () => openDepViewer,
+          });
 
-//           // Add the command to the palette.
-//           palette.addItem({ command, category: 'Tutorial' });
-//         }
-//     };
+          // Add the command to the palette.
+          palette.addItem({ command, category: 'Tutorial' });
+        }
+    };
 
 // /**
 //  * Initialization data for the Minimap extension.
 //  */
-// const MiniMap: JupyterFrontEndPlugin<void> = {
-//   id: 'dfnb-minimap',
-//   autoStart: true,
-//   requires: [ICommandPalette, INotebookTracker],
-//   activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
+const MiniMap: JupyterFrontEndPlugin<void> = {
+  id: 'dfnb-minimap',
+  autoStart: true,
+  requires: [ICommandPalette, INotebookTracker],
+  activate: (app: JupyterFrontEnd, palette: ICommandPalette, nbTrackers: INotebookTracker) => {
 
-//       const newWidget = () => {
-//           const content = new ViewerWidget();
-//           //Graph Manager maintains the flags on the widgets
-//           GraphManager.miniWidget = content;
-//           const widget = new MainAreaWidget({ content });
-//           widget.id = 'dfnb-minimap';
-//           widget.title.label = 'Notebook Minimap';
-//           widget.title.closable = true;
-//           // Add a div to the panel
-//             let panel = document.createElement('div');
-//             panel.setAttribute('id','minimap');
-//             let inner = document.createElement('div');
-//             inner.setAttribute('id','minidiv');
-//             let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-//             svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-//             svg.setAttribute('id','minisvg');
-//             inner.append(svg);
+      const newWidget = () => {
+          const content = new ViewerWidget();
+          //Graph Manager maintains the flags on the widgets
+          GraphManager.miniWidget = content;
+          const widget = new MainAreaWidget({ content });
+          widget.id = 'dfnb-minimap';
+          widget.title.label = 'Notebook Minimap';
+          widget.title.closable = true;
+          // Add a div to the panel
+            let panel = document.createElement('div');
+            panel.setAttribute('id','minimap');
+            let inner = document.createElement('div');
+            inner.setAttribute('id','minidiv');
+            let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+            svg.setAttribute('id','minisvg');
+            inner.append(svg);
 
-//             panel.appendChild(inner);
-//             content.node.appendChild(panel);
-//             return widget;
-//        }
-//         let widget = newWidget();
+            panel.appendChild(inner);
+            content.node.appendChild(panel);
+            return widget;
+       }
+        let widget = newWidget();
 
-//         nbTrackers.widgetAdded.connect((sender,nbPanel) => {
-//             const session = nbPanel.sessionContext;
-//               session.ready.then(() => {
-//                 if(session.session?.kernel?.name == 'dfpython3'){
+        nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+            const session = nbPanel.sessionContext;
+              session.ready.then(() => {
+                if(session.session?.kernel?.name == 'dfpython3'){
 
-//                     const button = new ToolbarButton({
-//                         className: 'open-mini-map',
-//                         label: 'Open Minimap',
-//                         onClick: openMinimap,
-//                         tooltip: 'Opens the Minimap',
-//                     });
-//                     nbPanel.toolbar.insertItem(10, 'Open Minimap', button);
-//                 }
-//               });
-//            });
+                    const button = new ToolbarButton({
+                        className: 'open-mini-map',
+                        label: 'Open Minimap',
+                        onClick: openMinimap,
+                        tooltip: 'Opens the Minimap',
+                    });
+                    nbPanel.toolbar.insertItem(10, 'Open Minimap', button);
+                }
+              });
+           });
 
-//           function openMinimap(){
+          function openMinimap(){
 
-//               if (widget.isDisposed) {
-//                 widget = newWidget();
-//                 GraphManager.minimap.wasCreated = false;
-//               }
-//               if (!widget.isAttached) {
+              if (widget.isDisposed) {
+                widget = newWidget();
+                GraphManager.minimap.wasCreated = false;
+              }
+              if (!widget.isAttached) {
 
-//                 app.shell.add(widget, 'main'
-//                 ,{
-//                     mode: 'split-right',
-//                     activate: false
-//                 });
-//                 //'right');
+                app.shell.add(widget, 'main'
+                ,{
+                    mode: 'split-right',
+                    activate: false
+                });
+                //'right');
 
-//                 if(!GraphManager.minimap.wasCreated){
-//                     console.log("Active Graph",GraphManager.graphs[GraphManager.currentGraph])
+                if(!GraphManager.minimap.wasCreated){
+                    console.log("Active Graph",GraphManager.graphs[GraphManager.currentGraph])
 
-//                     // Activate the widget
-//                     app.shell.activateById(widget.id);
-//                     GraphManager.minimap.createMiniArea();
-//                     GraphManager.minimap.wasCreated = true;
-//                 }
-//                 else{
-//                     GraphManager.minimap.startMinimapCreation();
-//                 }
+                    // Activate the widget
+                    app.shell.activateById(widget.id);
+                    GraphManager.minimap.createMiniArea();
+                    GraphManager.minimap.wasCreated = true;
+                }
+                else{
+                    GraphManager.minimap.startMinimapCreation();
+                }
 
-//               }
-//             }
+              }
+            }
 
-//           // Add an application command
-//           const command: string = 'minimap:open';
-//           app.commands.addCommand(command, {
-//             label: 'Open Minimap',
-//             execute: () => openMinimap,
-//           });
+          // Add an application command
+          const command: string = 'minimap:open';
+          app.commands.addCommand(command, {
+            label: 'Open Minimap',
+            execute: () => openMinimap,
+          });
 
-//           // Add the command to the palette.
-//           palette.addItem({ command, category: 'Tutorial' });
-//         }
-//     };
+          // Add the command to the palette.
+          palette.addItem({ command, category: 'Tutorial' });
+        }
+    };
 
 
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
   widgetFactoryPlugin,
-  trackerPlugin
-  // DepViewer,
-  // MiniMap,
-  // GraphManagerPlugin
+  trackerPlugin,
+  DepViewer,
+  MiniMap,
+  GraphManagerPlugin
 ];
 export default plugins;
 

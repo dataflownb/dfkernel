@@ -703,7 +703,7 @@ export class Minimap {
       a[b] = splitCell[splitCell.length - 1];
       return a;
     }, {});
-    that.updateOrder(that.tracker.currentWidget.model.cells._cellOrder._array);
+    that.updateOrder(that.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id));
     return true;
   };
 
@@ -810,7 +810,7 @@ export class Minimap {
   /** @method set graph, sets the current activate graph to be visualized */
   setGraph = function (graph: any) {
     this.dfgraph = graph;
-    this.updateOrder(this.tracker.currentWidget.model.cells._cellOrder._array);
+    this.updateOrder(this.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id));
     if (this.svg) {
       this.clearMinimap();
       this.startMinimapCreation();
