@@ -34,8 +34,8 @@ class DataflowHistoryManager(object):
         self.flags.update(kwargs)
         # self.flags['silent'] = True
 
-    def update_code(self, key, code):
-        # print("CALLING UPDATE CODE", key)
+    def update_code(self, key, code):        
+        # print("CALLING UPDATE CODE", key, code)
         # if code is empty, remove the code_cache, remove links
         if code == '' and key in self.value_cache:
             self.set_stale(key)
@@ -47,16 +47,12 @@ class DataflowHistoryManager(object):
             for parent in self.all_upstream(key):
                 self.remove_dependencies(key, parent)
                 self.remove_semantic_dependencies(key, parent)
-            self.shell.user_ns._reset_cell(key)
+            self.shell.dataflow_state.reset_cell(key)
             self.deleted_cells.append(key)
             del self.last_calculated[key]
         elif key not in self.code_cache or self.code_cache[key] != code:
             # clear out the old __links__ and __rev_links__ (if exist)
-            if self.shell.user_ns.__rev_links__[key]:
-                for tag in self.shell.user_ns.__rev_links__[key]:
-                    if tag in self.shell.user_ns.__links__:
-                        del self.shell.user_ns.__links__[tag]
-                del self.shell.user_ns.__rev_links__[key]
+            self.shell.dataflow_state.reset_cell(key)
             self.func_cached[key] = False
             self.code_cache[key] = code
             self.set_stale(key)
@@ -66,8 +62,12 @@ class DataflowHistoryManager(object):
                 self.force_cached_flags[key] = False;
 
     def update_codes(self, code_dict):
+        existing_keys = set(self.code_cache.keys())
+        deleted_keys = existing_keys.difference(code_dict.keys())
         for key, val in code_dict.items():
             self.update_code(key, val)
+        for key in deleted_keys:
+            self.update_code(key, '')
 
     def update_auto_update(self, flags):
         self.auto_update_flags.update(flags)
@@ -206,6 +206,7 @@ class DataflowHistoryManager(object):
             self.shell.uuid = parent_uuid
 
     def execute_cell(self, k, **flags):
+        # print("EXECUTING CELL", k)
         local_flags = dict(self.flags)
         local_flags.update(flags)
         # print("LOCAL FLAGS:", local_flags)
@@ -377,55 +378,102 @@ class DuplicateNameError(Exception):
     def __str__(self):
         return "name '{}' has already been defined in Cell '{}'".format(self.var_name,self.cell_id)
 
-class DataflowNamespace(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__links__ = {}
-        self.__all_links__ = defaultdict(set)
-        self.__rev_links__ = defaultdict(set)
-        self.__do_not_link__ = set()
-        self.__local_vars__ = defaultdict(dict)
-        self.__cur_uuid__ = None
+class DataflowState:
+    def __init__(self, history):
+        self.history = history
+        self.links = defaultdict(list)
+        self.all_links = defaultdict(set) # most recent is last
+        self.rev_links = defaultdict(set)
+        self.cur_cell_id = None
 
-    # @property
-    # def _cur_uuid(self):
-    #     return self.__cur_uuid__
-    #
-    # @_cur_uuid.setter
-    # def _cur_uuid(self, uuid):
-    #     if self.__cur_uuid__ is not None:
-    #         self._stash_local_vars()
-    #     self.__cur_uuid__ = uuid
+    def set_cur_cell_id(self, cell_id):
+        self.cur_cell_id = cell_id
 
-    def __getitem__(self, k):
-        if k not in self.__do_not_link__ and k in self.__links__:
-            # print("getting link", k)
-            cell_id = self.get_parent(k)
-            rev_links = self.__rev_links__[cell_id]
-            # FIXME think about local variables...
-            # FIXME do we need to compute difference first?
-            self.__do_not_link__.update(rev_links)
-            df_history = super().__getitem__('_oh')
-            try:
-                res = df_history.get_item(cell_id)
-            except CyclicalCallError:
-                raise
-            self.__do_not_link__.difference_update(rev_links)
-            return res[k]
-        return super().__getitem__(k)
+    def has_link(self, k):
+        return self.has_external_link(k, self.cur_cell_id)
+        # return k in self.links
 
+    def get_parent(self, k):
+        if not self.has_link(k):
+            raise DataflowCellException(f"No cell defines '{k}'")
+        # return self.links[k][-1]
+        return self.get_external_link(k, self.cur_cell_id)
 
+    get_cell = get_parent
 
-        # if k in self.links:
-        #     # run the cell at self.links[k]
-        #     pass
-        # if k in self:
-        #     return super().__getitem__(k)
+    def get_link(self, k):
+        # We should not get here unless the reference is not
+        # found during tokenization. This can happen is the function
+        # references the globals directly
+        # (e.g. pandas query with @var references)
+        # If this happens, we need to add it to the beginning of the cell
+        # to make sure the reference is explicitly linked to the correct
+        # cell_id
+        cell_id = self.get_parent(k)
+        # rev_links = self.rev_links[cell_id]
 
-    def get_parent(self,k):
-        if k in self.__links__:
-            return self.__links__[k]
-        return None
+        # FIXME want to update the code/something in self.cur_cell_id
+        # so that it dumps in a reference at the top of the cell as
+        # k = k$cell_id
+        # could have preference for setting as k = k$^cell_id
+        #
+        # self.history.add_deps(self.cur_cell_id, cell_id, k)
+        return self.history.get_item(cell_id)[k]
+
+    def add_links(self, output_tags):
+        """Used for adding links of pre-existing links currently only used for cold starts"""
+
+        # FIXME really need to store this information in the notebook metadata
+        # in order to keep track of this...
+        new_tags = set()
+        for (cell_id, tag_list) in output_tags.items():
+            for tag in tag_list:
+                # print("OUTER ADD_LINKS:", cell_id, tag)
+                self.add_link(tag, cell_id, make_current=False)
+                new_tags.add(tag)
+        for tag in new_tags:
+            if len(self.all_links[tag]) == 1 and not self.has_current_link(tag):
+                # can make current because unambiguous
+                cell_id = next(iter(self.all_links[tag]))
+                # print('ADDING TAG (ADD_LINKS):', cell_id, tag)
+                self.links[tag].append(cell_id)
+
+    def add_link(self, tag, cell_id, make_current=True):
+        # print("OUTER ADD_LINK:", cell_id, tag)
+        self.all_links[tag].add(cell_id)
+        self.rev_links[cell_id].add(tag)
+        if make_current:
+            # print('ADDING TAG (ADD_LINK):', cell_id, tag)
+            self.links[tag].append(cell_id)
+
+    def reset_cell(self, cell_id):
+        # print(f"{cell_id} LINKS: {self.links} REV LINKS: {self.rev_links} ALL_LINKS: {self.all_links}")
+        if cell_id in self.rev_links:
+            for name in self.rev_links[cell_id]:
+                if cell_id in self.links[name]:
+                    self.links[name].remove(cell_id)
+                self.all_links[name].discard(cell_id)
+            del self.rev_links[cell_id]
+
+    def has_current_link(self, k):
+        # print("HAS CURRENT LINK:", k, self.links[k])
+        return k in self.links and len(self.links[k]) > 0
+
+    def get_current_link(self, k):
+        if not self.has_current_link(k):
+            raise DataflowCellException(f"No cell defines '{k}'")
+        return self.links[k][-1]
+
+    def has_external_link(self, k, cur_id):
+        return self.has_current_link(k) and self.get_current_link(k) != cur_id
+        # return (k in self.links) and (self.links[k][-1] != cur_id or len(self.links[k]) > 1)
+
+    def get_external_link(self, k, cur_id):
+        if not self.has_external_link(k, cur_id):
+            raise DataflowCellException(f"No external link to '{k}'")
+        for cell_id in reversed(self.links[k]):
+            if cell_id != cur_id:
+                return cell_id
 
     def complete(self, text, input_tags={}):
         results = []
@@ -435,120 +483,28 @@ class DataflowNamespace(dict):
             id_start, cell_start = text.split('$',maxsplit=1)
         import sys
         # print(f"COMPLETER INTERNAL: '{id_start}' '{cell_start}'", file=sys.__stdout__)
-        for link, cell_ids in self.__all_links__.items():
+        for link, cell_ids in self.all_links.items():
             if link.startswith(id_start):
                 if cell_start:
                     results.extend(link + '$' + input_tag
-                                   for input_tag in input_tags
-                                   if input_tag.startswith(cell_start))
+                                   for input_tag, cell_id in input_tags.items()
+                                   if input_tag.startswith(cell_start) and cell_id in cell_ids)
                     results.extend(link + '$' + cell_id
                                    for cell_id in cell_ids
                                    if cell_id.startswith(cell_start))
                 else:
                     if cell_start is None:
                         results.append(link)
-                    results.extend(link + '$' + input_tag for input_tag in input_tags)
+                    results.extend(link + '$' + input_tag for input_tag, cell_id in input_tags.items() if cell_id in cell_ids)
                     results.extend(link + '$' + cell_id for cell_id in cell_ids)
         return results
 
-    def __setitem__(self, k, v):
-        # FIXME question is whether to do this or allow local vars
-        if k not in self.__do_not_link__ and k in self.__links__:
-            raise DuplicateNameError(k, self.__links__[k])
-        self.__local_vars__[self.__cur_uuid__][k] = v
-        return super().__setitem__(k, v)
+    def clear(self):
+        self.links.clear()
+        self.all_links.clear()
+        self.rev_links.clear()
 
-    def __contains__(self, k):
-        return super().__contains__(k) or k in self.__links__
-
-    def __delitem__(self, k):
-        # FIXME check if k in self or self.__links__
-        return super().__delitem__(k)
-
-    def __iter__(self):
-        return itertools.chain(super().__iter__(), iter(self.__links__))
-
-    def __len__(self):
-        return super().__len__() + len(self.__links__)
-
-    def _add_links(self, tag_dict):
-        """Used for adding links of pre-existing links currently only used for cold starts"""
-
-        # FIXME really need to store this information in the notebook metadata
-        # in order to keep track of this...
-        new_tags = {}
-        not_unique = set()
-        for (cell_id, tag_list) in tag_dict.items():
-            for tag in tag_list:
-                self.__all_links__[tag].add(cell_id)
-                if tag not in not_unique:
-                    if tag in new_tags:
-                        del new_tags[tag]
-                        not_unique.add(tag)
-                    else:
-                        new_tags[tag] = cell_id
-        for tag, cell_id in new_tags.items():
-            # do not overwrite existing value
-            if tag not in self.__links__:
-                self._add_link(tag, cell_id)
-
-    def _add_link(self, name, cell_id):
-        # allow overwrite...
-        # if name in self.__links__:
-        #     if self.__links__[name] != cell_id:
-        #         raise DuplicateNameError(name, self.__links__[name])
-        # else:
-        self.__all_links__[name].add(cell_id)
-        self.__links__[name] = cell_id
-        self.__rev_links__[cell_id].add(name)
-
-    def _reset_cell(self, cell_id):
-        for name in self.__rev_links__[cell_id]:
-            if self.__links__[name] == cell_id:
-                del self.__links__[name]
-        del self.__rev_links__[cell_id]
-
-    def _purge_local_vars(self):
-        for k in list(self.__local_vars__[self.__cur_uuid__].keys()):
-            del self.__local_vars__[self.__cur_uuid__][k]
-            del self[k]
-
-    def _stash_local_vars(self):
-        # print("STASHING LOCAL VARS:", self.__cur_uuid__, self.__local_vars__[self.__cur_uuid__].keys())
-        if self.__cur_uuid__ is not None:
-            for key in self.__local_vars__[self.__cur_uuid__].keys():
-                del self[key]
-
-    def _unstash_local_vars(self):
-        # print("UNSTASHING LOCAL VARS:", self.__cur_uuid__, self.__local_vars__[self.__cur_uuid__].keys())
-        if self.__cur_uuid__ is not None:
-            for key, val in self.__local_vars__[self.__cur_uuid__].items():
-                # have to watch for variables that have been added by other cells
-                if key not in self.__do_not_link__ and key in self.__links__:
-                    raise DuplicateNameError(key, self.__links__[key])
-                super().__setitem__(key, val)
-
-    def _start_uuid(self, uuid):
-        self._stash_local_vars()
-        self.__cur_uuid__ = uuid
-
-    def _revisit_uuid(self, old_uuid):
-        self._purge_local_vars()
-        self.__cur_uuid__ = old_uuid
-        self._unstash_local_vars()
-
-    def _is_external_link(self, k, uuid):
-        return k in self.__links__ and self.__links__[k] != uuid
-
-    # COPIED from collections.abc (MutableMapping cannot be assigned to __dict__)
-    # FIXME: Changing get causes strange dependency issues
-    #get = MutableMapping.get
-    keys = MutableMapping.keys
-    items = MutableMapping.items
-    values = MutableMapping.values
-    __eq__ = MutableMapping.__eq__
-    pop = MutableMapping.pop
-    popitem = MutableMapping.popitem
-    clear = MutableMapping.clear
-    update = MutableMapping.update
-    setdefault = MutableMapping.setdefault
+class DataflowNamespace(dict):
+    def clear(self):
+        super().clear()
+        self.__df_state__.clear()

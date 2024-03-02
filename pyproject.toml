@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.4", "jupyter_client>=6"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dfkernel"
+description = "Dataflow Python Kernel for Jupyter"
+authors = [
+    {name = "Dataflow Notebook Development Team", email = "dataflownb@users.noreply.github.com"},
+]
+requires-python = ">=3.9"
+readme = "README.md"
+license = {file = "LICENSE.md"}
+keywords = ["Dataflow", "Jupyter", "Kernel", "Python"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/dataflownb/dfkernel"}
+dependencies = [
+    'ipython>=7.17.0',
+    'traitlets>=4.1.0',
+    'jupyter_client>=6.1.12',
+    'jupyter_core>=4.12,!=5.0.*',
+    'tornado>=6.1',
+    'pyzmq>=24',
+    'psutil',
+    'ipykernel>=6',
+    'notebook>=5.0',
+    'nest_asyncio>=1.4',
+    'packaging',
+]
+dynamic=["version"]
+
+[tool.hatch.version]
+path = "dfkernel/_version.py"
+
+# Used to call hatch_build.py
+[tool.hatch.build.hooks.custom]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"data_kernelspec" = "share/jupyter/kernels/dfkernel"
+
+[tool.hatch.build.force-include]
+"./dfkernel_launcher.py" = "dfkernel_launcher.py"
+
+[tool.check-wheel-contents]
+toplevel = ["dfkernel/", "dfkernel_launcher.py"]
+ignore = ["W002"]
+

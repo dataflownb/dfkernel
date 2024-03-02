@@ -11,9 +11,9 @@ import asyncio
 import collections
 from functools import partial
 import inspect
+import nest_asyncio
 import sys
 import types
-from tornado import gen
 from IPython.core import magic_arguments
 from IPython.core.interactiveshell import InteractiveShellABC, \
     _assign_nodes, _single_targets_nodes
@@ -28,8 +28,6 @@ from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
 from IPython.core.history import HistoryManager
 from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import unicode_type
 from dfkernel.dflink import LinkedResult
 from dfkernel.displayhook import ZMQShellDisplayHook
 from dfkernel.safe_attr import safe_attr
@@ -44,7 +42,7 @@ from ast import AST
 import importlib
 
 from .dataflow import DataflowHistoryManager, DataflowFunctionManager, \
-    DataflowNamespace, DataflowCellException, DuplicateNameError
+    DataflowNamespace, DataflowCellException, DataflowState, DuplicateNameError
 from .dflink import build_linked_result
 
 # Python 3.10 removed the alias from collections
@@ -392,7 +390,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         def cell_scope_completer(completer, text):
             print("GOT COMPLETION REQUEST:", completer, text,
                   file=sys.__stdout__)
-            results = self.user_ns.complete(text, self.input_tags)
+            results = self.dataflow_state.complete(text, self.input_tags)
             return results
         self.set_custom_completer(cell_scope_completer)
 
@@ -420,10 +418,17 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             and self.loop_runner is _asyncio_runner
             and asyncio.get_event_loop().is_running()
         ):
-            future = gen.maybe_future(self.kernel.inner_execute_request(code, uuid, silent, store_history))
-            asyncio.get_event_loop().run_until_complete(future)
-            res = future.result()
-            return res
+            res = self.kernel.inner_execute_request(
+                code=code,
+                uuid=uuid,
+                silent=silent,
+                store_history=store_history,
+            )
+            if inspect.isawaitable(res):
+                # make this synchronous here for now
+                nest_asyncio.apply()
+                res = asyncio.get_event_loop().run_until_complete(res)
+            return res 
         else:
             raise Exception("FIXME asyncio not enabled")
 
@@ -434,8 +439,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
 
         exc_content = {
             u'traceback' : stb,
-            u'ename' : unicode_type(etype.__name__),
-            u'evalue' : py3compat.safe_unicode(evalue),
+            u'ename' : str(etype.__name__),
+            u'evalue' : str(evalue),
             u'execution_count': self.uuid,
         }
 
@@ -511,12 +516,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
     # need to reset self.execution_count to store history correctly
 
     def run_cell(self, raw_cell, uuid=None, dfkernel_data={},
-                 store_history=False, silent=False, shell_futures=True):
+                 store_history=False, silent=False, shell_futures=True, cell_id=None):
         # set partial on run_cell_async
         # print("RUN CELL:", uuid, self.max_execution_count, self.execution_count)
         self.run_cell_async = partial(self.run_cell_async_override, uuid=uuid, dfkernel_data=dfkernel_data)
         # self.execution_count = int(uuid, 16)
-        res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures)
+        res = super().run_cell(raw_cell, store_history=store_history, silent=silent, shell_futures=shell_futures,
+            cell_id=cell_id)
         # self.max_execution_count = max(self.max_execution_count, self.execution_count)
         # print("DONE:", self.uuid, self.execution_count)
         return res
@@ -527,8 +533,8 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                              update_downstream_deps=False,
                              *,
                              transformed_cell: Optional[str] = None,
-                             preprocessing_exc_tuple: Optional[Any] = None
-                                      ) -> ExecutionResult:
+                             preprocessing_exc_tuple: Optional[Any] = None,
+                             cell_id=None) -> ExecutionResult:
 
         code_dict = dfkernel_data.get("code_dict", {})
         output_tags = dfkernel_data.get("output_tags", {})
@@ -545,7 +551,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
             self.dataflow_history_manager.update_codes(code_dict)
             self.dataflow_history_manager.update_auto_update(auto_update_flags)
             self.dataflow_history_manager.update_force_cached(force_cached_flags)
-            self.user_ns._add_links(output_tags)
+            self.dataflow_state.add_links(output_tags)
             # also put the current cell into the cache and force recompute
             if uuid not in code_dict:
                 self.dataflow_history_manager.update_code(uuid, raw_cell)
@@ -582,7 +588,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # self.user_ns._start_uuid(self.uuid)
 
         self.uuid = uuid
-        self.user_ns._start_uuid(self.uuid)
+        self.dataflow_state.set_cur_cell_id(self.uuid)
         self.push_result()
 
         result = await super().run_cell_async(raw_cell,
@@ -591,12 +597,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                                               shell_futures=shell_futures,
                                               transformed_cell=transformed_cell,
                                               preprocessing_exc_tuple=preprocessing_exc_tuple,
+                                              cell_id=cell_id
                                               )
 
         self.pop_result()
         uuid = self.uuid
         # this is actually referencing the parent uuid...
-        self.user_ns._revisit_uuid(self.parent_uuid())
+        self.dataflow_state.set_cur_cell_id(self.parent_uuid())
 
         # AFTER RUN_AST_NODES CODE
         # # Reset this so later displayed values do not modify the
@@ -1104,9 +1111,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     ast.fix_missing_locations(node)
             interactivity = 'last_expr'
 
-        # print("DO NOT LINK", no_link_vars)
-        self.user_ns.__do_not_link__.update(no_link_vars)
-
         # import astor
         # import inspect
         # if sys.version_info > (3, 8):
@@ -1137,7 +1141,6 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # print("END CODE")
         res = await super().run_ast_nodes(nodelist, cell_name, interactivity, compiler, result)
         # print("DONE WITH AST NODES")
-        self.user_ns.__do_not_link__.difference_update(no_link_vars)
         self.pop_uuid()
         self.pop_execution_count()
 
@@ -1246,6 +1249,9 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         ns['Func'] = self.dataflow_function_manager
         ns['_build_linked_result'] = build_linked_result
         ns['_ns'] = self.user_ns
+
+        self.dataflow_state = DataflowState(self.dataflow_history_manager)
+        self.user_ns.__df_state__ = self.dataflow_state
 
         # Store myself as the public api!!!
         ns['get_ipython'] = self.get_ipython
