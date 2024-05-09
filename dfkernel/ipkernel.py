@@ -28,6 +28,10 @@ from .utils import (
     dollar_replacer,
 )
 
+'''DF Convert Imports'''
+from .dfconvert.convert import convert_notebook
+from ipykernel.comm import Comm
+from IPython import get_ipython
 
 def _accepts_cell_id(meth):
     parameters = inspect.signature(meth).parameters
@@ -49,6 +53,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self.shell.display_pub.get_execution_count = lambda: int(
             self.execution_count, 16
         )
+        get_ipython().kernel.comm_manager.register_target('dfconvert', self.dfconvert_comm)
         # # first use nest_ayncio for nested async, then add asyncio.Future to tornado
         # nest_asyncio.apply()
         # # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
@@ -78,6 +83,16 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #
     #     super()._publish_execute_input(code, parent, execution_count)
 
+    def dfconvert_comm(self, comm, msg):
+        @comm.on_msg
+        def _recv(msg):
+            try:
+                updated_notebook = convert_notebook(msg['content']['data']['notebook'])
+                comm.send({'notebook': updated_notebook})
+            except Exception as e:
+                self.log.error('Error in conversion')
+                self.log.error(e)
+    
     async def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
         try:
