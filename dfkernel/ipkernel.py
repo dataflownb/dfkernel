@@ -165,6 +165,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             if dollar_converted:
                 code = orig_code
             pass
+        except Exception as e:
+            pass
 
         # print("FIRST CODE:", code)
 
@@ -180,6 +182,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             )
         except SyntaxError:
             # ignore this for now, catch it in do_execute
+            pass
+        except Exception as e:
             pass
 
         # print("SECOND CODE:", code)
