@@ -18,10 +18,10 @@ class OutStream(ipykernel.iostream.OutStream):
         """
 
         self._flush_pending = False
-        if callable(getattr(self,"_flush_buffer",None)):
-            data = self._flush_buffer()
-        else:
+        if callable(getattr(self,"_flush_buffers",None)):
             data = self._flush_buffers()
+        else:
+            data = self._flush_buffer()
         if data:
             # FIXME: this disables Session's fork-safe check,
             # since pub_thread is itself fork-safe.
