@@ -2,7 +2,7 @@ import asyncio
 from functools import partial
 import ipykernel.ipkernel
 from ipykernel.ipkernel import *
-import tokenize
+from tokenize import TokenError
 
 """The IPython kernel implementation"""
 
@@ -166,7 +166,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             if dollar_converted:
                 code = orig_code
             pass
-        except tokenize.TokenError as e:
+        except TokenError as e:
             # ignore this for now, catch it in do_execute
             pass
 
@@ -185,7 +185,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         except SyntaxError as e:
             # ignore this for now, catch it in do_execute
             pass
-        except tokenize.TokenError as e:
+        except TokenError as e:
             # ignore this for now, catch it in do_execute
             pass
 
