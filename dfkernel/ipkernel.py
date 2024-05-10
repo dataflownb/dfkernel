@@ -167,6 +167,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 code = orig_code
             pass
         except tokenize.TokenError as e:
+            # ignore this for now, catch it in do_execute
             pass
 
         # print("FIRST CODE:", code)
@@ -185,6 +186,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             # ignore this for now, catch it in do_execute
             pass
         except tokenize.TokenError as e:
+            # ignore this for now, catch it in do_execute
             pass
 
         # print("SECOND CODE:", code)
