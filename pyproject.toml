@@ -31,6 +31,8 @@ dependencies = [
     'ipykernel>=6',
     'notebook>=5.0',
     'nest_asyncio>=1.4',
+    'astor>=0.7',
+    'asttokens>1.1',
     'packaging',
 ]
 dynamic=["version"]
