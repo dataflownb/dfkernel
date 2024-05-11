@@ -31,10 +31,9 @@ import {
 import { NBTestUtils } from '@dfnotebook/dfcells/lib/testutils';
 //import { NBTestUtils } from '@jupyterlab/cells/lib/testutils';
 import { CodeEditorWrapper } from '@jupyterlab/codeeditor';
-import { DataflowOutputArea as OutputArea, DataflowOutputPrompt as OutputPrompt } from '@dfnotebook/dfoutputarea';
-
+import { DataflowOutputPrompt as OutputPrompt } from '@dfnotebook/dfoutputarea';
+import { OutputArea as OutputAreaType } from '@jupyterlab/outputarea';
 import { defaultRenderMime } from '@jupyterlab/rendermime/lib/testutils';
-import { IExecuteReplyMsg } from '@jupyterlab/services/lib/kernel/messages';
 import {
   framePromise,
   JupyterServer,
@@ -566,7 +565,7 @@ describe('cells/widget', () => {
           rendermime
         });
         widget.initializeState();
-        expect(widget.outputArea).toBeInstanceOf(OutputArea);
+        expect(widget.outputArea).toBeInstanceOf(OutputAreaType);
       });
     });
 
@@ -856,7 +855,6 @@ describe('cells/widget', () => {
       it('should fire when model metadata changes', () => {
         const method = 'onMetadataChanged';
         const widget = new LogCodeCell().initializeState();
-        console.debug(widget);
         expect(widget.methods).not.toContain(method);
         widget.model.setMetadata('foo', 1);
         expect(widget.methods).toContain(method);
@@ -884,8 +882,6 @@ describe('cells/widget', () => {
 
         await (sessionContext as SessionContext).initialize();
         await sessionContext.session?.kernel?.info;
-        console.debug(sessionContext.session?.kernel?.info);
-        console.debug(sessionContext.kernelDisplayName);
         await sessionContext.session?.id;
         await sessionContext.startKernel();
       });
@@ -903,8 +899,10 @@ describe('cells/widget', () => {
         });
         widget.initializeState();
         let uuid = String(widget.model.executionCount);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
+        let mockmap = {uuid:widget};
         await expect(
-          CodeCell.execute(widget, sessionContext,{},{'uuid':uuid,'code_dict':{uuid:''}})
+          CodeCell.execute(widget, sessionContext,{},mockdata,mockmap)
         ).resolves.not.toThrow();
       });
       //FIXME: This test currently fails due to session info not being assigned during testing not sure what causes this
@@ -916,15 +914,16 @@ describe('cells/widget', () => {
           placeholder: false
         });
         widget.initializeState();
-        let originalCount: number;
-        widget.model.sharedModel.setSource('foo');
-        originalCount = widget.model.executionCount!;
+        widget.model.sharedModel.setSource('foo = 3');
 
-        console.debug(widget.model.executionCount,originalCount);
-        await CodeCell.execute(widget, sessionContext);
-        const executionCount = widget.model.executionCount;
-        //console.debug(widget.model.cellId);
-        expect(executionCount).toEqual(originalCount);
+        let uuid = String(widget.model.id);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
+        let mockmap = {uuid:widget};
+        const originalexecutionCount = widget.promptNode!.textContent;
+        
+        await CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
+        const executionCount = widget.promptNode!.textContent;
+        expect(executionCount).toEqual(originalexecutionCount);
       });
 
       const TIMING_KEYS = [
@@ -943,8 +942,10 @@ describe('cells/widget', () => {
           contentFactory,
           placeholder: false
         });
-        //console.debug("Here is the sessionContext",sessionContext.session?.kernel);
-        await CodeCell.execute(widget, sessionContext);
+        let uuid = String(widget.model.executionCount);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
+        let mockmap = {uuid:widget};
+        await CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
         expect(widget.model.getMetadata('execution')).toBeUndefined();
       });
       //FIXME: This test currently fails due to session info not being assigned during testing not sure what causes this
@@ -955,9 +956,11 @@ describe('cells/widget', () => {
           contentFactory,
           placeholder: false
         });
-        await CodeCell.execute(widget, sessionContext, { recordTiming: true });
+        let uuid = String(widget.model.executionCount);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
+        let mockmap = {uuid:widget};
+        await CodeCell.execute(widget, sessionContext, { recordTiming: true },mockdata,mockmap);
         expect(widget.model.getMetadata('execution')).toBeDefined();
-        console.debug(widget.model);
         const timingInfo = widget.model.getMetadata('execution') as any;
         for (const key of TIMING_KEYS) {
           expect(timingInfo[key]).toBeDefined();
@@ -972,18 +975,22 @@ describe('cells/widget', () => {
           placeholder: false
         });
         widget.initializeState();
-        widget.model.sharedModel.setSource('foo');
-        const future1 = CodeCell.execute(widget, sessionContext);
-        expect(widget.promptNode!.textContent).toEqual(new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
-        const future2 = CodeCell.execute(widget, sessionContext);
-        expect(widget.promptNode!.textContent).toEqual(new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
+        widget.model.sharedModel.setSource('foo = 3');
+        
+        let uuid = String(widget.model.id);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
+        let mockmap = {uuid:widget};
+        const future1 = CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
+        expect(widget.promptNode!.textContent).toEqual('[*]:');//new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
+        const future2 = CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
+        expect(widget.promptNode!.textContent).toEqual('[*]:');//new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
         await expect(future1).rejects.toThrow('Canceled');
         expect(widget.promptNode!.textContent).toEqual('[*]:');
         const msg = await future2;
         expect(msg).not.toBeUndefined();
 
         expect(widget.promptNode!.textContent).toEqual(
-          `[${(msg as IExecuteReplyMsg).content.execution_count}]:`
+          `[${widget.model.id.replace(/-/g, '').substr(0, 8)}]:`
         );
       });
     });

@@ -133,6 +133,11 @@ class GraphManager {
     this.updateDepViews(true, true);
   };
 
+  // Utility function to create an empty graph in case one doesn't exist
+  createGraph = function (sess:string){
+    this.graphs[sess] = new Graph();
+  }
+
   /** @method updates all viewers based on if they're open or not */
   // view flag is based on if it's a new view or the same view
   updateDepViews = function (
@@ -437,6 +442,8 @@ export class Graph {
     //         cell.updateDfList(cell,that.allDownstream(uuid),'downstream');
     //     }
     //
+    if (allUps == undefined){ return; }
+
     if (allUps.length > 0) {
       // @ts-ignore
       that.upstreamList[uuid] = allUps;
