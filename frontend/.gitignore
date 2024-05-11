@@ -123,3 +123,16 @@ dmypy.json
 
 # Yarn cache
 .yarn/
+
+#Testing related
+*.spec.d.ts
+*.js.map
+*.spec.js
+
+#Untitled ipynbs
+Untitled*.ipynb
+
+#Compiled files
+*.d.ts
+packages/*/src/*.js
+packages/dfnotebook/fonts/*.*

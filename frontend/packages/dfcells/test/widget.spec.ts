@@ -869,7 +869,7 @@ describe('cells/widget', () => {
       const server = new JupyterServer();
 
       beforeAll(async () => {
-        await server.start();
+        await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
       }, 30000);
 
       afterAll(async () => {
@@ -878,8 +878,8 @@ describe('cells/widget', () => {
 
       beforeEach(async () => {
         sessionContext = await createSessionContext(
-         {'kernelPreference':
-         {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         //sessionContext.changeKernel({'name':'dfpython3'});
 
         await (sessionContext as SessionContext).initialize();
@@ -904,8 +904,9 @@ describe('cells/widget', () => {
           placeholder: false
         });
         widget.initializeState();
+        let uuid = String(widget.model.executionCount);
         await expect(
-          CodeCell.execute(widget, sessionContext)
+          CodeCell.execute(widget, sessionContext,{},{'uuid':uuid,'code_dict':{uuid:''}})
         ).resolves.not.toThrow();
       });
       //FIXME: This test currently fails due to session info not being assigned during testing not sure what causes this
