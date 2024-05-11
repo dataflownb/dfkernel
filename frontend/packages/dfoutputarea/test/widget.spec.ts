@@ -20,6 +20,7 @@ import {
 import { Message } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
 import { simulate } from 'simulate-event';
+import { IExecuteReplyMsg, IShellMessage, ShellMessageType } from '@jupyterlab/services/lib/kernel/messages';
 
 /**
  * The default rendermime instance to use for testing.
@@ -67,7 +68,7 @@ describe('outputarea/widget', () => {
       values: DEFAULT_OUTPUTS,
       trusted: true
     });
-    widget = new LogOutputArea({ rendermime, model });
+    widget = new LogOutputArea({ rendermime, model }, 'cellId');
   });
 
   afterEach(() => {
@@ -84,7 +85,7 @@ describe('outputarea/widget', () => {
 
       it('should take an optional contentFactory', () => {
         const contentFactory = Object.create(OutputArea.defaultContentFactory);
-        const widget = new OutputArea({ rendermime, contentFactory, model });
+        const widget = new OutputArea({ rendermime, contentFactory, model }, 'cellId');
         expect(widget.contentFactory).toBe(contentFactory);
       });
     });
@@ -115,7 +116,7 @@ describe('outputarea/widget', () => {
             rendermime,
             model,
             maxNumberOutputs
-          });
+          }, 'cellId');
 
           expect(widget.widgets.length).toBeLessThanOrEqual(
             maxNumberOutputs + 1
@@ -140,7 +141,7 @@ describe('outputarea/widget', () => {
           rendermime,
           model,
           maxNumberOutputs: 2
-        });
+        }, 'cellId');
 
         expect(widget.widgets.length).toBeLessThan(model.length);
         Widget.attach(widget, document.body);
@@ -158,7 +159,7 @@ describe('outputarea/widget', () => {
           rendermime,
           model,
           maxNumberOutputs: 2
-        });
+        }, 'cellId');
         expect(widget.widgets.length).toBeLessThan(model.length);
 
         widget.maxNumberOutputs += 1;
@@ -172,7 +173,7 @@ describe('outputarea/widget', () => {
           rendermime,
           model,
           maxNumberOutputs: 2
-        });
+        }, 'cellId');
         expect(widget.widgets.length).toBeLessThan(model.length);
 
         widget.maxNumberOutputs -= 1;
@@ -200,7 +201,9 @@ describe('outputarea/widget', () => {
       let sessionContext: SessionContext;
 
       beforeEach(async () => {
-        sessionContext = await createSessionContext();
+        sessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await sessionContext.initialize();
         await sessionContext.session?.kernel?.info;
       });
@@ -322,7 +325,10 @@ describe('outputarea/widget', () => {
       let sessionContext: SessionContext;
 
       beforeEach(async () => {
-        sessionContext = await createSessionContext();
+        sessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
+        
         await sessionContext.initialize();
         await sessionContext.session?.kernel?.info;
       });
@@ -348,11 +354,11 @@ describe('outputarea/widget', () => {
 
       it('should handle routing of display messages', async () => {
         const model0 = new OutputAreaModel({ trusted: true });
-        const widget0 = new LogOutputArea({ rendermime, model: model0 });
+        const widget0 = new LogOutputArea({ rendermime, model: model0 }, 'cellId');
         const model1 = new OutputAreaModel({ trusted: true });
-        const widget1 = new LogOutputArea({ rendermime, model: model1 });
+        const widget1 = new LogOutputArea({ rendermime, model: model1 }, 'cellId');
         const model2 = new OutputAreaModel({ trusted: true });
-        const widget2 = new LogOutputArea({ rendermime, model: model2 });
+        const widget2 = new LogOutputArea({ rendermime, model: model2 }, 'cellId');
 
         const code0 = [
           'ip = get_ipython()',
@@ -378,9 +384,9 @@ describe('outputarea/widget', () => {
         ].join('\n');
 
         let ipySessionContext: SessionContext;
-        ipySessionContext = await createSessionContext({
-          kernelPreference: { name: 'ipython' }
-        });
+        ipySessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
         const promise0 = OutputArea.execute(code0, widget0, ipySessionContext);
         const promise1 = OutputArea.execute(code1, widget1, ipySessionContext);
@@ -401,11 +407,11 @@ describe('outputarea/widget', () => {
 
       it('should stop on an error', async () => {
         let ipySessionContext: SessionContext;
-        ipySessionContext = await createSessionContext({
-          kernelPreference: { name: 'ipython' }
-        });
+        ipySessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
-        const widget1 = new LogOutputArea({ rendermime, model });
+        const widget1 = new LogOutputArea({ rendermime, model }, 'cellId');
         const future1 = OutputArea.execute('a++1', widget, ipySessionContext);
         const future2 = OutputArea.execute('a=1', widget1, ipySessionContext);
         const reply = await future1;
@@ -419,11 +425,11 @@ describe('outputarea/widget', () => {
 
       it('should allow an error given "raises-exception" metadata tag', async () => {
         let ipySessionContext: SessionContext;
-        ipySessionContext = await createSessionContext({
-          kernelPreference: { name: 'ipython' }
-        });
+        ipySessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
-        const widget1 = new LogOutputArea({ rendermime, model });
+        const widget1 = new LogOutputArea({ rendermime, model }, 'cellId');
         const metadata = { tags: ['raises-exception'] };
         const future1 = OutputArea.execute(
           'a++1',
@@ -447,9 +453,9 @@ describe('outputarea/widget', () => {
           rendermime: rendermime
         });
         let ipySessionContext: SessionContext;
-        ipySessionContext = await createSessionContext({
-          kernelPreference: { name: 'python3' }
-        });
+        ipySessionContext = await createSessionContext(
+          {'kernelPreference':
+          {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
         const code = [
           'import time',
@@ -476,6 +482,12 @@ describe('outputarea/widget', () => {
           const kernel = await manager.startNew();
           const factory = new OutputArea.ContentFactory();
           const future = kernel.requestExecute({ code: CODE });
+          const wrappedFuture = {
+            ...future,
+            onReply: (msg: IShellMessage<ShellMessageType>) => {
+              return future.onReply(msg as IExecuteReplyMsg);
+            },
+          };
           const options = {
             parent_header: {
               date: '',
@@ -487,7 +499,7 @@ describe('outputarea/widget', () => {
             },
             prompt: 'hello',
             password: false,
-            future
+            future: wrappedFuture
           };
           expect(factory.createStdin(options)).toBeInstanceOf(Widget);
           await kernel.shutdown();

@@ -883,8 +883,6 @@ describe('cells/widget', () => {
         //sessionContext.changeKernel({'name':'dfpython3'});
 
         await (sessionContext as SessionContext).initialize();
-
-
         await sessionContext.session?.kernel?.info;
         console.debug(sessionContext.session?.kernel?.info);
         console.debug(sessionContext.kernelDisplayName);
@@ -976,9 +974,9 @@ describe('cells/widget', () => {
         widget.initializeState();
         widget.model.sharedModel.setSource('foo');
         const future1 = CodeCell.execute(widget, sessionContext);
-        expect(widget.promptNode!.textContent).toEqual('[*]:');
+        expect(widget.promptNode!.textContent).toEqual(new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
         const future2 = CodeCell.execute(widget, sessionContext);
-        expect(widget.promptNode!.textContent).toEqual('[*]:');
+        expect(widget.promptNode!.textContent).toEqual(new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
         await expect(future1).rejects.toThrow('Canceled');
         expect(widget.promptNode!.textContent).toEqual('[*]:');
         const msg = await future2;
