@@ -6,10 +6,11 @@ import { createSessionContext } from '@jupyterlab/apputils/lib/testutils';
 import {
   IOutputAreaModel,
   OutputAreaModel,
-  SimplifiedOutputArea
+  //SimplifiedOutputArea
 } from '@jupyterlab/outputarea';
 import {
-  DataflowOutputArea as OutputArea
+  DataflowOutputArea as OutputArea,
+  DataflowSimplifiedOutputArea as SimplifiedOutputArea
 } from '@dfnotebook/dfoutputarea'
 import { KernelManager } from '@jupyterlab/services';
 import { JupyterServer } from '@jupyterlab/testing';
@@ -53,7 +54,7 @@ describe('outputarea/widget', () => {
 
   beforeAll(async () => {
     server = new JupyterServer();
-    await server.start();
+    await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
   }, 30000);
 
   afterAll(async () => {
@@ -215,8 +216,10 @@ describe('outputarea/widget', () => {
 
       it('should execute code on a kernel and send outputs to the model', async () => {
         const future = sessionContext.session!.kernel!.requestExecute({
-          code: CODE
-        });
+          code: CODE,
+          user_expressions:{__dfkernel_data__: {}}},
+          false
+        );
         widget.future = future;
         const reply = await future.done;
         expect(reply!.content.execution_count).toBeTruthy();
@@ -227,8 +230,9 @@ describe('outputarea/widget', () => {
       it('should clear existing outputs', async () => {
         widget.model.fromJSON(DEFAULT_OUTPUTS);
         const future = sessionContext.session!.kernel!.requestExecute({
-          code: CODE
-        });
+          code: CODE,
+          user_expressions:{__dfkernel_data__: {}}},
+          false);
         widget.future = future;
         const reply = await future.done;
         expect(reply!.content.execution_count).toBeTruthy();
@@ -339,15 +343,22 @@ describe('outputarea/widget', () => {
       });
 
       it('should execute code on a kernel and send outputs to the model', async () => {
-        const reply = await OutputArea.execute(CODE, widget, sessionContext);
+        let uuid = String(widget.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:CODE}};
+        let mockmap = {uuid:widget};
+        const reply = await OutputArea.execute(CODE, widget, sessionContext,{},mockdata,mockmap);
         expect(reply!.content.execution_count).toBeTruthy();
         expect(reply!.content.status).toBe('ok');
+        console.debug(model);
         expect(model.length).toBe(1);
       });
 
       it('should clear existing outputs', async () => {
         widget.model.fromJSON(DEFAULT_OUTPUTS);
-        const reply = await OutputArea.execute(CODE, widget, sessionContext);
+        let uuid = String(widget.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:CODE}};
+        let mockmap = {uuid:widget};
+        const reply = await OutputArea.execute(CODE, widget, sessionContext,{},mockdata,mockmap);
         expect(reply!.content.execution_count).toBeTruthy();
         expect(model.length).toBe(1);
       });
@@ -370,7 +381,8 @@ describe('outputarea/widget', () => {
           '  transient = {"display_id": display_id}',
           '  content = {"data": data, "metadata": md, "transient": transient}',
           '  msg_type = "update_display_data" if update else "display_data"',
-          '  session.send(iopub, msg_type, content, parent=ip.parent_header)'
+          '  session.send(iopub, msg_type, content, parent=ip.parent_header)',
+          'ip,display_with_id'
         ].join('\n');
         const code1 = [
           'display("above")',
@@ -388,12 +400,21 @@ describe('outputarea/widget', () => {
           {'kernelPreference':
           {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
-        const promise0 = OutputArea.execute(code0, widget0, ipySessionContext);
-        const promise1 = OutputArea.execute(code1, widget1, ipySessionContext);
+        let uuid = String(widget0.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:code0}};
+        let mockmap = {uuid:widget0};
+        const promise0 = OutputArea.execute(code0, widget0, ipySessionContext,{},mockdata,mockmap);
+        uuid = String(widget1.cellId);
+        mockdata = {'uuid':uuid,'code_dict':{uuid:code1}};
+        mockmap = {uuid:widget1};
+        const promise1 = OutputArea.execute(code1, widget1, ipySessionContext,{},mockdata,mockmap);
         await Promise.all([promise0, promise1]);
         expect(model1.length).toBe(3);
         expect(model1.toJSON()[1].data).toEqual({ 'text/plain': '1' });
-        await OutputArea.execute(code2, widget2, ipySessionContext);
+        uuid = String(widget2.cellId);
+        mockdata = {'uuid':uuid,'code_dict':{uuid:code2}};
+        mockmap = {uuid:widget2};
+        await OutputArea.execute(code2, widget2, ipySessionContext,{},mockdata,mockmap);
 
         expect(model1.length).toBe(3);
         expect(model1.toJSON()[1].data).toEqual({ 'text/plain': '4' });
@@ -412,8 +433,14 @@ describe('outputarea/widget', () => {
           {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
         const widget1 = new LogOutputArea({ rendermime, model }, 'cellId');
-        const future1 = OutputArea.execute('a++1', widget, ipySessionContext);
-        const future2 = OutputArea.execute('a=1', widget1, ipySessionContext);
+        let uuid = String(widget.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:'a++1'}};
+        let mockmap = {uuid:widget};
+        const future1 = OutputArea.execute('a++1', widget, ipySessionContext,{},mockdata,mockmap);
+        uuid = String(widget1.cellId);
+        mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
+        mockmap = {uuid:widget1};
+        const future2 = OutputArea.execute('a=1', widget1, ipySessionContext,{},mockdata,mockmap);
         const reply = await future1;
         const reply2 = await future2;
         expect(reply!.content.status).toBe('error');
@@ -431,13 +458,21 @@ describe('outputarea/widget', () => {
         await ipySessionContext.initialize();
         const widget1 = new LogOutputArea({ rendermime, model }, 'cellId');
         const metadata = { tags: ['raises-exception'] };
+        let uuid = String(widget.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:'a++1'}};
+        let mockmap = {uuid:widget};
         const future1 = OutputArea.execute(
           'a++1',
           widget,
           ipySessionContext,
-          metadata
+          metadata,
+          mockdata,
+          mockmap
         );
-        const future2 = OutputArea.execute('a=1', widget1, ipySessionContext);
+        uuid = String(widget1.cellId);
+        mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
+        mockmap = {uuid:widget1};
+        const future2 = OutputArea.execute('a=1', widget1, ipySessionContext,{},mockdata,mockmap);
         const reply = await future1;
         const reply2 = await future2;
         expect(reply!.content.status).toBe('error');
@@ -451,7 +486,7 @@ describe('outputarea/widget', () => {
         const widget0 = new SimplifiedOutputArea({
           model: model0,
           rendermime: rendermime
-        });
+        },'aaaaaa');
         let ipySessionContext: SessionContext;
         ipySessionContext = await createSessionContext(
           {'kernelPreference':
@@ -463,7 +498,10 @@ describe('outputarea/widget', () => {
           '    print(f"Hello Jupyter! {i}")',
           '    time.sleep(1)'
         ].join('\n');
-        await SimplifiedOutputArea.execute(code, widget0, ipySessionContext);
+        let uuid = String('aaaaaa');//widget0.cellId);
+        let mockdata = {'uuid':uuid,'code_dict':{uuid:code}};
+        let mockmap = {uuid:widget0};
+        await SimplifiedOutputArea.execute(code, widget0, ipySessionContext,{},mockdata,mockmap);
         expect(model0.toJSON()[0].text).toBe(widget0.node.textContent);
       });
     });
@@ -481,7 +519,7 @@ describe('outputarea/widget', () => {
           const manager = new KernelManager();
           const kernel = await manager.startNew();
           const factory = new OutputArea.ContentFactory();
-          const future = kernel.requestExecute({ code: CODE });
+          const future = kernel.requestExecute({ code: CODE ,user_expressions:{__dfkernel_data__: {}}},false);
           const wrappedFuture = {
             ...future,
             onReply: (msg: IShellMessage<ShellMessageType>) => {
