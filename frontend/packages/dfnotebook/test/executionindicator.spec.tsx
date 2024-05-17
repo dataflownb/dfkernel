@@ -44,7 +44,7 @@
 // const server = new JupyterServer();
 //
 // beforeAll(async () => {
-//   await server.start();
+//   await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
 // }, 30000);
 //
 // afterAll(async () => {

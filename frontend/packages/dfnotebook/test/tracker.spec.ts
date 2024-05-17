@@ -15,7 +15,7 @@
 //
 // beforeAll(async () => {
 //   jest.setTimeout(20000);
-//   await server.start();
+//   await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
 // });
 //
 // afterAll(async () => {
