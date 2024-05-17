@@ -8,7 +8,18 @@ import { ISessionContext } from '@jupyterlab/apputils';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
+import { Message } from '@lumino/messaging';
 import { Panel, Widget } from '@lumino/widgets';
+
+/**
+ * The class name added to the direction children of OutputArea
+ */
+const OUTPUT_AREA_ITEM_CLASS = 'jp-OutputArea-child';
+
+/**
+ * The class name added to actual outputs
+ */
+const OUTPUT_AREA_OUTPUT_CLASS = 'jp-OutputArea-output';
 
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions, cellId: string) {
@@ -180,4 +191,74 @@ export namespace DataflowOutputArea {
   }
 
   export const defaultContentFactory = new ContentFactory();
+}
+
+/**
+ * A namespace for private data.
+ */
+namespace Private {
+ /**
+   * A `Panel` that's focused by a `contextmenu` event.
+   */
+ export class OutputPanel extends Panel {
+    /**
+     * Construct a new `OutputPanel` widget.
+     */
+    constructor(options?: Panel.IOptions) {
+      super(options);
+    }
+
+    /**
+     * A callback that focuses on the widget.
+     */
+    private _onContext(_: Event): void {
+      this.node.focus();
+    }
+
+    /**
+     * Handle `after-attach` messages sent to the widget.
+     */
+    protected onAfterAttach(msg: Message): void {
+      super.onAfterAttach(msg);
+      this.node.addEventListener('contextmenu', this._onContext.bind(this));
+    }
+
+    /**
+     * Handle `before-detach` messages sent to the widget.
+     */
+    protected onBeforeDetach(msg: Message): void {
+      super.onAfterDetach(msg);
+      this.node.removeEventListener('contextmenu', this._onContext.bind(this));
+    }
+}
+
+}
+export class DataflowSimplifiedOutputArea extends DataflowOutputArea {
+  /**
+     * Handle an input request from a kernel by doing nothing.
+     */
+  protected onInputRequest(
+    msg: KernelMessage.IInputRequestMsg,
+    future: Kernel.IShellFuture
+  ): void {
+    return;
+  }
+
+  /**
+   * Create an output item without a prompt, just the output widgets
+   */
+  protected createOutputItem(model: IOutputModel): Widget | null {
+    const output = this.createRenderedMimetype(model);
+
+    if (!output) {
+      return null;
+    }
+
+    const panel = new Private.OutputPanel();
+    panel.addClass(OUTPUT_AREA_ITEM_CLASS);
+
+    output.addClass(OUTPUT_AREA_OUTPUT_CLASS);
+    panel.addWidget(output);
+    return panel;
+  }
 }
