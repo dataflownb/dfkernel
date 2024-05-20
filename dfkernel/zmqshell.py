@@ -993,7 +993,7 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         # if so, need to also adjset tb_offset values (should be config option)
         closure = True
         future_elt = False # Flag for determining if there's a __future__ import
-        if interactivity == 'last_expr_or_assign':
+        if len(nodelist) > 0 and interactivity == 'last_expr_or_assign':
             keep_last_node = False
             vars, unnamed, create_node, append_node = self.get_linked_vars(nodelist[-1])
             no_link_vars.extend(vars)
