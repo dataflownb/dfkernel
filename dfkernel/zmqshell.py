@@ -1062,6 +1062,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     ast.fix_missing_locations(nnode)
                     nodelist[-1] = nnode
 
+            def unnamed_var_tuple(i, output):
+                var_name = '[' + self.uuid + ']'
+                if i >= 0:
+                    var_name += '[' + str(i) + ']'
+                return ast.Tuple([ast.Str(var_name), output],ast.Load())
             if create_node:
                 keywords = [ast.Tuple([ast.Str(var), ast.Name(var, ast.Load())],ast.Load()) for var in (libs+vars)]
                 none_flag = bool(len(vars))
@@ -1069,11 +1074,11 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
                     #FIXME: Thought it would make more sense to use _ notation here but this doesn't seem to cause any issues
                     #might be better to double check though to ensure that this is actually fine
                     if(len(unnamed)+len(vars) == 1):
-                        keywords.append(ast.Tuple([ast.Str('Out[' + self.uuid + ']'), out[1]],ast.Load()))
+                        keywords.append(unnamed_var_tuple(-1, out[1]))
                     elif(out[0]>=0):
-                        keywords.insert(out[0]+len(libs), ast.Tuple([ast.Str(self.uuid + str(out[0])),out[1]],ast.Load()))
+                        keywords.insert(out[0]+len(libs), unnamed_var_tuple(out[0], out[1]))
                     else:
-                        keywords.append(ast.Tuple([ast.Str(self.uuid +  str(len(vars))),out[1]],ast.Load()))
+                        keywords.append(unnamed_var_tuple(len(vars),out[1]))
 
                 if keep_last_node:
                     nnode = ast.Expr(ast.Tuple(
