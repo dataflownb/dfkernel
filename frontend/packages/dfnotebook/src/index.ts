@@ -5,7 +5,7 @@
  * @module dfnotebook
  */
 
-export * from './actions';
+export * from './cellexecutor';
 export * from './model';
 export * from './modelfactory';
 export * from './panel';
