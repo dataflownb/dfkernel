@@ -30,11 +30,13 @@ jobs:
       run: |
         pip install -e .
 
-    - name: Install and build
+    - name: Install
       run: |
         node ./staging/yarn.js install --immutable
 
-        node ./staging/yarn.js build
+    - name: Build
+      run: |
+        node ./staging/yarn.js run build
 
     # - name: Lint the extension
     #   run: |
