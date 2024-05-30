@@ -395,13 +395,13 @@ class ZMQInteractiveShell(ipykernel.zmqshell.ZMQInteractiveShell):
         self.set_custom_completer(cell_scope_completer)
 
 
-        # def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
-        #     retval = shell.InteractiveTB.structured_traceback(
-        #         etype, value, tb, tb_offset=tb_offset)
-        #     return retval[:-4] + retval[-1:]
-        #
-        # self.set_custom_exc((DataflowCellException,), cell_exception_handler)
-        #
+        def cell_exception_handler(shell, etype, value, tb, tb_offset=None):
+            stb = shell.InteractiveTB.structured_traceback(
+                etype, value, tb, tb_offset=tb_offset)
+            self._showtraceback(etype, value, stb[:2] + stb[3:-4] + stb[-1:])
+        
+        self.set_custom_exc((DataflowCellException,), cell_exception_handler)
+
         # def duplicate_name_handler(shell, etype, value, tb, tb_offset=None):
         #     retval = shell.InteractiveTB.structured_traceback(
         #         etype, value, tb, tb_offset=tb_offset)
