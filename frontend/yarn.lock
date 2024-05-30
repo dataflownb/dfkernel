@@ -2819,6 +2819,47 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@jupyterlab/builder@npm:^4.2.0":
+  version: 4.2.1
+  resolution: "@jupyterlab/builder@npm:4.2.1"
+  dependencies:
+    "@lumino/algorithm": ^2.0.1
+    "@lumino/application": ^2.3.1
+    "@lumino/commands": ^2.3.0
+    "@lumino/coreutils": ^2.1.2
+    "@lumino/disposable": ^2.1.2
+    "@lumino/domutils": ^2.0.1
+    "@lumino/dragdrop": ^2.1.4
+    "@lumino/messaging": ^2.0.1
+    "@lumino/properties": ^2.0.1
+    "@lumino/signaling": ^2.1.2
+    "@lumino/virtualdom": ^2.0.1
+    "@lumino/widgets": ^2.3.2
+    ajv: ^8.12.0
+    commander: ^9.4.1
+    css-loader: ^6.7.1
+    duplicate-package-checker-webpack-plugin: ^3.0.0
+    fs-extra: ^10.1.0
+    glob: ~7.1.6
+    license-webpack-plugin: ^2.3.14
+    mini-css-extract-plugin: ^2.7.0
+    mini-svg-data-uri: ^1.4.4
+    path-browserify: ^1.0.0
+    process: ^0.11.10
+    source-map-loader: ~1.0.2
+    style-loader: ~3.3.1
+    supports-color: ^7.2.0
+    terser-webpack-plugin: ^5.3.7
+    webpack: ^5.76.1
+    webpack-cli: ^5.0.1
+    webpack-merge: ^5.8.0
+    worker-loader: ^3.0.2
+  bin:
+    build-labextension: lib/build-labextension.js
+  checksum: d8ea62deab2866be6fd0147470bd2ebd4970d1f628428e3354f86e8b8121a83ce3074eeead65427f09042eec8d88b4d1f1c2830972fc529ba5a084ada6be63b0
+  languageName: node
+  linkType: hard
+
 "@jupyterlab/buildutils@npm:^4.0.0":
   version: 4.2.1
   resolution: "@jupyterlab/buildutils@npm:4.2.1"
