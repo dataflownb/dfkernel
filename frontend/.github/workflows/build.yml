@@ -24,8 +24,11 @@ jobs:
       run: python -m pip install dfkernel
 
     - name: Install extension
-      run: pip install -e .
+      run: |
+        pip install -e .
+
         jlpm install
+
         jlpm build
 
     # - name: Lint the extension
