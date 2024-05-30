@@ -30,10 +30,6 @@ jobs:
       run: |
         pip install -e .
 
-        nvm install 18.12
-
-        nvm use 18.12
-
         jlpm install
 
         jlpm build
