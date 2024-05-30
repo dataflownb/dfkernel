@@ -30,9 +30,11 @@ jobs:
       run: |
         pip install -e .
 
-        jlpm install
+    - name: Install and build
+      run: |
+        node ./staging/yarn.js install
 
-        jlpm build
+        node ./staging/yarn.js build
 
     # - name: Lint the extension
     #   run: |
