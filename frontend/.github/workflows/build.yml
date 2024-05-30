@@ -32,7 +32,7 @@ jobs:
 
     - name: Install and build
       run: |
-        node ./staging/yarn.js install
+        node ./staging/yarn.js install --frozen-lockfile
 
         node ./staging/yarn.js build
 
