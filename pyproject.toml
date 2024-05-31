@@ -42,7 +42,7 @@ path = "dfkernel/_version.py"
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"data_kernelspec" = "share/jupyter/kernels/dfkernel"
+"data_kernelspec" = "share/jupyter/kernels/dfpython3"
 
 [tool.hatch.build.force-include]
 "./dfkernel_launcher.py" = "dfkernel_launcher.py"
