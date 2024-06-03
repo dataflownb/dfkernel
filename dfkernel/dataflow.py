@@ -3,19 +3,21 @@ from collections.abc import KeysView, ItemsView, ValuesView, MutableMapping
 from .dflink import LinkedResult
 import itertools
 
-class DataflowCacheException(Exception):
-    def __init__(self, cid):
-        self.cid = cid
-
-    def __str__(self):
-        return "Cell '{}' has not yet been computed".format(self.cid)
-
 class DataflowCellException(Exception):
     def __init__(self, cid):
         self.cid = cid
 
     def __str__(self):
         return "Cell '{}' raised an exception".format(self.cid)
+
+class DataflowCacheError(DataflowCellException):
+    def __str__(self):
+        return "Cell '{}' has not yet been computed".format(self.cid)
+
+class DataflowInvalidRefError(DataflowCellException):
+    '''Called when an Invalid OutCell is called'''
+    def __str__(self):
+        return "Invalid Reference to Cell '{}'".format(self.cid)
 
 class DataflowHistoryManager(object):
     deleted_cells = []
@@ -198,12 +200,12 @@ class DataflowHistoryManager(object):
             parent_uuid = k
             retval = self.shell.run_cell_as_execute_request(self.code_cache[uid], uid,
                                                             **self.flags)
+            # FIXME can we just rely on run_cell?
+            self.shell.uuid = parent_uuid
             if not retval.success:
                 # FIXME really want to just raise this error and not the bits of the
                 # stack that are internal (get_item, etc.)
                 retval.raise_error()
-            # FIXME can we just rely on run_cell?
-            self.shell.uuid = parent_uuid
 
     def execute_cell(self, k, **flags):
         # print("EXECUTING CELL", k)
@@ -217,10 +219,10 @@ class DataflowHistoryManager(object):
         retval = self.shell.run_cell_as_execute_request(self.code_cache[k], k,
                                                    **self.flags)
         # print('retval:', retval)
+        self.shell.uuid = child_uuid
         if not retval.success:
             raise DataflowCellException(k)
         # FIXME can we just rely on run_cell?
-        self.shell.uuid = child_uuid
         return retval.result
 
     def run_auto_updates(self, k):
@@ -239,12 +241,9 @@ class DataflowHistoryManager(object):
             return res.__tuple__()
         return res
 
-
     def stale_check(self, k):
-        class InvalidOutCell(KeyError):
-            '''Called when an Invalid OutCell is called'''
         if k not in self.code_stale:
-            raise InvalidOutCell("Out["+k + "] is an Invalid Out Cell Reference")
+            raise DataflowInvalidRefError(k)
 
     def get_item(self, k):
         self.stale_check(k)
@@ -255,7 +254,7 @@ class DataflowHistoryManager(object):
         # force recompute
         if self.force_cached_flags[k]:
             if k not in self.value_cache:
-                raise DataflowCacheException(k)
+                raise DataflowCacheError(k)
             # print("returning cache", k)
             return self.value_cache[k]
 
