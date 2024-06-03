@@ -94,6 +94,8 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { IChangedArgs, PageConfig } from '@jupyterlab/coreutils';
 import { DataflowInputArea } from '@dfnotebook/dfcells';
 
+import { CellBarExtension } from '@jupyterlab/cell-toolbar';
+
 /**
  * The command IDs used by the notebook plugin.
  */
@@ -625,10 +627,42 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
     };
 
 
+const cellToolbar: JupyterFrontEndPlugin<void> = {
+  id: '@dfnotebook/dfnotebook-extension:cell-toolbar',
+  description: 'Add the cells toolbar.',
+  autoStart: true,
+  activate: async (
+    app: JupyterFrontEnd,
+    settingRegistry: ISettingRegistry | null,
+    toolbarRegistry: IToolbarWidgetRegistry | null,
+    translator: ITranslator | null
+  ) => {
+    const toolbarItems =
+      settingRegistry && toolbarRegistry
+        ? createToolbarFactory(
+            toolbarRegistry,
+            settingRegistry,
+            CellBarExtension.FACTORY_NAME,
+            '@jupyterlab/cell-toolbar-extension:plugin',
+            translator ?? nullTranslator
+          )
+        : undefined;
+
+    // have to register this with our factory
+    app.docRegistry.addWidgetExtension(
+      DATAFLOW_FACTORY,
+      new CellBarExtension(app.commands, toolbarItems)
+    );
+  },
+  optional: [ISettingRegistry, IToolbarWidgetRegistry, ITranslator]
+};
+    
+
 const plugins: JupyterFrontEndPlugin<any>[] = [
   factory,
   widgetFactoryPlugin,
   trackerPlugin,
+  cellToolbar,
   DepViewer,
   MiniMap,
   GraphManagerPlugin

@@ -4,6 +4,7 @@
 |----------------------------------------------------------------------------*/
 
 import '@jupyterlab/notebook-extension/style/index.js';
+import '@jupyterlab/cell-toolbar/style/index.js';
 import '@dfnotebook/dfgraph/style/index.js';
 import '@dfnotebook/dfnotebook/style/index.js';
 

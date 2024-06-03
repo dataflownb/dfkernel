@@ -4,6 +4,7 @@
 |----------------------------------------------------------------------------*/
 
 @import url('~@jupyterlab/notebook-extension/style/index.css');
+@import url('~@jupyterlab/cell-toolbar/style/index.css');
 @import url('~@dfnotebook/dfgraph/style/index.css');
 @import url('~@dfnotebook/dfnotebook/style/index.css');
 
