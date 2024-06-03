@@ -1,5 +1,4 @@
 """A custom hatch build hook for ipykernel."""
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -12,11 +11,8 @@ class CustomHook(BuildHookInterface):
 
     def initialize(self, version, build_data):
         """Initialize the hook."""
-        # here = Path(__file__).parent.resolve()
-        # sys.path.insert(0, str(here))
-        # from dfkernel.kernelspec import make_ipkernel_cmd, write_kernel_spec
-        here = Path(__file__).parent.resolve() / "dfkernel"
-        sys.path.insert(0, str(here))
+        here = Path(__file__).parent.resolve()
+        sys.path.insert(0, str(here / "dfkernel"))
         from kernelspec import make_ipkernel_cmd, write_kernel_spec
 
         overrides = {}
