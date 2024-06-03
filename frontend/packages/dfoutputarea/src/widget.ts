@@ -10,6 +10,23 @@ import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
 import { Panel, Widget } from '@lumino/widgets';
 
+export interface IStreamWithExecCountMsg extends KernelMessage.IStreamMsg {
+  content: {
+    name: 'stdout' | 'stderr';
+    text: string;
+    execution_count?: number | null;
+  };
+}
+
+export interface IErrorWithExecCountMsg extends KernelMessage.IErrorMsg {
+  content: {
+    ename: string;
+    evalue: string;
+    traceback: string[];
+    execution_count?: number | null;
+  };
+}
+
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions, cellId: string) {
     super({
@@ -48,25 +65,28 @@ export class DataflowOutputArea extends OutputArea {
 
   public onIOPub = (msg: KernelMessage.IIOPubMessage) => {
     const msgType = msg.header.msg_type;
-    let output: nbformat.IOutput;
+    let execCountMsg: KernelMessage.IExecuteResultMsg | KernelMessage.IDisplayDataMsg | IStreamWithExecCountMsg | IErrorWithExecCountMsg;
 
     switch (msgType) {
       case 'execute_result':
+        execCountMsg = msg as KernelMessage.IExecuteResultMsg;
       case 'display_data':
+        execCountMsg = msg as KernelMessage.IDisplayDataMsg;
       case 'stream':
+        execCountMsg = msg as IStreamWithExecCountMsg;
       case 'error':
-        output = { ...msg.content, output_type: msgType };
-        if (output.execution_count) {
-          const cellId = output.execution_count.toString(16).padStart(8, '0');
-          if (msgType === 'stream') {
-            delete output.execution_count;
+        execCountMsg = msg as IErrorWithExecCountMsg;
+        if (execCountMsg.content.execution_count) {
+          const cellId = execCountMsg.content.execution_count.toString(16).padStart(8, '0');
+          if (msgType === 'stream' || msgType === 'error') {
+            delete execCountMsg.content.execution_count;
           }
           if (cellId !== this.cellId) {
             if (DataflowOutputArea.cellIdWidgetMap) {
               const cellWidget = DataflowOutputArea.cellIdWidgetMap[cellId];
               //@ts-ignore
               const outputArea = cellWidget._output;
-              outputArea._onIOPub(msg);
+              outputArea._onIOPub(execCountMsg);
             }
             break;
           }
