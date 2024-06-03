@@ -55,56 +55,19 @@ from collections.abc import Mapping
 class ZMQDisplayPublisher(ipykernel.zmqshell.ZMQDisplayPublisher):
     """A display publisher that publishes data using a ZeroMQ PUB socket."""
 
-    def publish(self, data, metadata=None, source=None, transient=None,
-            update=False):
-        """Publish a display-data message
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._add_uuid_hook()
 
-        Parameters
-        ----------
-        data: dict
-            A mime-bundle dict, keyed by mime-type.
-        metadata: dict, optional
-            Metadata associated with the data.
-        transient: dict, optional, keyword-only
-            Transient data that may only be relevant during a live display,
-            such as display_id.
-            Transient data should not be persisted to documents.
-        update: bool, optional, keyword-only
-            If True, send an update_display_data message instead of display_data.
-        """
-        self._flush_streams()
-        if metadata is None:
-            metadata = {}
-        if transient is None:
-            transient = {}
-        self._validate_data(data, metadata)
-        content = {}
-        content['data'] = encode_images(data)
-        content['metadata'] = metadata
-        content['transient'] = transient
-        #content['execution_count'] = self.get_execution_count()
+    def uuid_hook(self, msg):
+        msg['content']['execution_count'] = self.get_execution_count()
+        return msg
 
-        msg_type = 'update_display_data' if update else 'display_data'
+    def _add_uuid_hook(self):
+        self.register_hook(self.uuid_hook)
 
-        # Use 2-stage process to send a message,
-        # in order to put it through the transform
-        # hooks before potentially sending.
-        msg = self.session.msg(
-            msg_type, json_clean(content),
-            parent=self.parent_header
-        )
-
-        # Each transform either returns a new
-        # message or None. If None is returned,
-        # the message has been 'used' and we return.
-        for hook in self._hooks:
-            msg = hook(msg)
-            if msg is None:
-                return
-
-        self.session.send(
-            self.pub_socket, msg, ident=self.topic,
-        )
+    def get_execution_count(self):
+        raise NotImplementedError("Should be added by the kernelapp");
 
 @magics_class
 class FunctionMagics(Magics):
