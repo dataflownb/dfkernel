@@ -62,9 +62,100 @@
     "watch": "run-p watch:src",
     "watch:src": "tsc -w --sourceMap"
   },
+  "prettier": {
+    "arrowParens": "avoid",
+    "endOfLine": "auto",
+    "singleQuote": true,
+    "trailingComma": "none",
+    "overrides": [
+      {
+        "files": "package.json",
+        "options": {
+          "tabWidth": 4
+        }
+      }
+    ]
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "tsconfig.json",
+      "sourceType": "module"
+    },
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended"
+    ],
+    "rules": {
+      "curly": [
+        "error",
+        "all"
+      ],
+      "eqeqeq": "error",
+      "prefer-arrow-callback": "error",
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          "selector": "interface",
+          "format": [
+            "PascalCase"
+          ],
+          "custom": {
+            "regex": "^I[A-Z]",
+            "match": true
+          }
+        }
+      ],
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-namespace": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "args": "none"
+        }
+      ],
+      "@typescript-eslint/no-use-before-define": "off",
+      "@typescript-eslint/quotes": [
+        "error",
+        "single",
+        {
+          "avoidEscape": true,
+          "allowTemplateLiterals": false
+        }
+      ]
+    }
+  },
+  "eslintIgnore": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.d.ts"
+  ],
+  "stylelint": {
+    "extends": [
+      "stylelint-config-recommended",
+      "stylelint-config-standard",
+      "stylelint-prettier/recommended"
+    ],
+    "plugins": [
+      "stylelint-csstree-validator"
+    ],
+    "rules": {
+      "csstree/validator": true,
+      "property-no-vendor-prefix": null,
+      "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
+      "selector-no-vendor-prefix": null,
+      "value-no-vendor-prefix": null
+    }
+  },
   "dependencies": {
     "@hpcc-js/wasm": "^2.15.3",
-    "@lumino/widgets": "^2.3.1",
+    "@lumino/widgets": "^2.3.2",
     "@types/d3": "^7.4.3",
     "@types/d3-graphviz": "^2.6.10",
     "@types/graphlib": "^2.1.8",
@@ -82,8 +173,8 @@
     "react": "^18.2.0"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^4.0.0",
-    "@jupyterlab/testutils": "^4.0.0",
+    "@jupyterlab/builder": "^4.2.1",
+    "@jupyterlab/testutils": "^4.2.1",
     "@types/jest": "^26.0.10",
     "@types/json-schema": "^7.0.11",
     "@types/marked": "^4.0.1",
@@ -114,96 +205,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "styleModule": "style/index.js",
-  "eslintConfig": {
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "tsconfig.json",
-      "sourceType": "module"
-    },
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "rules": {
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          "selector": "interface",
-          "format": [
-            "PascalCase"
-          ],
-          "custom": {
-            "regex": "^I[A-Z]",
-            "match": true
-          }
-        }
-      ],
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          "args": "none"
-        }
-      ],
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-namespace": "off",
-      "@typescript-eslint/no-use-before-define": "off",
-      "@typescript-eslint/quotes": [
-        "error",
-        "single",
-        {
-          "avoidEscape": true,
-          "allowTemplateLiterals": false
-        }
-      ],
-      "curly": [
-        "error",
-        "all"
-      ],
-      "eqeqeq": "error",
-      "prefer-arrow-callback": "error"
-    }
-  },
-  "eslintIgnore": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "**/*.d.ts"
-  ],
-  "prettier": {
-    "singleQuote": true,
-    "trailingComma": "none",
-    "arrowParens": "avoid",
-    "endOfLine": "auto",
-    "overrides": [
-      {
-        "files": "package.json",
-        "options": {
-          "tabWidth": 4
-        }
-      }
-    ]
-  },
-  "stylelint": {
-    "extends": [
-      "stylelint-config-recommended",
-      "stylelint-config-standard",
-      "stylelint-prettier/recommended"
-    ],
-    "plugins": [
-      "stylelint-csstree-validator"
-    ],
-    "rules": {
-      "csstree/validator": true,
-      "property-no-vendor-prefix": null,
-      "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
-      "selector-no-vendor-prefix": null,
-      "value-no-vendor-prefix": null
-    }
-  }
+  "styleModule": "style/index.js"
 }
