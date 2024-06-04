@@ -23,7 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    'dfkernel >= 4.0.0a1'
+    'dfkernel >= 4.0.0a1',
+    'jupyterlab >= 4.2'
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
