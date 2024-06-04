@@ -1,4 +1,5 @@
 import {
+  IOutputAreaModel,
   IOutputPrompt,
   OutputArea,
   OutputPrompt
@@ -37,9 +38,9 @@ export class DataflowOutputArea extends OutputArea {
   }
 
   /**
-   * The cellIdWidgetMap is a hack to map outputs to other cells.
+   * The cellIdModelMap is a hack to map outputs to other cells.
    */
-  static cellIdWidgetMap: { [key: string]: Widget } | undefined;
+  static cellIdModelMap: { [key: string]: IOutputAreaModel } | undefined;
 
   /*
    * The cell's id
@@ -64,9 +65,14 @@ export class DataflowOutputArea extends OutputArea {
   }
 
   public onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+    const model = this.model;
     const msgType = msg.header.msg_type;
     let execCountMsg: KernelMessage.IExecuteResultMsg | KernelMessage.IDisplayDataMsg | IStreamWithExecCountMsg | IErrorWithExecCountMsg;
-
+    let output: nbformat.IOutput;
+    const transient = ((msg.content as any).transient || {}) as JSONObject;
+    const displayId = transient['display_id'] as string;
+    let targets: number[];
+    
     switch (msgType) {
       case 'execute_result':
         execCountMsg = msg as KernelMessage.IExecuteResultMsg;
@@ -75,31 +81,40 @@ export class DataflowOutputArea extends OutputArea {
       case 'stream':
         execCountMsg = msg as IStreamWithExecCountMsg;
       case 'error':
-        execCountMsg = msg as IErrorWithExecCountMsg;
+        execCountMsg = msg as IErrorWithExecCountMsg;        
         if (execCountMsg.content.execution_count) {
           const cellId = execCountMsg.content.execution_count.toString(16).padStart(8, '0');
           if (msgType === 'stream' || msgType === 'error') {
             delete execCountMsg.content.execution_count;
           }
-          if (cellId !== this.cellId) {
-            if (DataflowOutputArea.cellIdWidgetMap) {
-              const cellWidget = DataflowOutputArea.cellIdWidgetMap[cellId];
-              //@ts-ignore
-              const outputArea = cellWidget._output;
-              outputArea._onIOPub(execCountMsg);
+          output = { ...execCountMsg.content, output_type: msgType };
+          if (cellId != this.cellId) {
+            if (DataflowOutputArea.cellIdModelMap) {
+              const cellModel = DataflowOutputArea.cellIdModelMap[cellId];
+              cellModel.add(output);
             }
-            break;
+          } else {
+            model.add(output);
           }
+        } else {
+          output = { ...execCountMsg.content, output_type: msgType };
+          model.add(output);
         }
-        //@ts-ignore
+        // FIXME do we have to do the displayId && msgType === 'display_data' stuff?
+        // is this only for update-display-data?
+        if (displayId && msgType === 'display_data') {
+          //@ts-expect-error
+          targets = this._displayIdMap.get(displayId) || [];
+          targets.push(model.length - 1);
+          //@ts-expect-error
+          this._displayIdMap.set(displayId, targets);
+        }
+        break;
+      default:
+        //@ts-expect-error
         this._onIOPub(msg);
         break;
-      default: {
-        //@ts-ignore
-        this._onIOPub(msg);
-        break;
-      }
-    }
+      };
   };
 
   protected createOutputItem(model: IOutputModel): Widget | null {
@@ -154,7 +169,7 @@ export namespace DataflowOutputArea {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdWidgetMap?: { [key: string]: Widget }
+    cellIdModelMap?: { [key: string]: IOutputAreaModel }
   ): Promise<KernelMessage.IExecuteReplyMsg | undefined> {
     // Override the default for `stop_on_error`.
     let stopOnError = true;
@@ -182,7 +197,7 @@ export namespace DataflowOutputArea {
     const future = kernel.requestExecute(content, false, metadata);
     output.future = future;
 
-    DataflowOutputArea.cellIdWidgetMap = cellIdWidgetMap;
+    DataflowOutputArea.cellIdModelMap = cellIdModelMap;
 
     return future.done;
   }

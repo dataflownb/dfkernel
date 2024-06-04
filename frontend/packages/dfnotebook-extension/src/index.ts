@@ -39,6 +39,7 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import * as nbformat from '@jupyterlab/nbformat';
 import {
   ExecutionIndicator,
+  INotebookCellExecutor,
   INotebookTracker,
   INotebookWidgetFactory,
   Notebook,
@@ -48,7 +49,8 @@ import {
   NotebookTracker,
   NotebookWidgetFactory,
   StaticNotebook,
-  ToolbarItems
+  ToolbarItems,
+  setCellExecutor
 } from '@jupyterlab/notebook';
 import { IObservableList } from '@jupyterlab/observables';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
@@ -82,8 +84,6 @@ import { DisposableSet } from '@lumino/disposable';
 import { Panel } from '@lumino/widgets';
 
 import {
-  DataflowNotebook,
-  DataflowNotebookActions,
   DataflowNotebookModel,
   DataflowNotebookModelFactory,
   DataflowNotebookPanel,
@@ -94,6 +94,7 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { IChangedArgs, PageConfig } from '@jupyterlab/coreutils';
 import { DataflowInputArea } from '@dfnotebook/dfcells';
 
+import { cellExecutor } from './cellexecutor';
 import { CellBarExtension } from '@jupyterlab/cell-toolbar';
 
 /**
@@ -316,7 +317,8 @@ const trackerPlugin: JupyterFrontEndPlugin<INotebookTracker> = {
   requires: [
     INotebookWidgetFactory,
     IDataflowNotebookWidgetFactory,
-    IEditorExtensionRegistry
+    IEditorExtensionRegistry,
+    INotebookCellExecutor    
   ],
   optional: [
     ICommandPalette,
@@ -659,6 +661,7 @@ const cellToolbar: JupyterFrontEndPlugin<void> = {
     
 
 const plugins: JupyterFrontEndPlugin<any>[] = [
+  cellExecutor,
   factory,
   widgetFactoryPlugin,
   trackerPlugin,
@@ -784,6 +787,7 @@ function activateNotebookHandler(
   dfFactory: DataflowNotebookWidgetFactory.IFactory,
   // dfModelFactory: DataflowNotebookModelFactory.IFactory,
   extensions: IEditorExtensionRegistry,
+  executor: INotebookCellExecutor,
   palette: ICommandPalette | null,
   defaultBrowser: IDefaultFileBrowser | null,
   launcher: ILauncher | null,
@@ -795,6 +799,8 @@ function activateNotebookHandler(
   translator_: ITranslator | null,
   formRegistry: IFormRendererRegistry | null
 ): INotebookTracker {
+  setCellExecutor(executor);
+
   const translator = translator_ ?? nullTranslator;
   const sessionDialogs =
     sessionDialogs_ ?? new SessionContextDialogs({ translator });
@@ -1339,23 +1345,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.runAndAdvance(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.runAndAdvance(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.runAndAdvance(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled: args => (args.toolbar ? true : isEnabled()),
@@ -1375,23 +1370,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.run(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.run(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.run(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled
@@ -1410,23 +1394,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.runAndInsert(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.runAndInsert(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.runAndInsert(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled
@@ -1439,23 +1412,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.runAll(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.runAll(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.runAll(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled
@@ -1467,23 +1429,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.runAllAbove(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.runAllAbove(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.runAllAbove(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled: () => {
@@ -1502,23 +1453,12 @@ function addCommands(
 
       if (current) {
         const { context, content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.runAllBelow(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        } else {
-          return NotebookActions.runAllBelow(
-            content,
-            context.sessionContext,
-            sessionDialogs,
-            translator
-          );
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.runAllBelow(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
       }
     },
     isEnabled: () => {
@@ -1537,13 +1477,7 @@ function addCommands(
       const current = getCurrent(tracker, shell, args);
       if (current) {
         const { content } = current;
-        // !!! DATAFLOW NOTEBOOK UPDATE !!!
-        if (content instanceof DataflowNotebook) {
-          return DataflowNotebookActions.renderAllMarkdown(content);
-        } else {
-          return NotebookActions.renderAllMarkdown(content);
-        }
-        // !!! END DATAFLOW NOTEBOOK UPDATE !!!
+        return NotebookActions.renderAllMarkdown(content);
       }
     },
     isEnabled
@@ -2613,23 +2547,12 @@ function addCommands(
 
       current.content.extendContiguousSelectionTo(lastIndex);
 
-      // !!! DATAFLOW NOTEBOOK CHANGE !!!
-      if (current.content instanceof DataflowNotebook) {
-        void DataflowNotebookActions.run(
-          current.content,
-          current.sessionContext,
-          sessionDialogs,
-          translator
-        );
-      } else {
-        void NotebookActions.run(
-          current.content,
-          current.sessionContext,
-          sessionDialogs,
-          translator
-        );
-      }
-      // !!! END DATAFLOW NOTEBOOK CHANGE !!!
+      NotebookActions.run(
+        current.content,
+        current.sessionContext,
+        sessionDialogs,
+        translator
+      );
     }
   });
 
