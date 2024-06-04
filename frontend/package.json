@@ -1,197 +1,197 @@
 {
-  "name": "@dfnotebook/top",
-  "version": "0.4.0-a.0",
-  "private": true,
-  "description": "A JupyterLab extension for running dataflow notebooks",
-  "keywords": [
-    "jupyter",
-    "jupyterlab",
-    "jupyterlab-extension"
-  ],
-  "homepage": "https://github.com/dataflownb/dfnotebook-extension",
-  "bugs": {
-    "url": "https://github.com/dataflownb/dfnotebook-extension/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dataflownb/dfnotebook-extension.git"
-  },
-  "license": "BSD-3-Clause",
-  "author": {
-    "name": "{'name': 'Dataflow Notebook Development Team', 'email': 'dataflownb@users.noreply.github.com'}",
-    "email": "dataflownb@users.noreply.github.com"
-  },
-  "files": [
-    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
-    "style/index.js"
-  ],
-  "workspaces": {
-    "packages": [
-      "packages/*"
-    ]
-  },
-  "scripts": {
-    "build": "lerna run build",
-    "build:lib": "lerna run build:lib",
-    "build:lib:prod": "lerna run build:lib:prod",
-    "clean": "lerna run clean",
-    "clean:slate": "python clean.py",
-    "develop": "jupyter labextension develop --overwrite .",
-    "install": "lerna bootstrap",
-    "install:extension": "lerna run install:extension",
-    "install:develop": "jlpm install && jlpm build && jlpm develop",
-    "lint": "jlpm && jlpm prettier && jlpm eslint && jlpm stylelint",
-    "lint:check": "jlpm prettier:check && jlpm eslint:check && jlpm stylelint:check",
-    "prettier": "prettier --write \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
-    "prettier:check": "prettier --list-different \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
-    "stylelint": "jlpm stylelint:check --fix",
-    "stylelint:check": "stylelint --cache \"packages/*/style/**/*.css\"",
-    "stylelint:files": "stylelint --fix",
-    "update-dependency": "update-dependency --lerna",
-    "watch": "run-p watch:cells watch:notebook watch:outputarea watch:extension",
-    "watch:cells": "lerna exec --stream --scope \"@dfnotebook/dfcells\" jlpm watch",
-    "watch:extension": "lerna exec --stream --scope \"@dfnotebook/dfnotebook-extension\" jlpm watch",
-    "watch:notebook": "lerna exec --stream --scope \"@dfnotebook/dfnotebook\" jlpm watch",
-    "watch:outputarea": "lerna exec --stream --scope \"@dfnotebook/dfoutputarea\" jlpm watch"
-  },
-  "prettier": {
-    "arrowParens": "avoid",
-    "endOfLine": "auto",
-    "singleQuote": true,
-    "trailingComma": "none",
-    "overrides": [
-      {
-        "files": "package.json",
-        "options": {
-          "tabWidth": 4
-        }
-      }
-    ]
-  },
-  "eslintConfig": {
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "tsconfig.json",
-      "sourceType": "module"
+    "name": "@dfnotebook/top",
+    "version": "0.4.0-a1",
+    "private": true,
+    "description": "A JupyterLab extension for running dataflow notebooks",
+    "keywords": [
+        "jupyter",
+        "jupyterlab",
+        "jupyterlab-extension"
+    ],
+    "homepage": "https://github.com/dataflownb/dfnotebook-extension",
+    "bugs": {
+        "url": "https://github.com/dataflownb/dfnotebook-extension/issues"
     },
-    "plugins": [
-      "@typescript-eslint"
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dataflownb/dfnotebook-extension.git"
+    },
+    "license": "BSD-3-Clause",
+    "author": {
+        "name": "{'name': 'Dataflow Notebook Development Team', 'email': 'dataflownb@users.noreply.github.com'}",
+        "email": "dataflownb@users.noreply.github.com"
+    },
+    "files": [
+        "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+        "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
+        "style/index.js"
     ],
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
-    ],
-    "rules": {
-      "curly": [
-        "error",
-        "all"
-      ],
-      "eqeqeq": "error",
-      "prefer-arrow-callback": "error",
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          "selector": "interface",
-          "format": [
-            "PascalCase"
-          ],
-          "custom": {
-            "regex": "^I[A-Z]",
-            "match": true
-          }
+    "workspaces": {
+        "packages": [
+            "packages/*"
+        ]
+    },
+    "scripts": {
+        "build": "lerna run build",
+        "build:lib": "lerna run build:lib",
+        "build:lib:prod": "lerna run build:lib:prod",
+        "clean": "lerna run clean",
+        "clean:slate": "python clean.py",
+        "develop": "jupyter labextension develop --overwrite .",
+        "install": "lerna bootstrap",
+        "install:extension": "lerna run install:extension",
+        "install:develop": "jlpm install && jlpm build && jlpm develop",
+        "lint": "jlpm && jlpm prettier && jlpm eslint && jlpm stylelint",
+        "lint:check": "jlpm prettier:check && jlpm eslint:check && jlpm stylelint:check",
+        "prettier": "prettier --write \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
+        "prettier:check": "prettier --list-different \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
+        "stylelint": "jlpm stylelint:check --fix",
+        "stylelint:check": "stylelint --cache \"packages/*/style/**/*.css\"",
+        "stylelint:files": "stylelint --fix",
+        "update-dependency": "update-dependency --lerna",
+        "watch": "run-p watch:cells watch:notebook watch:outputarea watch:extension",
+        "watch:cells": "lerna exec --stream --scope \"@dfnotebook/dfcells\" jlpm watch",
+        "watch:extension": "lerna exec --stream --scope \"@dfnotebook/dfnotebook-extension\" jlpm watch",
+        "watch:notebook": "lerna exec --stream --scope \"@dfnotebook/dfnotebook\" jlpm watch",
+        "watch:outputarea": "lerna exec --stream --scope \"@dfnotebook/dfoutputarea\" jlpm watch"
+    },
+    "prettier": {
+        "arrowParens": "avoid",
+        "endOfLine": "auto",
+        "singleQuote": true,
+        "trailingComma": "none",
+        "overrides": [
+            {
+                "files": "package.json",
+                "options": {
+                    "tabWidth": 4
+                }
+            }
+        ]
+    },
+    "eslintConfig": {
+        "parser": "@typescript-eslint/parser",
+        "parserOptions": {
+            "project": "tsconfig.json",
+            "sourceType": "module"
+        },
+        "plugins": [
+            "@typescript-eslint"
+        ],
+        "extends": [
+            "eslint:recommended",
+            "plugin:@typescript-eslint/eslint-recommended",
+            "plugin:@typescript-eslint/recommended",
+            "plugin:prettier/recommended"
+        ],
+        "rules": {
+            "curly": [
+                "error",
+                "all"
+            ],
+            "eqeqeq": "error",
+            "prefer-arrow-callback": "error",
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    "selector": "interface",
+                    "format": [
+                        "PascalCase"
+                    ],
+                    "custom": {
+                        "regex": "^I[A-Z]",
+                        "match": true
+                    }
+                }
+            ],
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/no-namespace": "off",
+            "@typescript-eslint/no-unused-vars": [
+                "warn",
+                {
+                    "args": "none"
+                }
+            ],
+            "@typescript-eslint/no-use-before-define": "off",
+            "@typescript-eslint/quotes": [
+                "error",
+                "single",
+                {
+                    "avoidEscape": true,
+                    "allowTemplateLiterals": false
+                }
+            ]
         }
-      ],
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-namespace": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          "args": "none"
-        }
-      ],
-      "@typescript-eslint/no-use-before-define": "off",
-      "@typescript-eslint/quotes": [
-        "error",
-        "single",
-        {
-          "avoidEscape": true,
-          "allowTemplateLiterals": false
-        }
-      ]
-    }
-  },
-  "eslintIgnore": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "**/*.d.ts",
-    "tests",
-    "**/__tests__",
-    "ui-tests"
-  ],
-  "stylelint": {
-    "extends": [
-      "stylelint-config-recommended",
-      "stylelint-config-standard",
-      "stylelint-prettier/recommended"
+    },
+    "eslintIgnore": [
+        "node_modules",
+        "dist",
+        "coverage",
+        "**/*.d.ts",
+        "tests",
+        "**/__tests__",
+        "ui-tests"
     ],
-    "plugins": [
-      "stylelint-csstree-validator"
-    ],
-    "rules": {
-      "csstree/validator": true,
-      "property-no-vendor-prefix": null,
-      "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
-      "selector-no-vendor-prefix": null,
-      "value-no-vendor-prefix": null
-    }
-  },
-  "dependencies": {
-    "@jupyterlab/application": "^4.2.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "@jupyterlab/builder": "^4.2.1",
-    "@jupyterlab/buildutils": "^4.2.1",
-    "@jupyterlab/testutils": "^4.2.1",
-    "@types/jest": "^29.2.0",
-    "@types/json-schema": "^7.0.11",
-    "@types/react": "^18.0.26",
-    "@types/react-addons-linked-state-mixin": "^0.14.22",
-    "@typescript-eslint/eslint-plugin": "^6.1.0",
-    "@typescript-eslint/parser": "^6.1.0",
-    "css-loader": "^6.7.1",
-    "eslint": "^8.36.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "jest": "^29.2.0",
-    "lerna": "^6.6.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^3.0.0",
-    "rimraf": "^5.0.1",
-    "source-map-loader": "^1.0.2",
-    "style-loader": "^3.3.1",
-    "stylelint": "^15.10.1",
-    "stylelint-config-prettier": "^9.0.4",
-    "stylelint-config-recommended": "^13.0.0",
-    "stylelint-config-standard": "^34.0.0",
-    "stylelint-csstree-validator": "^3.0.0",
-    "stylelint-prettier": "^4.0.0",
-    "ts-jest": "^26.0.0",
-    "typescript": "~5.0.2",
-    "yjs": "^13.5.40"
-  },
-  "jupyterlab": {
-    "extension": true,
-    "schemaDir": "packages/dfnotebook-extension/schema",
-    "outputDir": "dfnotebook/labextension",
-    "disabledExtensions": [
-      "@jupyterlab/notebook-extension:tracker"
-    ]
-  },
-  "styleModule": "style/index.js"
+    "stylelint": {
+        "extends": [
+            "stylelint-config-recommended",
+            "stylelint-config-standard",
+            "stylelint-prettier/recommended"
+        ],
+        "plugins": [
+            "stylelint-csstree-validator"
+        ],
+        "rules": {
+            "csstree/validator": true,
+            "property-no-vendor-prefix": null,
+            "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
+            "selector-no-vendor-prefix": null,
+            "value-no-vendor-prefix": null
+        }
+    },
+    "dependencies": {
+        "@jupyterlab/application": "^4.2.1"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.0.0",
+        "@babel/preset-env": "^7.0.0",
+        "@jupyterlab/builder": "^4.2.1",
+        "@jupyterlab/buildutils": "^4.2.1",
+        "@jupyterlab/testutils": "^4.2.1",
+        "@types/jest": "^29.2.0",
+        "@types/json-schema": "^7.0.11",
+        "@types/react": "^18.0.26",
+        "@types/react-addons-linked-state-mixin": "^0.14.22",
+        "@typescript-eslint/eslint-plugin": "^6.1.0",
+        "@typescript-eslint/parser": "^6.1.0",
+        "css-loader": "^6.7.1",
+        "eslint": "^8.36.0",
+        "eslint-config-prettier": "^8.8.0",
+        "eslint-plugin-prettier": "^5.0.0",
+        "jest": "^29.2.0",
+        "lerna": "^6.6.0",
+        "npm-run-all": "^4.1.5",
+        "prettier": "^3.0.0",
+        "rimraf": "^5.0.1",
+        "source-map-loader": "^1.0.2",
+        "style-loader": "^3.3.1",
+        "stylelint": "^15.10.1",
+        "stylelint-config-prettier": "^9.0.4",
+        "stylelint-config-recommended": "^13.0.0",
+        "stylelint-config-standard": "^34.0.0",
+        "stylelint-csstree-validator": "^3.0.0",
+        "stylelint-prettier": "^4.0.0",
+        "ts-jest": "^26.0.0",
+        "typescript": "~5.0.2",
+        "yjs": "^13.5.40"
+    },
+    "jupyterlab": {
+        "extension": true,
+        "schemaDir": "packages/dfnotebook-extension/schema",
+        "outputDir": "dfnotebook/labextension",
+        "disabledExtensions": [
+            "@jupyterlab/notebook-extension:tracker"
+        ]
+    },
+    "styleModule": "style/index.js"
 }
