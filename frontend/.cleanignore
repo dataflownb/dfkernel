@@ -26,3 +26,5 @@
 
 @.py
 @.cleanignore
+
+@.yml

@@ -61,31 +61,122 @@
     "watch": "run-p watch:src",
     "watch:src": "tsc -w --sourceMap"
   },
+  "prettier": {
+    "arrowParens": "avoid",
+    "endOfLine": "auto",
+    "singleQuote": true,
+    "trailingComma": "none",
+    "overrides": [
+      {
+        "files": "package.json",
+        "options": {
+          "tabWidth": 4
+        }
+      }
+    ]
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "tsconfig.json",
+      "sourceType": "module"
+    },
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended"
+    ],
+    "rules": {
+      "curly": [
+        "error",
+        "all"
+      ],
+      "eqeqeq": "error",
+      "prefer-arrow-callback": "error",
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          "selector": "interface",
+          "format": [
+            "PascalCase"
+          ],
+          "custom": {
+            "regex": "^I[A-Z]",
+            "match": true
+          }
+        }
+      ],
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-namespace": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "args": "none"
+        }
+      ],
+      "@typescript-eslint/no-use-before-define": "off",
+      "@typescript-eslint/quotes": [
+        "error",
+        "single",
+        {
+          "avoidEscape": true,
+          "allowTemplateLiterals": false
+        }
+      ]
+    }
+  },
+  "eslintIgnore": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.d.ts"
+  ],
+  "stylelint": {
+    "extends": [
+      "stylelint-config-recommended",
+      "stylelint-config-standard",
+      "stylelint-prettier/recommended"
+    ],
+    "plugins": [
+      "stylelint-csstree-validator"
+    ],
+    "rules": {
+      "csstree/validator": true,
+      "property-no-vendor-prefix": null,
+      "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
+      "selector-no-vendor-prefix": null,
+      "value-no-vendor-prefix": null
+    }
+  },
   "dependencies": {
     "@dfnotebook/dfoutputarea": ">0.4.0-a",
     "@jupyter/ydoc": "^1.1.1",
-    "@jupyterlab/apputils": "^4.1.11",
-    "@jupyterlab/attachments": "^4.0.11",
-    "@jupyterlab/cells": "^4.0.11",
-    "@jupyterlab/codeeditor": "^4.0.11",
-    "@jupyterlab/codemirror": "^4.0.11",
-    "@jupyterlab/coreutils": "^6.0.11",
-    "@jupyterlab/filebrowser": "^4.0.11",
-    "@jupyterlab/nbformat": "^4.0.11",
-    "@jupyterlab/observables": "^5.0.11",
-    "@jupyterlab/outputarea": "^4.0.11",
-    "@jupyterlab/rendermime": "^4.0.11",
-    "@jupyterlab/services": "^7.0.11",
-    "@jupyterlab/ui-components": "^4.0.11",
-    "@lumino/algorithm": "^2.0.0",
-    "@lumino/coreutils": "^2.0.0",
-    "@lumino/domutils": "^2.0.0",
-    "@lumino/dragdrop": "^2.0.0",
-    "@lumino/messaging": "^2.0.0",
-    "@lumino/polling": "^2.0.0",
-    "@lumino/signaling": "^2.0.0",
-    "@lumino/virtualdom": "^2.0.0",
-    "@lumino/widgets": "^2.0.1",
+    "@jupyterlab/apputils": "^4.3.1",
+    "@jupyterlab/attachments": "^4.2.1",
+    "@jupyterlab/cells": "^4.2.1",
+    "@jupyterlab/codeeditor": "^4.2.1",
+    "@jupyterlab/codemirror": "^4.2.1",
+    "@jupyterlab/coreutils": "^6.2.1",
+    "@jupyterlab/filebrowser": "^4.2.1",
+    "@jupyterlab/nbformat": "^4.2.1",
+    "@jupyterlab/observables": "^5.2.1",
+    "@jupyterlab/outputarea": "^4.2.1",
+    "@jupyterlab/rendermime": "^4.2.1",
+    "@jupyterlab/services": "^7.2.1",
+    "@jupyterlab/ui-components": "^4.2.1",
+    "@lumino/algorithm": "^2.0.1",
+    "@lumino/coreutils": "^2.1.2",
+    "@lumino/domutils": "^2.0.1",
+    "@lumino/dragdrop": "^2.1.4",
+    "@lumino/messaging": "^2.0.1",
+    "@lumino/polling": "^2.1.2",
+    "@lumino/signaling": "^2.1.2",
+    "@lumino/virtualdom": "^2.0.1",
+    "@lumino/widgets": "^2.3.2",
     "marked": "^4.0.17",
     "react": "^18.2.0"
   },
@@ -104,96 +195,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "styleModule": "style/index.js",
-  "eslintConfig": {
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "tsconfig.json",
-      "sourceType": "module"
-    },
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "rules": {
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          "selector": "interface",
-          "format": [
-            "PascalCase"
-          ],
-          "custom": {
-            "regex": "^I[A-Z]",
-            "match": true
-          }
-        }
-      ],
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          "args": "none"
-        }
-      ],
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-namespace": "off",
-      "@typescript-eslint/no-use-before-define": "off",
-      "@typescript-eslint/quotes": [
-        "error",
-        "single",
-        {
-          "avoidEscape": true,
-          "allowTemplateLiterals": false
-        }
-      ],
-      "curly": [
-        "error",
-        "all"
-      ],
-      "eqeqeq": "error",
-      "prefer-arrow-callback": "error"
-    }
-  },
-  "eslintIgnore": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "**/*.d.ts"
-  ],
-  "prettier": {
-    "singleQuote": true,
-    "trailingComma": "none",
-    "arrowParens": "avoid",
-    "endOfLine": "auto",
-    "overrides": [
-      {
-        "files": "package.json",
-        "options": {
-          "tabWidth": 4
-        }
-      }
-    ]
-  },
-  "stylelint": {
-    "extends": [
-      "stylelint-config-recommended",
-      "stylelint-config-standard",
-      "stylelint-prettier/recommended"
-    ],
-    "plugins": [
-      "stylelint-csstree-validator"
-    ],
-    "rules": {
-      "csstree/validator": true,
-      "property-no-vendor-prefix": null,
-      "selector-class-pattern": "^([a-z][A-z\\d]*)(-[A-z\\d]+)*$",
-      "selector-no-vendor-prefix": null,
-      "value-no-vendor-prefix": null
-    }
-  }
+  "styleModule": "style/index.js"
 }
