@@ -900,7 +900,7 @@ describe('cells/widget', () => {
         widget.initializeState();
         let uuid = String(widget.model.executionCount);
         let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
-        let mockmap = {uuid:widget};
+        let mockmap = {uuid:widget.model};
         await expect(
           CodeCell.execute(widget, sessionContext,{},mockdata,mockmap)
         ).resolves.not.toThrow();
@@ -918,7 +918,7 @@ describe('cells/widget', () => {
 
         let uuid = String(widget.model.id);
         let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
-        let mockmap = {uuid:widget};
+        let mockmap = {uuid:widget.model};
         const originalexecutionCount = widget.promptNode!.textContent;
         
         await CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
@@ -944,7 +944,7 @@ describe('cells/widget', () => {
         });
         let uuid = String(widget.model.executionCount);
         let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
-        let mockmap = {uuid:widget};
+        let mockmap = {uuid:widget.model};
         await CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
         expect(widget.model.getMetadata('execution')).toBeUndefined();
       });
@@ -958,7 +958,7 @@ describe('cells/widget', () => {
         });
         let uuid = String(widget.model.executionCount);
         let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
-        let mockmap = {uuid:widget};
+        let mockmap = {uuid:widget.model};
         await CodeCell.execute(widget, sessionContext, { recordTiming: true },mockdata,mockmap);
         expect(widget.model.getMetadata('execution')).toBeDefined();
         const timingInfo = widget.model.getMetadata('execution') as any;
@@ -979,7 +979,7 @@ describe('cells/widget', () => {
         
         let uuid = String(widget.model.id);
         let mockdata = {'uuid':uuid,'code_dict':{uuid:''}};
-        let mockmap = {uuid:widget};
+        let mockmap = {uuid:widget.model};
         const future1 = CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
         expect(widget.promptNode!.textContent).toEqual('[*]:');//new RegExp('\\[[a-zA-Z0-9]{8}\\]:'));
         const future2 = CodeCell.execute(widget, sessionContext,{},mockdata,mockmap);
