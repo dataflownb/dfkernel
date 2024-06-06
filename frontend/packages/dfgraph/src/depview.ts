@@ -84,6 +84,7 @@ export class DepView {
     this.cellLabel = '';
 
     this.cellLinks = [];
+    this.order = [];
     this.cellList = [];
     this.cellChildNums = [];
     this.outputNodes = [];
@@ -130,9 +131,31 @@ export class DepView {
     d3.select('.end_space').transition().delay(100).style('height', '0vh');
   };
 
-  updateOrder = function (order: any) {
+  updateOrder = function (order: any, active: Boolean) {
+    let old_order = this.order.slice();
     this.order = order;
+    
+    if(active && this.is_open && this.arraysEqual(old_order,this.order)){
+        this.startGraphCreation();
+    }
   };
+
+  //Taken from https://stackoverflow.com/questions/3115982/how-to-check-if-two-arrays-are-equal-with-javascript
+  arraysEqual = function (a:any, b:any) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+  
+    let bcopy = b.slice();
+    a.sort();
+    bcopy.sort();
+   
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== bcopy[i]) return false;
+    }
+    return true;
+  }
+
 
   //
   //     /** @method closes the depviewer and scrolls to the currently selected cell **/
@@ -504,7 +527,9 @@ export class DepView {
     let outnames: string[] = [];
 
     if (that.dataflow) {
-      that.cellList = that.dfgraph.getCells();
+      //Should provide a better experience since order handles deletions
+      that.updateOrder(that.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id),false);
+      that.cellList = that.order.map((cell:any) => cell.replace(/-/g, '').substr(0, 8));
       that.cellList.forEach(function (uuid: string) {
         that.outputNodes[uuid] = that.getNodes(uuid);
         outnames = that.outputNodes[uuid];
@@ -522,7 +547,9 @@ export class DepView {
         return { id: uuid };
       });
     } else {
-      that.cellList = that.dfgraph.getCells();
+      //Should provide a better experience
+      that.updateOrder(that.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id),false);
+      that.cellList = that.order.map((cell:any) => cell.replace(/-/g, '').substr(0, 8));
       that.cellList.forEach(function (uuid: string) {
         that.outputNodes[uuid] = that.getNodes(uuid);
         if (that.outputNodes[uuid].length == 0) {
@@ -532,7 +559,7 @@ export class DepView {
 
         outnames = that.outputNodes[uuid];
 
-        if (uuid in that.outputNodes) {
+        if (uuid in that.outputNodes && that.cellList.indexOf(uuid) > 1) {
           that.dfgraph.getUpstreams(uuid).forEach(function (b: string) {
             b = b.length > 10 ? b.substring(0, 7) + '..' : b;
             if (outnames.indexOf(uuid) > -1) {

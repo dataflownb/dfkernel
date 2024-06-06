@@ -227,7 +227,8 @@
     "schemaDir": "schema",
     "outputDir": "../../dfnotebook/labextension",
     "disabledExtensions": [
-      "@jupyterlab/notebook-extension:tracker"
+      "@jupyterlab/notebook-extension:tracker",
+      "@jupyterlab/notebook-extension:cell-executor"
     ]
   },
   "styleModule": "style/index.js"

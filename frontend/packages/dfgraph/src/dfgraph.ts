@@ -129,7 +129,7 @@ class GraphManager {
       (cellid: any) => cellid.replace(/-/g, '').substr(0, 8) as string
     );
     this.minimap.updateOrder(modifiedorder);
-    this.depview.updateOrder(modifiedorder);
+    this.depview.updateOrder(modifiedorder,true);
     this.updateDepViews(true, true);
   };
 

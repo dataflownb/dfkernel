@@ -5,12 +5,13 @@ import {
   CodeCell,
   IAttachmentsCellModel,
   ICellModel,
+  ICodeCellModel,
   IInputPrompt,
   MarkdownCell,
   RawCell
 } from '@jupyterlab/cells';
 import { DataflowInputArea, DataflowInputPrompt } from './inputarea';
-import { IOutputPrompt } from '@jupyterlab/outputarea';
+import { IOutputAreaModel, IOutputPrompt } from '@jupyterlab/outputarea';
 import {
   DataflowOutputArea,
   DataflowOutputPrompt
@@ -213,7 +214,7 @@ export namespace DataflowCodeCell {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdWidgetMap?: { [key: string]: CodeCell }
+    cellIdModelMap?: { [key: string]: ICodeCellModel }
   ): Promise<KernelMessage.IExecuteReplyMsg | void> {
     const model = cell.model;
     const code = model.sharedModel.getSource();
@@ -243,13 +244,20 @@ export namespace DataflowCodeCell {
         >
       | undefined;
     try {
+      const cellIdOutputsMap: { [key: string]: IOutputAreaModel } = {};
+      if (cellIdModelMap) {
+        for (const cellId in cellIdModelMap) {
+          cellIdOutputsMap[cellId] = cellIdModelMap[cellId].outputs;
+        }
+      }
+
       const msgPromise = DataflowOutputArea.execute(
         code,
         cell.outputArea,
         sessionContext,
         metadata,
         dfData,
-        cellIdWidgetMap
+        cellIdOutputsMap
       );
 
       // cell.outputArea.future assigned synchronously in `execute`
@@ -291,13 +299,12 @@ export namespace DataflowCodeCell {
               .content.execution_count;
             if (executionCount !== null) {
               const cellId = executionCount.toString(16).padStart(8, '0');
-              if (cellIdWidgetMap) {
-                const cellWidget = cellIdWidgetMap[cellId];
-                cellWidget.model.sharedModel.setSource(
+              if (cellIdModelMap) {
+                const cellModel = cellIdModelMap[cellId];
+                cellModel.sharedModel.setSource(
                   (msg as KernelMessage.IExecuteInputMsg).content.code
                 );
-                const outputArea = cellWidget.outputArea;
-                outputArea.model.clear();
+                cellModel.outputs.clear();
               }
             }
             break;
