@@ -32,7 +32,9 @@ fi
 
 if [[ $GROUP == js* ]]; then
 
+    python -m pip install -e .
     jlpm install
+    jlpm build
 
     # extract the group name
     export PKG="${GROUP#*-}"
