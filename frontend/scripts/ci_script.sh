@@ -32,12 +32,12 @@ fi
 
 if [[ $GROUP == js* ]]; then
 
+    jlpm install
+
     # extract the group name
     export PKG="${GROUP#*-}"
     pushd packages/${PKG}
 
-    jlpm install
-    
     jlpm run build:test; true
 
     export FORCE_COLOR=1
