@@ -36,6 +36,8 @@ if [[ $GROUP == js* ]]; then
     export PKG="${GROUP#*-}"
     pushd packages/${PKG}
 
+    jlpm install
+    
     jlpm run build:test; true
 
     export FORCE_COLOR=1
