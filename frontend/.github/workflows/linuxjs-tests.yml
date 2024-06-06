@@ -1,0 +1,46 @@
+name: Linux JS Tests
+
+on:
+  push:
+    branches: [4.2.x]
+  pull_request:
+    branches: [4.2.x]
+  release:
+    types: [published]
+
+jobs:
+  linuxjs:
+    name: JS
+    strategy:
+      matrix:
+        # Fix for https://github.com/jupyterlab/jupyterlab/issues/13903
+        include:
+          - group: js-debugger
+            python-version: '3.11'
+        group:
+          [
+            js-dfcells,
+            js-dfnotebook,
+            js-dfoutputarea,
+          ]
+      fail-fast: false
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Base Setup
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+
+      - name: Install dependencies
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          bash ./scripts/ci_install.sh
+
+      - name: Run test ${{ matrix.group }}
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          bash ./scripts/ci_script.sh
