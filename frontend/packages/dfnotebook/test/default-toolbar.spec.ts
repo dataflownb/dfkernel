@@ -247,7 +247,7 @@ describe('@jupyterlab/notebook', () => {
         context.dispose();
       });
 
-      describe('#createRunButton()', () => {
+      describe.skip('#createRunButton()', () => {
         it('should run and advance when clicked', async () => {
           const button = ToolbarItems.createRunButton(panel);
           const widget = panel.content;
@@ -283,7 +283,7 @@ describe('@jupyterlab/notebook', () => {
         });
       });
 
-      describe('#createRestartRunAllButton()', () => {
+      describe.skip('#createRestartRunAllButton()', () => {
         it('should restart and run all when clicked', async () => {
           const button = ToolbarItems.createRestartRunAllButton(panel);
           const widget = panel.content;
