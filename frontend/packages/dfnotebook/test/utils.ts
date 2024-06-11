@@ -10,17 +10,13 @@ import {
   //NotebookWidgetFactory
 } from '@jupyterlab/notebook';
 import {
-  //INotebookModel,
   DataflowNotebook as Notebook,
-//  DataflowNotebookPanel as NotebookPanel,
   DataflowNotebookWidgetFactory as NotebookWidgetFactory
 } from '../src';
-//import { NBTestUtils } from '@jupyterlab/notebook/lib/testutils';
 import { NBTestUtils } from '@dfnotebook/dfnotebook/lib/testutils';
 import * as defaultContent45 from './default-45.json';
 import * as emptyContent from './empty.json';
 
-//export { DEFAULT_CONTENT } from '@jupyterlab/notebook/lib/testutils';
 export { DEFAULT_CONTENT } from '@dfnotebook/dfnotebook/lib/testutils';
 export const DEFAULT_CONTENT_45: INotebookContent = defaultContent45;
 export const EMPTY_CONTENT: INotebookContent = emptyContent;

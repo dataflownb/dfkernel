@@ -29,7 +29,6 @@ import {
 } from '@dfnotebook/dfcells';
 
 import { NBTestUtils } from '@dfnotebook/dfcells/lib/testutils';
-//import { NBTestUtils } from '@jupyterlab/cells/lib/testutils';
 import { CodeEditorWrapper } from '@jupyterlab/codeeditor';
 import { DataflowOutputPrompt as OutputPrompt } from '@dfnotebook/dfoutputarea';
 import { OutputArea as OutputAreaType } from '@jupyterlab/outputarea';

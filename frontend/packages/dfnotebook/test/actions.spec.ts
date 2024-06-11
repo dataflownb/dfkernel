@@ -15,12 +15,7 @@ import {
   StaticNotebook as StaticNotebookType
 } from '@jupyterlab/notebook';
 import {
-//  KernelError,
   DataflowNotebook as Notebook,
-  //FIXME: A ton of properties do not exist on
-  //DataflowNotebookActions as NotebookActions,
-//  NotebookModel,
-  //DataflowStaticNotebook as StaticNotebook
 } from '../src';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { ISharedCodeCell } from '@jupyter/ydoc';
