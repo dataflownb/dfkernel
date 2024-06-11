@@ -23,13 +23,14 @@ import { ServiceManager } from '@jupyterlab/services';
 import { ServiceManagerMock } from '@jupyterlab/services/lib/testutils';
 import { UUID } from '@lumino/coreutils';
 import * as defaultContent from './default.json';
-import { INotebookModel, NotebookModel } from '@jupyterlab/notebook';
+import { INotebookModel, NotebookModel, setCellExecutor } from '@jupyterlab/notebook';
 import { DataflowNotebookModelFactory as NotebookModelFactory } from './modelfactory';
 import { DataflowNotebookPanel as NotebookPanel } from './panel';
 import { NotebookPanel as NotebookPanelType } from '@jupyterlab/notebook';
 import { DataflowNotebook as Notebook } from './widget';
 import { Notebook as NotebookType, StaticNotebook as StaticNotebookType } from '@jupyterlab/notebook';
 import { DataflowNotebookWidgetFactory as NotebookWidgetFactory } from './widgetfactory';
+import { runCell } from './cellexecutor';
 
 export const DEFAULT_CONTENT: INotebookContent = defaultContent;
 
@@ -43,7 +44,13 @@ export async function initNotebookContext(
     startKernel?: boolean;
   } = {}
 ): Promise<Context<INotebookModel>> {
-  const factory = Private.notebookFactory;
+  const executor = Object.freeze({runCell});
+  try {
+    setCellExecutor(executor); 
+  } catch (Error) {
+    console.log("Executor already set. Continuing.");
+  } 
+const factory = Private.notebookFactory;
   const manager = options.manager || Private.getManager();
   const path = options.path || UUID.uuid4() + '.ipynb';
   console.debug(
@@ -229,6 +236,12 @@ export namespace NBTestUtils {
   export async function createMockContext(
     startKernel = false
   ): Promise<Context<INotebookModel>> {
+    const executor = Object.freeze({runCell});
+    try {
+      setCellExecutor(executor); 
+    } catch (Error) {
+      console.log("Executor already set. Continuing.");
+    } 
     const path = UUID.uuid4() + '.txt';
     const manager = new ServiceManagerMock();
     const factory = new NotebookModelFactory({});

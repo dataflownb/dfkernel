@@ -11,11 +11,13 @@ import {
   ExecutionIndicatorComponent,
   Notebook,
   NotebookActions,
-  NotebookModel
+  NotebookModel,
+  setCellExecutor
 } from '@jupyterlab/notebook';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import * as utils from './utils';
+import { runCell } from '@dfnotebook/dfnotebook/lib/cellexecutor';
 
 const fastCellModel = {
   cell_type: 'code',
@@ -44,6 +46,13 @@ const killerCellModel = {
 const server = new JupyterServer();
 
 beforeAll(async () => {
+  const executor = Object.freeze({ runCell });
+  try {
+    setCellExecutor(executor); 
+  } catch (Error) {
+    console.log("Executor already set. Continuing.")
+  } 
+
   await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
 }, 30000);
 
