@@ -198,49 +198,42 @@ describe('outputarea/widget', () => {
       });
     });
 
-    // describe('#future', () => {
-    //   let sessionContext: SessionContext;
+    describe('#future', () => {
+      let sessionContext: SessionContext;
 
-    //   beforeEach(async () => {
-    //     sessionContext = await createSessionContext(
-    //       {'kernelPreference':
-    //       {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
-    //       await (sessionContext as SessionContext).initialize();
-    //       await sessionContext.session?.kernel?.info;
-    //       await sessionContext.session?.id;
-    //       await sessionContext.startKernel();
-    //   });
+      beforeEach(async () => {
+        sessionContext = await createSessionContext();
+        await sessionContext.initialize();
+        await sessionContext.session?.kernel?.info;
+      });
 
-    //   afterEach(async () => {
-    //     await sessionContext.shutdown();
-    //     sessionContext.dispose();
-    //   });
+      afterEach(async () => {
+        await sessionContext.shutdown();
+        sessionContext.dispose();
+      });
 
-    //   it('should execute code on a kernel and send outputs to the model', async () => {
-    //     const future = sessionContext.session!.kernel!.requestExecute({
-    //       code: CODE,
-    //       user_expressions:{__dfkernel_data__: {}}},
-    //       false
-    //     );
-    //     widget.future = future;
-    //     const reply = await future.done;
-    //     expect(reply!.content.execution_count).toBeTruthy();
-    //     expect(reply!.content.status).toBe('ok');
-    //     expect(model.length).toBe(1);
-    //   });
+      it('should execute code on a kernel and send outputs to the model', async () => {
+        const future = sessionContext.session!.kernel!.requestExecute({
+          code: CODE
+        });
+        widget.future = future;
+        const reply = await future.done;
+        expect(reply!.content.execution_count).toBeTruthy();
+        expect(reply!.content.status).toBe('ok');
+        expect(model.length).toBe(1);
+      });
 
-    //   it('should clear existing outputs', async () => {
-    //     widget.model.fromJSON(DEFAULT_OUTPUTS);
-    //     const future = sessionContext.session!.kernel!.requestExecute({
-    //       code: CODE,
-    //       user_expressions:{__dfkernel_data__: {}}},
-    //       false);
-    //     widget.future = future;
-    //     const reply = await future.done;
-    //     expect(reply!.content.execution_count).toBeTruthy();
-    //     expect(model.length).toBe(1);
-    //   });
-    // });
+      it('should clear existing outputs', async () => {
+        widget.model.fromJSON(DEFAULT_OUTPUTS);
+        const future = sessionContext.session!.kernel!.requestExecute({
+          code: CODE
+        });
+        widget.future = future;
+        const reply = await future.done;
+        expect(reply!.content.execution_count).toBeTruthy();
+        expect(model.length).toBe(1);
+      });
+    });
 
     describe('#onModelChanged()', () => {
       it('should handle an added output', () => {
