@@ -53,10 +53,11 @@
     "prettier:check": "jlpm prettier:base --check",
     "stylelint": "jlpm stylelint:check --fix",
     "stylelint:check": "stylelint --cache \"style/**/*.css\"",
-    "test": "jest",
-    "test:cov": "jest --collect-coverage",
+    "test": "jest -i",
+    "test:cov": "jest -i --collect-coverage",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:debug:watch": "node --inspect-brk node_modules/.bin/jest --runInBand --watch",
+    "test:summary": "jest -i | grep -Ei '.* test.*(failed|passed|total|completed|skipped)' | sort",
     "test:watch": "jest --runInBand --watch",
     "watch": "run-p watch:src",
     "watch:src": "tsc -w --sourceMap"
