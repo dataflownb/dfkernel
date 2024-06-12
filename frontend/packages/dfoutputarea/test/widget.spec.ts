@@ -344,14 +344,12 @@ describe('outputarea/widget', () => {
         let metadata: any = {};
         let code_dict: any = {};
         let mockmap: any = {};
-        let mockdata: any = {};//'uuid':uuid,'code_dict':{uuid:code}};
+        let mockdata: any = {};
         metadata['cellId'] = uuid;
         code_dict[uuid] = CODE;
         mockdata['uuid'] = uuid;
         mockdata['code_dict'] = code_dict;
         mockmap[uuid] = widget;
-        // let mockdata = {'uuid':uuid,'code_dict':{uuid:CODE}};
-        // let mockmap = {uuid:widget};
         const reply = await OutputArea.execute(CODE, widget, sessionContext,metadata,mockdata,mockmap);
         expect(reply!.content.execution_count).toBeTruthy();
         expect(reply!.content.status).toBe('ok');
@@ -378,11 +376,11 @@ describe('outputarea/widget', () => {
 
       it('should handle routing of display messages', async () => {
         const model0 = new OutputAreaModel({ trusted: true });
-        const widget0 = new LogOutputArea({ rendermime, model: model0 }, 'cellId');
+        const widget0 = new LogOutputArea({ rendermime, model: model0 }, 'aaaaaaaa');
         const model1 = new OutputAreaModel({ trusted: true });
-        const widget1 = new LogOutputArea({ rendermime, model: model1 }, 'cellId');
+        const widget1 = new LogOutputArea({ rendermime, model: model1 }, 'bbbbbbbb');
         const model2 = new OutputAreaModel({ trusted: true });
-        const widget2 = new LogOutputArea({ rendermime, model: model2 }, 'cellId');
+        const widget2 = new LogOutputArea({ rendermime, model: model2 }, 'cccccccc');
 
         const code0 = [
           'ip = get_ipython()',
@@ -398,18 +396,8 @@ describe('outputarea/widget', () => {
           'ip,display_with_id'
         ].join('\n');
         const code1 = 'j = 3'; 
-        // [
-        //   'display("above")',
-        //   'display_with_id(1, "here")',
-        //   'display("below")'
-        // ].join('\n');
-        const code2 = 'a,b,c = 4,3,4';
-        // [
-        //   'a,b,c = 4,3,4'
-        //   // 'display_with_id(2, "here")',
-        //   // 'display_with_id(3, "there")',
-        //   // 'display_with_id(4, "here")'
-        // ].join('\n');
+        
+        const code2 = 'a,b,c = 4,j,4';
 
         let ipySessionContext: SessionContext;
         ipySessionContext = await createSessionContext(
@@ -432,36 +420,31 @@ describe('outputarea/widget', () => {
         mockdata['uuid'] = uuid;
         code_dict[uuid] = code1;
         mockdata['code_dict'] = code_dict;
-        //mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
-        //mockmap = {uuid:widget1};
         metadata['cellId'] = uuid;
         mockmap[uuid] = widget1;
-        // mockdata = {'uuid':uuid,'code_dict':{uuid:code1}};
-        // mockmap = {uuid:widget1};
         const promise1 = OutputArea.execute(code1, widget1, ipySessionContext,{},mockdata,mockmap);
         await Promise.all([promise0, promise1]);
-        expect(model1.length).toBe(0);
-        //expect(model1.toJSON()).toEqual({"text/plain": "'above'"});
+        expect(model1.length).toBe(1);
+        const outputs2 = model1.toJSON();
+        expect(outputs2[0].data).toEqual({"text/plain": '3'});
+        expect(outputs2[0]["metadata"]).toEqual({"output_tag":"j"});
         uuid = String(widget2.cellId);
         mockdata['uuid'] = uuid;
         code_dict[uuid] = code2;
         mockdata['code_dict'] = code_dict;
-        //mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
-        //mockmap = {uuid:widget1};
         metadata['cellId'] = uuid;
         mockmap[uuid] = widget2;
-        // mockdata = {'uuid':uuid,'code_dict':{uuid:code2}};
-        // mockmap = {uuid:widget2};
         await OutputArea.execute(code2, widget2, ipySessionContext,metadata,mockdata,mockmap);
-
-        expect(model1.length).toBe(0);
-        //expect(model1.toJSON()[0]['data']).toEqual({"text/plain": "'above'"});
-        expect(model2.length).toBe(0);
+        
+        expect(model1.length).toBe(1);
+        expect(model2.length).toBe(3);
         const outputs = model2.toJSON();
-        expect(outputs).toEqual([]);
-        // expect(outputs[0].data).toEqual({ 'text/plain': '4' });
-        // expect(outputs[1].data).toEqual({ 'text/plain': '3' });
-        // expect(outputs[2].data).toEqual({ 'text/plain': '4' });
+        expect(outputs[0].data).toEqual({ 'text/plain': '4' });
+        expect(outputs[0]["metadata"]).toEqual({"output_tag":"a"});
+        expect(outputs[1].data).toEqual({ 'text/plain': '3' });
+        expect(outputs[1]["metadata"]).toEqual({"output_tag":"b"});
+        expect(outputs[2].data).toEqual({ 'text/plain': '4' });
+        expect(outputs[2]["metadata"]).toEqual({"output_tag":"c"});
         await ipySessionContext.shutdown();
       });
 
@@ -476,25 +459,18 @@ describe('outputarea/widget', () => {
         let metadata: any = {};
         let code_dict: any = {};
         let mockmap: any = {};
-        let mockdata: any = {};//'uuid':uuid,'code_dict':{uuid:code}};
+        let mockdata: any = {};
         metadata['cellId'] = uuid;
         code_dict[uuid] = 'a++1';
         mockdata['uuid'] = uuid;
         mockdata['code_dict'] = code_dict;
         mockmap[uuid] = widget;
-        // let uuid = String(widget.cellId);
-        // let mockdata = {'uuid':uuid,'code_dict':{uuid:'a++1'}};
-        // let mockmap = {uuid:widget};
         const future1 = OutputArea.execute('a++1', widget, ipySessionContext,metadata,mockdata,mockmap);
         uuid = String(widget1.cellId);
         mockdata['uuid'] = uuid;
         code_dict[uuid] = 'a=1';
         mockdata['code_dict'] = code_dict;
-        //mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
-        //mockmap = {uuid:widget1};
         metadata['cellId'] = uuid;
-        // mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
-        // mockmap = {uuid:widget1};
         const future2 = OutputArea.execute('a=1', widget1, ipySessionContext,metadata,mockdata,mockmap);
         const reply = await future1;
         const reply2 = await future2;
@@ -512,17 +488,15 @@ describe('outputarea/widget', () => {
           {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
         await ipySessionContext.initialize();
         const widget1 = new LogOutputArea({ rendermime, model }, 'cellId');
-        //let uuid = String(widget.cellId);
         let uuid = widget1.cellId;
         let metadata: any = {};
         let code_dict: any = {};
         let mockmap: any = {};
-        let mockdata: any = {};//'uuid':uuid,'code_dict':{uuid:code}};
+        let mockdata: any = {};
         metadata['cellId'] = uuid;
         code_dict[uuid] = 'a++1';
         mockdata['uuid'] = uuid;
         mockdata['code_dict'] = code_dict;
-        //let mockmap = {};//{uuid:widget0};
         mockmap[uuid] = widget1;
         const future1 = OutputArea.execute(
           'a++1',
@@ -536,10 +510,7 @@ describe('outputarea/widget', () => {
         mockdata['uuid'] = uuid;
         code_dict[uuid] = 'a=1';
         mockdata['code_dict'] = code_dict;
-        //mockdata = {'uuid':uuid,'code_dict':{uuid:'a=1'}};
-        //mockmap = {uuid:widget1};
         metadata['cellId'] = uuid;
-        //metadata = {'cellId':uuid};
         const future2 = OutputArea.execute('a=1', widget1, ipySessionContext,metadata,mockdata,mockmap);
         const reply = await future1;
         const reply2 = await future2;
