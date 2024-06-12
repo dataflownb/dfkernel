@@ -20,6 +20,5 @@
     "strictPropertyInitialization": false,
     "target": "ES2018",
     "types": []
-  },
-  "include": ["src/*"]
+  }
 }
