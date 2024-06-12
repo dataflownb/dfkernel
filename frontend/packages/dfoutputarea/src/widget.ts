@@ -11,6 +11,26 @@ import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
 import { Panel, Widget } from '@lumino/widgets';
 
+
+export interface IStreamWithExecCountMsg extends KernelMessage.IStreamMsg {
+  content: {
+    name: 'stdout' | 'stderr';
+    text: string;
+    execution_count?: number | null;
+  };
+}
+
+export interface IErrorWithExecCountMsg extends KernelMessage.IErrorMsg {
+  content: {
+    ename: string;
+    evalue: string;
+    traceback: string[];
+    execution_count?: number | null;
+  };
+}
+
+
+
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions, cellId: string) {
     super({
