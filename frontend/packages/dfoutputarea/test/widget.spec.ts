@@ -569,39 +569,6 @@ describe('outputarea/widget', () => {
         await SimplifiedOutputArea.execute(code, widget0, ipySessionContext);
         expect(model0.toJSON()[0].text).toBe(widget0.node.textContent);
       });
-      
-      //FIXME: Restore this test if we add Dataflow SimplifiedOutputAreas
-      // it('should continuously render delayed outputs', async () => {
-      //   const model0 = new OutputAreaModel({ trusted: true });
-      //   const widget0 = new SimplifiedOutputArea({
-      //     model: model0,
-      //     rendermime: rendermime
-      //   },'celllId');
-      //   let ipySessionContext: SessionContext;
-      //   ipySessionContext = await createSessionContext(
-      //     {'kernelPreference':
-      //     {'name':'dfpython3','autoStartDefault':true,'shouldStart':true}});
-      //   await ipySessionContext.initialize();
-      //   const code = [
-      //     'import time',
-      //     'for i in range(3):',
-      //     '    print(f"Hello Jupyter! {i}")',
-      //     '    time.sleep(1)'
-      //   ].join('\n');
-      //   let uuid = widget0.cellId;
-      //   let metadata: any = {};
-      //   let code_dict: any = {};
-      //   let mockmap: any = {};
-      //   let mockdata: any = {};//'uuid':uuid,'code_dict':{uuid:code}};
-      //   metadata['cellId'] = uuid;
-      //   code_dict[uuid] = code;
-      //   mockdata['uuid'] = uuid;
-      //   mockdata['code_dict'] = code_dict;
-      //   //let mockmap = {};//{uuid:widget0};
-      //   mockmap[uuid] = widget0;
-      //   await SimplifiedOutputArea.execute(code, widget0, ipySessionContext,metadata,mockdata,mockmap);
-      //   expect(model0.toJSON()[0].text).toBe(widget0.node.textContent);
-      // });
      });
 
     describe('.ContentFactory', () => {
