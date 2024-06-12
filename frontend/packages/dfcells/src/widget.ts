@@ -337,7 +337,6 @@ export namespace DataflowCodeCell {
       }
 
       let content = (msg.content as any);
-      console.log(content);
       let nodes = content.nodes;
       let uplinks = content.links;
       let cells = content.cells;
@@ -345,15 +344,15 @@ export namespace DataflowCodeCell {
       let allUps = content.upstream_deps;
       let internalNodes = content.internal_nodes;
       let sessId = sessionContext.session.id;
-      let testflag = false;
+      let graphUndefined = false;
       //Set information about the graph based on sessionid
       if(GraphManager.graphs[sessId] === undefined){
         GraphManager.createGraph(sessId);
-        testflag = true;
+        graphUndefined = true;
       }
       GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
       GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      if (!testflag){
+      if (!graphUndefined){
         GraphManager.updateDepViews(false);
       }
 
