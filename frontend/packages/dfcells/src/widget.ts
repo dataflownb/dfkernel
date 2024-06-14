@@ -259,6 +259,7 @@ export namespace DataflowCodeCell {
         dfData,
         cellIdOutputsMap
       );
+
       // cell.outputArea.future assigned synchronously in `execute`
       if (recordTiming) {
         const recordTimingHook = (msg: KernelMessage.IIOPubMessage) => {
@@ -335,7 +336,7 @@ export namespace DataflowCodeCell {
         model.setMetadata('execution', timingInfo);
       }
 
-      let content = (msg.content as any)
+      let content = (msg.content as any);
       let nodes = content.nodes;
       let uplinks = content.links;
       let cells = content.cells;
@@ -343,10 +344,18 @@ export namespace DataflowCodeCell {
       let allUps = content.upstream_deps;
       let internalNodes = content.internal_nodes;
       let sessId = sessionContext.session.id;
+      let graphUndefined = false;
       //Set information about the graph based on sessionid
+      if(GraphManager.graphs[sessId] === undefined){
+        GraphManager.createGraph(sessId);
+        graphUndefined = true;
+      }
       GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
       GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      GraphManager.updateDepViews(false);
+      if (!graphUndefined){
+        GraphManager.updateDepViews(false);
+      }
+
        if (content.update_downstreams) {
                     GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
       }
