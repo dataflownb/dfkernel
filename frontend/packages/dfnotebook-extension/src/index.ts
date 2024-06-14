@@ -2573,19 +2573,19 @@ function addCommands(
       // If it is 8 hex digits, it matches generated uuid, ask for different input.
       // If it does not follow conventions, it can cause errors in the code so ask for different input.
       // If cancel is hit, do not update the tag
-      let value = prompt('Tag this cell please:', '');
+      let value: string | null
       var hexRegexp = new RegExp('^[0-9a-f]{8}$');
       var pythonVarRegexp = new RegExp('^[a-zA-Z0-9_]*$');
-      if(value !== null){ //Handle cancel button
-        do {
-          if(hexRegexp.test(value)) {
-            value = prompt('Cell tags cannot be 8 hex values. Enter a valid tag:', '');
-          } else if (!pythonVarRegexp.test(value)) {
-            value = prompt('Invalid name (follows python identifier rules). Enter a valid tag:', '');
-          }
-          if(value === null) break; // Handle cancel button
-        } while(hexRegexp.test(value) || !pythonVarRegexp.test(value))
-      }
+
+      value = prompt('Tag this cell:', '');
+
+      do{    
+        if(value === null) break; //handle cancel upon entry
+        else if(!pythonVarRegexp.test(value))
+          value = prompt('Invalid name (follow python identifier rules). Enter a valid tag:', value);
+        else if(hexRegexp.test(value))
+          value = prompt('Cell tags cannot be 8 hex values. Enter a valid tag:', value);
+      }while(value !== null && (hexRegexp.test(value) || !pythonVarRegexp.test(value)));
 
       if(value !== null) //Do not update tag if canceled
         inputArea.addTag(value);
