@@ -155,11 +155,11 @@ class OutputMagics(Magics):
             mode = 'exec'
             source = '<display exec>'
         import sys
-        sys.stdout.write("COMPILE CALLED\n")
-        sys.stdout.flush()
+        # sys.stdout.write("COMPILE CALLED\n")
+        # sys.stdout.flush()
         code = self.shell.compile(expr_ast, source, mode)
-        sys.stdout.write("COMPILE DONE\n")
-        sys.stdout.flush()
+        # sys.stdout.write("COMPILE DONE\n")
+        # sys.stdout.flush()
 
         glob = self.shell.user_ns
         if mode=='eval':
@@ -176,12 +176,12 @@ class OutputMagics(Magics):
                 return
             out = None
 
-        if isinstance(out, collections.Mapping):
+        if isinstance(out, collections.abc.Mapping):
             # wrap out according to names
             # if is dictionary-like
             return build_linked_result(self.shell.uuid,[],False, list(out.items()))
             # return nameddict.from_mapping(out)
-        elif isinstance(out, collections.Sequence):
+        elif isinstance(out, collections.abc.Sequence):
             # wrap out according to names or indicies
             names = [safe_attr(names[i] if i < len(names) else i)
                      for i in range(len(out))]
