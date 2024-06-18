@@ -2565,8 +2565,29 @@ function addCommands(
       }
 
       const inputArea = cell.inputArea as DataflowInputArea;
-      const value = prompt('Tag this cell please:', '');
-      inputArea.addTag(value);
+
+      // Get value from user and check if it is 8 hex digits or follows pythonic identifier conventions.
+      // If it is 8 hex digits, it matches generated uuid, ask for different input.
+      // If it does not follow conventions, it can cause errors in the code so ask for different input.
+      // If cancel is hit, do not update the tag
+      const hexRegexp = new RegExp('^[0-9a-f]{8}$');
+      const pythonVarRegexp = new RegExp('^[a-zA-Z0-9_]*$');
+
+      let tagPrompt = 'Tag this cell:';
+      let tagValue = inputArea.tag; // populate with existing tag
+      do {
+        tagValue = prompt(tagPrompt, tagValue || '')
+        if (tagValue !== null) { // not a cancel
+          if (!pythonVarRegexp.test(tagValue))
+            tagPrompt = 'Invalid name (follow python identifier rules). Enter a valid tag:'
+          else if (hexRegexp.test(tagValue))
+            tagPrompt = 'Cell tags cannot be 8 hex values. Enter a valid tag:'
+          else { // update tag
+            inputArea.addTag(tagValue);
+            break
+          }
+        }
+      } while (tagValue !== null);
     }
   });
   // !!! END DATAFLOW NOTEBOOK CHANGE !!!

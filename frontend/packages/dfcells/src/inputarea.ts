@@ -27,6 +27,10 @@ export class DataflowInputArea extends InputArea {
     this.model?.setMetadata('tag', value);
     this.prompt.updatePromptNode(this.prompt.executionCount);
   }
+
+  public get tag(): string | null {
+    return this.model?.getMetadata('tag') || null;
+  }
 }
 
 export namespace DataflowInputArea {
