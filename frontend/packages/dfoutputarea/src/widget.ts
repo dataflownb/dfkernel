@@ -10,6 +10,7 @@ import { Kernel, KernelMessage } from '@jupyterlab/services';
 import * as nbformat from '@jupyterlab/nbformat';
 import { JSONObject } from '@lumino/coreutils';
 import { Panel, Widget } from '@lumino/widgets';
+import { cellIdIntToStr } from '@dfnotebook/dfutils';
 
 
 export interface IStreamWithExecCountMsg extends KernelMessage.IStreamMsg {
@@ -86,7 +87,7 @@ export class DataflowOutputArea extends OutputArea {
       case 'error':
         execCountMsg = msg as IErrorWithExecCountMsg;        
         if (execCountMsg.content.execution_count) {
-          const cellId = execCountMsg.content.execution_count.toString(16).padStart(8, '0');
+          const cellId = cellIdIntToStr(execCountMsg.content.execution_count);
           if (msgType === 'stream' || msgType === 'error') {
             delete execCountMsg.content.execution_count;
           }
@@ -139,7 +140,7 @@ export class DataflowOutputPrompt extends OutputPrompt {
     } else if (this.executionCount === null) {
       this.node.textContent = '';
     } else {
-      const cellId = this.executionCount.toString(16).padStart(8, '0');
+      const cellId = cellIdIntToStr(this.executionCount)
       // .substr(0, 3);
       this.node.textContent = `[${cellId}]:`;
     }

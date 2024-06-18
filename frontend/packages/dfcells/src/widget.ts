@@ -16,6 +16,7 @@ import {
   DataflowOutputArea,
   DataflowOutputPrompt
 } from '@dfnotebook/dfoutputarea';
+import { cellIdIntToStr, truncateCellId } from '@dfnotebook/dfutils';
 import { IChangedArgs } from '@jupyterlab/coreutils';
 import { ISessionContext } from '@jupyterlab/apputils';
 import { JSONObject } from '@lumino/coreutils';
@@ -89,8 +90,7 @@ function setOutputArea(cell: CodeCell) {
       //@ts-expect-error
       inputHistoryScope: output._inputHistoryScope
     },
-    // FIXME move this to a function to unify with the code below and in dfnotebook/actions.tsx
-    cell.model.id.replace(/-/g, '').substring(0, 8)
+    truncateCellId(cell.model.id)
   );
 
   dfOutput.addClass(CELL_OUTPUT_AREA_CLASS);
@@ -184,7 +184,7 @@ export class DataflowCodeCell extends CodeCell {
 
   public setPromptToId() {
     // FIXME move this to a function to unify with the code in dfnotebook/actions.tsx
-    this.setPrompt(`${this.model.id.replace(/-/g, '').substring(0, 8) || ''}`);
+    this.setPrompt(`${truncateCellId(this.model.id) || ''}`);
   }
 
   initializeState(): this {
@@ -298,7 +298,7 @@ export namespace DataflowCodeCell {
             const executionCount = (msg as KernelMessage.IExecuteInputMsg)
               .content.execution_count;
             if (executionCount !== null) {
-              const cellId = executionCount.toString(16).padStart(8, '0');
+              const cellId = cellIdIntToStr(executionCount);
               if (cellIdModelMap) {
                 const cellModel = cellIdModelMap[cellId];
                 cellModel.sharedModel.setSource(
@@ -365,10 +365,8 @@ export namespace DataflowCodeCell {
       // If we started executing, and the cell is still indicating this
       // execution, clear the prompt.
       if (future && !cell.isDisposed && cell.outputArea.future === future) {
-        // cell.setPrompt('');
         // FIXME is this necessary?
         cell.setPromptToId();
-        // cell.setPrompt(`${cell.model.id.substring(0, 8) || ''}`);
       }
       throw e;
     }

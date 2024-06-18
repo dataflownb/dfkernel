@@ -11,6 +11,7 @@ import { findIndex } from '@lumino/algorithm';
 import { KernelError, INotebookModel, INotebookCellExecutor } from '@jupyterlab/notebook';
 import { DataflowCodeCell } from '@dfnotebook/dfcells';
 import { DataflowNotebookModel } from './model';
+import { truncateCellId } from '@dfnotebook/dfutils';
 
 /**
  * Run a single notebook cell.
@@ -91,8 +92,7 @@ export async function runCell({
                     const cAny = notebook.cells.get(index);
                     if (cAny.type === 'code') {
                         const c = cAny as ICodeCellModel;
-                        // FIXME replace with utility function (see dfcells/widget)
-                        const cId = c.id.replace(/-/g, '').substring(0, 8);
+                        const cId = truncateCellId(c.id)
                         const inputTag = c.getMetadata('tag');
                         if (inputTag) {
                         // FIXME need to check for duplicates!
@@ -118,7 +118,7 @@ export async function runCell({
     
                 const dfData = {
                     // FIXME replace with utility function (see dfcells/widget)
-                    uuid: cell.model.id.replace(/-/g, '').substring(0, 8) || '',
+                    uuid: truncateCellId(cell.model.id) || '',
                     code_dict: codeDict,
                     output_tags: outputTags, // this.notebook.get_output_tags(Object.keys(code_dict)),
                     input_tags: inputTags,
