@@ -33,7 +33,6 @@
   },
   "scripts": {
     "build": "lerna run build",
-    "build:dev": "jlpm build & jlpm develop",
     "build:lib": "lerna run build:lib",
     "build:lib:prod": "lerna run build:lib:prod",
     "build:test": "lerna run build:test",
@@ -41,7 +40,7 @@
     "clean:slate": "python clean.py",
     "develop": "jupyter labextension develop --overwrite .",
     "install:extension": "lerna run install:extension",
-    "install:develop": "jlpm build && jlpm develop",
+    "install:develop": "jlpm install && jlpm build && jlpm develop",
     "lint": "jlpm && jlpm prettier && jlpm eslint && jlpm stylelint",
     "lint:check": "jlpm prettier:check && jlpm eslint:check && jlpm stylelint:check",
     "prettier": "prettier --write \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
