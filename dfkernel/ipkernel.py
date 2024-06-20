@@ -14,6 +14,15 @@ import inspect
 from traitlets import Type
 from ipykernel.jsonutil import json_clean
 
+from ipykernel.comm import Comm
+from IPython import get_ipython
+
+try:
+    from dfconvert.convert import convert_notebook
+    dfconvert_package_installed = True
+except ImportError:
+    dfconvert_package_installed = False
+
 try:
     from IPython.core.interactiveshell import _asyncio_runner
 except ImportError:
@@ -50,6 +59,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self.shell.display_pub.get_execution_count = lambda: int(
             self.execution_count, 16
         )
+
+        get_ipython().kernel.comm_manager.register_target('dfpackages', self.dfpackages_comm)
+        get_ipython().kernel.comm_manager.register_target('dfconvert', self.dfconvert_comm)
+
         # # first use nest_ayncio for nested async, then add asyncio.Future to tornado
         # nest_asyncio.apply()
         # # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
@@ -78,6 +91,26 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #     # FIXME deal with scoping
     #
     #     super()._publish_execute_input(code, parent, execution_count)
+
+    def dfpackages_comm(self, comm, msg):
+        dfpackages = dict()
+        dfpackages['dfconvert'] = dfconvert_package_installed
+        comm.send({'dfpackages': dfpackages})
+
+        @comm.on_msg
+        def _recv(msg):
+            pass
+
+    def dfconvert_comm(self, comm, msg):
+        @comm.on_msg
+        def _recv(msg):
+            if dfconvert_package_installed:
+                try:
+                    updated_notebook = convert_notebook(msg['content']['data']['notebook'])
+                    comm.send({'notebook': updated_notebook})
+                except Exception as e:
+                    self.log.error('Error in conversion')
+                    self.log.error(e)
 
     async def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
