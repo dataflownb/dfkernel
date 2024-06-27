@@ -35,6 +35,7 @@ import { DocumentRegistry, IDocumentWidget } from '@jupyterlab/docregistry';
 import { IDefaultFileBrowser } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { IMainMenu } from '@jupyterlab/mainmenu';
+import { truncateCellId } from '@dfnotebook/dfutils';
 import * as nbformat from '@jupyterlab/nbformat';
 import {
   ExecutionIndicator,
@@ -393,7 +394,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
 
                 cellList.map(function(cell:any)
                 {
-                let cellId = cell.id.replace(/-/g, '').substr(0, 8) as string;
+                let cellId = truncateCellId(cell.id.replace(/-/g, '')) as string;
                 if(cell?.cell_type != "code"){return;}
                 cellContents[cellId] = cell.source;
                 outputTags[cellId] =
@@ -433,7 +434,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             nbPanel.content.activeCellChanged.connect(() =>{
                 let prevActive = GraphManager.getActive();
                 if(typeof prevActive == 'object'){
-                    let uuid = prevActive.id.replace(/-/g, '').substr(0, 8);
+                    let uuid = truncateCellId(prevActive.id.replace(/-/g, ''));
                     if(prevActive.sharedModel.source != GraphManager.getText(uuid)){
                         GraphManager.markStale(uuid);
                     }
@@ -442,7 +443,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                     }
                 }
                 //Have to get this off the model the same way that actions.tsx does
-                let activeId = nbPanel.content.activeCell?.model?.id.replace(/-/g, '').substr(0, 8);
+                let activeId = truncateCellId(nbPanel.content.activeCell?.model?.id.replace(/-/g, '') || '');
                 GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
             });
       });

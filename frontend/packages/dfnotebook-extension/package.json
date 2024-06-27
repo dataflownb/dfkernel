@@ -161,6 +161,7 @@
   "dependencies": {
     "@dfnotebook/dfcells": ">0.4.0-a",
     "@dfnotebook/dfnotebook": ">0.4.0-a",
+    "@dfnotebook/dfutils": ">0.4.0-a",
     "@jupyterlab/application": "^4.2.1",
     "@jupyterlab/apputils": "^4.3.1",
     "@jupyterlab/cell-toolbar": "^4.2.1",
