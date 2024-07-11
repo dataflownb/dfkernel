@@ -530,7 +530,7 @@ export class DepView {
     if (that.dataflow) {
       //Should provide a better experience since order handles deletions
       that.updateOrder(that.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id),false);
-      that.cellList = that.order.map((cell:any) => truncateCellId(cell.replace(/-/g, '')));
+      that.cellList = that.order.map((cell:any) => truncateCellId(cell));
       that.cellList.forEach(function (uuid: string) {
         that.outputNodes[uuid] = that.getNodes(uuid);
         outnames = that.outputNodes[uuid];
@@ -550,7 +550,7 @@ export class DepView {
     } else {
       //Should provide a better experience
       that.updateOrder(that.tracker.currentWidget.model.cells.model.cells.map((cell:any) => cell.id),false);
-      that.cellList = that.order.map((cell:any) => truncateCellId(cell.replace(/-/g, '')));
+      that.cellList = that.order.map((cell:any) => truncateCellId(cell));
       that.cellList.forEach(function (uuid: string) {
         that.outputNodes[uuid] = that.getNodes(uuid);
         if (that.outputNodes[uuid].length == 0) {
