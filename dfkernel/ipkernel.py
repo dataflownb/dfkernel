@@ -93,13 +93,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #     super()._publish_execute_input(code, parent, execution_count)
 
     def dfpackages_comm(self, comm, msg):
-        dfpackages = dict()
-        dfpackages['dfconvert'] = dfconvert_package_installed
-        comm.send({'dfpackages': dfpackages})
-
         @comm.on_msg
         def _recv(msg):
-            pass
+            dfpackages = dict()
+            dfpackages['dfconvert'] = dfconvert_package_installed
+            comm.send({'dfpackages': dfpackages})
 
     def dfconvert_comm(self, comm, msg):
         @comm.on_msg
