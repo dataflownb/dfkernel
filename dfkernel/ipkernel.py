@@ -14,6 +14,9 @@ import inspect
 from traitlets import Type
 from ipykernel.jsonutil import json_clean
 
+from ipykernel.comm import Comm
+from IPython import get_ipython
+
 try:
     from IPython.core.interactiveshell import _asyncio_runner
 except ImportError:
@@ -27,6 +30,7 @@ from .utils import (
     ref_replacer,
     identifier_replacer,
     dollar_replacer,
+    get_references
 )
 
 
@@ -50,6 +54,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self.shell.display_pub.get_execution_count = lambda: int(
             self.execution_count, 16
         )
+        get_ipython().kernel.comm_manager.register_target('dfcode', self.dfcode_comm)
+        
         # # first use nest_ayncio for nested async, then add asyncio.Future to tornado
         # nest_asyncio.apply()
         # # from maartenbreddels: https://github.com/jupyter/nbclient/pull/71/files/a79ae70eeccf1ab8bdd28370cd28f9546bd4f657
@@ -79,6 +85,21 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
     #
     #     super()._publish_execute_input(code, parent, execution_count)
 
+    
+    def dfcode_comm(self, comm, msg):
+        @comm.on_msg
+        def _recv(msg):
+            try:
+                dfMetadata = msg['content']['data']['dfMetadata']
+                code_dict = self.update_code_cells(dfMetadata)
+                comm.send({'code_dict': code_dict})
+            except Exception as e:
+                self.log.error('Error in conversion')
+                self.log.error(e)
+                comm.send({'error': str(e)})
+            finally:
+                comm.close()
+
     async def execute_request(self, stream, ident, parent):
         """handle an execute_request"""
         try:
@@ -101,6 +122,14 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         input_tags = dfkernel_data.get("input_tags", {})
         # print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
+
+        output_tags= {}
+        for op_id, op_tags in dfkernel_data['output_tags'].items():
+            for tag in op_tags:
+                if isinstance(tag, str):
+                    output_tags.setdefault(tag, set()).add(op_id)
+        
+        self._output_tags = output_tags
         self.shell.input_tags = input_tags
 
         self._outer_stream = stream
@@ -109,6 +138,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_stop_on_error = stop_on_error
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
+        self._identifier_refs = {}
+        self._persistent_code = {}
 
         res = await self.inner_execute_request(
             code,
@@ -150,30 +181,37 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             execution_count = 1
         dollar_converted = False
         orig_code = code
+        parsed_code = ''
         try:
             code = convert_dollar(
                 code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags
             )
             dollar_converted = True
+            parsed_code = code;
             code = ground_refs(
-                code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags
+                code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags, output_tags=self._output_tags
             )
-            code = convert_identifier(code, dollar_replacer)
+            self._identifier_refs[uuid] = get_references(code)
+            code = convert_identifier(code, dollar_replacer, input_tags=input_tags)
             dollar_converted = False
         except SyntaxError as e:
-            # ignore this for now, catch it in do_execute
-            # print(e)
             if dollar_converted:
                 code = orig_code
+                parsed_code = ''
             pass
         except TokenError as e:
             # ignore this for now, catch it in do_execute
+            parsed_code = ''
             pass
 
-        # print("FIRST CODE:", code)
-
+        #print("FIRST CODE:", code)
         if not silent:
-            self._publish_execute_input(code, parent, execution_count)
+            if len(parsed_code) > 0:
+                display_code = ground_refs(parsed_code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags, output_tags=self._output_tags, display_code_parsed=True)
+                display_code = convert_identifier(display_code, dollar_replacer, input_tags=input_tags)
+                self._publish_execute_input(display_code, parent, execution_count)
+            else:
+                self._publish_execute_input(code, parent, execution_count)
 
         # update the code_dict with the modified code
         dfkernel_data["code_dict"][uuid] = code
@@ -182,6 +220,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             code = convert_dollar(
                 code, self.shell.dataflow_state, uuid, ref_replacer, input_tags
             )
+            self._persistent_code[uuid] = code
         except SyntaxError as e:
             # ignore this for now, catch it in do_execute
             pass
@@ -377,6 +416,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 reply_content["nodes"] = res.nodes
                 reply_content["links"] = res.links
                 reply_content["cells"] = res.cells
+                reply_content["identifier_refs"] = self._identifier_refs
+                reply_content["persistent_code"] = self._persistent_code
 
                 reply_content["upstream_deps"] = res.all_upstream_deps
                 reply_content["downstream_deps"] = res.all_downstream_deps
@@ -431,6 +472,47 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return reply_content, res
 
+    def update_code_cells(self, dfmetadata):
+        curr_output_tags = dict()
+        updated_code_dict = {}
+        code_refs = dict()
+
+        for id, tags in dfmetadata['output_tags'].items():
+            for tag in tags:
+                if isinstance(tag, str):
+                    curr_output_tags.setdefault(tag, set()).add(id)
+        
+        for uuid, refs in dfmetadata['all_refs'].items():
+            for ref_id, ref_tags in refs['ref'].items():
+                for tag in ref_tags:
+                    if code_refs.get(tag):
+                        code_refs[tag].add(ref_id)
+                    else:
+                        code_refs[tag] = {ref_id}
+
+            if dfmetadata['code_dict'].get(uuid):
+                try:
+                    code = dfmetadata['code_dict'][uuid]
+                    tag_refs = { value: key for key, value in refs['tag_refs'].items() }
+
+                    code = convert_dollar(
+                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs = tag_refs
+                    )
+
+                    code = ground_refs(
+                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=curr_output_tags, cell_refs=code_refs, reversion=True
+                    )
+
+                    code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
+                    
+                    if dfmetadata['code_dict'].get(uuid) and code != dfmetadata['code_dict'][uuid]:
+                        updated_code_dict[uuid] = code
+
+                except Exception as e:
+                    self.log.error('Error in conversion for cell: {uuid}')
+                    self.log.error(e)
+        
+        return updated_code_dict
 
 # This exists only for backwards compatibility - use IPythonKernel instead
 class Kernel(IPythonKernel):

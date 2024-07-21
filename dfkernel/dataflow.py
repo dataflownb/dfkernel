@@ -427,9 +427,10 @@ class DataflowState:
         new_tags = set()
         for (cell_id, tag_list) in output_tags.items():
             for tag in tag_list:
-                # print("OUTER ADD_LINKS:", cell_id, tag)
-                self.add_link(tag, cell_id, make_current=False)
-                new_tags.add(tag)
+                if tag:
+                    # print("OUTER ADD_LINKS:", cell_id, tag)
+                    self.add_link(tag, cell_id, make_current=False)
+                    new_tags.add(tag)
         for tag in new_tags:
             if len(self.all_links[tag]) == 1 and not self.has_current_link(tag):
                 # can make current because unambiguous
@@ -439,11 +440,12 @@ class DataflowState:
 
     def add_link(self, tag, cell_id, make_current=True):
         # print("OUTER ADD_LINK:", cell_id, tag)
-        self.all_links[tag].add(cell_id)
-        self.rev_links[cell_id].add(tag)
-        if make_current:
-            # print('ADDING TAG (ADD_LINK):', cell_id, tag)
-            self.links[tag].append(cell_id)
+        if isinstance(tag, str):
+            self.all_links[tag].add(cell_id)
+            self.rev_links[cell_id].add(tag)
+            if make_current:
+                # print('ADDING TAG (ADD_LINK):', cell_id, tag)
+                self.links[tag].append(cell_id)
 
     def reset_cell(self, cell_id):
         # print(f"{cell_id} LINKS: {self.links} REV LINKS: {self.rev_links} ALL_LINKS: {self.all_links}")

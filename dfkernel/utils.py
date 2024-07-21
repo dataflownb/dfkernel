@@ -11,16 +11,17 @@ import itertools
 import re
 
 class DataflowRef:
-    __slots__ = ['start_pos','end_pos','name','cell_id','cell_tag','ref_qualifier']
+    __slots__ = ['start_pos','end_pos','name','cell_id','cell_tag','ref_qualifier','input_tags']
 
-    def __init__(self, start_pos=None, end_pos=None, name=None, cell_id=None, cell_tag=None, ref_qualifier=None):
+    def __init__(self, start_pos=None, end_pos=None, name=None, cell_id=None, cell_tag=None, ref_qualifier=None, input_tags=None):
         self.start_pos = start_pos
         self.end_pos = end_pos
         self.name = name
         self.cell_id = cell_id
         self.cell_tag = cell_tag
         self.ref_qualifier = ref_qualifier
-
+        self.input_tags = input_tags
+        
     @classmethod
     def fromstrstr(cls, s):
         return cls(**json.loads(json.loads(s)))
@@ -35,11 +36,16 @@ class DataflowRef:
 
     def __str__(self):
         qualifier = self.ref_qualifier if self.ref_qualifier is not None else ''
-        if self.cell_tag:
-            cell_tag = f'{self.cell_tag}$'
-        else:
-            cell_tag = ''
-        return f'{self.name}${qualifier}{cell_tag}{self.cell_id}'
+        
+        if self.cell_id == '@default_ref':
+            return f'{self.name}'
+        
+        reversed_input_tags = {id: tag for tag, id in self.input_tags.items()}
+        if self.cell_id in reversed_input_tags:
+            return f'{self.name}${reversed_input_tags[self.cell_id]}'
+
+        return f'{self.name}${self.cell_id}'
+        # return f'{self.name}${qualifier}{cell_tag}{self.cell_id}'
 
     def __repr__(self):
         return f'DataflowRef({self.start_pos}, {self.end_pos}, {self.name}, {self.cell_id}, {self.cell_tag}, {self.ref_qualifier})'
@@ -94,7 +100,7 @@ def run_replacer(s, refs, replace_f):
             line[:ref.start_pos[1]] + replace_f(ref) + line[ref.end_pos[1]:]
     return '\n'.join(code_arr)    
 
-def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}):
+def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}, output_tags={}, cell_refs = {}, reversion = False, display_code_parsed = False):
     updates = []
 
     class DataflowLinker(ast.NodeVisitor):
@@ -110,10 +116,25 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                 self.scope[-1].add(node.id)
             elif isinstance(node.ctx, ast.Del):
                 self.scope[-1].discard(node.id)
-            elif (isinstance(node.ctx, ast.Load) and
+            elif (not reversion) and (isinstance(node.ctx, ast.Load) and
                     all(node.id not in s for s in self.scope) and
                     dataflow_state.has_external_link(node.id, execution_count)):
                 cell_id = dataflow_state.get_external_link(node.id, execution_count)
+                if not (display_code_parsed and output_tags.get(node.id) and len(output_tags[node.id]) == 1 and cell_id in output_tags[node.id]):
+                    ref = DataflowRef(
+                        start_pos=(node.lineno, node.col_offset),
+                        end_pos=(node.end_lineno, node.end_col_offset),
+                        name=node.id,
+                        cell_id=cell_id
+                    )
+                    self.updates.append(ref)
+                
+            elif (not reversion) and (isinstance(node.ctx, ast.Load) and
+                    all(node.id not in s for s in self.scope) and
+                    ((output_tags.get(node.id) and len(output_tags[node.id]) == 1) or
+                     (cell_refs.get(node.id) and len(cell_refs[node.id]) == 1))
+                    ):
+                cell_id = list(output_tags[node.id])[0] if output_tags.get(node.id) else list(cell_refs[node.id])[0]
                 ref = DataflowRef(
                     start_pos=(node.lineno, node.col_offset),
                     end_pos=(node.end_lineno, node.end_col_offset),
@@ -121,7 +142,36 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                     cell_id=cell_id
                 )
                 self.updates.append(ref)
-                # print("LOAD", name.id, cell_id, file=sys.__stdout__)
+                    
+            elif reversion and isinstance(node.ctx, ast.Load) and all(node.id not in s for s in self.scope):
+                if (output_tags.get(node.id) and len(output_tags[node.id]) == 2 and cell_refs.get(node.id) 
+                     and len(cell_refs[node.id]) == 1 and list(cell_refs[node.id])[0] in output_tags[node.id]):
+                    ref = DataflowRef(
+                    start_pos=(node.lineno, node.col_offset),
+                    end_pos=(node.end_lineno, node.end_col_offset),
+                    name=node.id,
+                    cell_id=list(cell_refs[node.id])[0]
+                    )
+                    self.updates.append(ref)
+                
+                elif (not output_tags.get(node.id) and cell_refs.get(node.id) and len(cell_refs[node.id]) == 1):
+                    ref = DataflowRef(
+                    start_pos=(node.lineno, node.col_offset),
+                    end_pos=(node.end_lineno, node.end_col_offset),
+                    name=node.id,
+                    cell_id=list(cell_refs[node.id])[0]
+                    )
+                    self.updates.append(ref)
+                
+                elif cell_refs.get(node.id) and len(cell_refs[node.id]) == 1 and list(cell_refs[node.id])[0] not in output_tags[node.id]:
+                    ref = DataflowRef(
+                    start_pos=(node.lineno, node.col_offset),
+                    end_pos=(node.end_lineno, node.end_col_offset),
+                    name=node.id,
+                    cell_id=list(cell_refs[node.id])[0]
+                    )
+                    self.updates.append(ref)
+                 
             self.generic_visit(node)
 
         # need to make sure we visit right side before left!
@@ -142,6 +192,27 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                 self.visit(node.value)
             self.visit(node.annotation)
             self.visit(node.target)
+
+        def visit_Subscript(self, node):
+            if (reversion and isinstance(node.value, ast.Name)
+                and node.value.id == '__dfvar__'):
+                # print("NODE SLICE VALUE:", node.slice.value)
+                ref_data = json.loads(node.slice.value)
+                if ref_data.get('name') and all(ref_data['name'] not in s for s in self.scope):
+                    if (output_tags.get(ref_data['name']) and len(output_tags[ref_data['name']]) == 1 and
+                        ref_data['cell_id'] in output_tags[ref_data['name']]
+                        and len(cell_refs[ref_data['name']]) == 1):  # last line added to resolve ambiguity when multiple refs exists
+                        ref_data['cell_id']='@default_ref'
+                        ref_data['cell_tag'] = None
+                        ref = DataflowRef(
+                            start_pos=(node.lineno, node.col_offset),
+                            end_pos=(node.end_lineno, node.end_col_offset),
+                            **ref_data  # Unpack the updated ref_data
+                        )
+                        self.updates.append(ref)
+
+            self.generic_visit(node)
+                        
 
         def process_function(self, node, add_name=True):
             if add_name:
@@ -225,14 +296,13 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
     linker.visit(tree)
 
     update_refs(linker.updates, dataflow_state, execution_count, input_tags)
-
+    
     return run_replacer(s, linker.updates, replace_f)
 
-def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}):
+def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}, reversion = False, tag_refs = {}):
     def positions_mesh(end, start):
         return end[0] == start[0] and end[1] == start[1]
 
-    # res = defaultdict(list)
     updates = []
     s_stream = StringIO(s)
 
@@ -294,12 +364,17 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
                 else:
                     cell_tag = None
                     cell_id = cell_ref
+
+                if reversion and tag_refs:
+                    if cell_id in tag_refs and cell_id not in input_tags:
+                        cell_id = tag_refs[cell_id] 
+
                 updates.append(DataflowRef(
                     start_pos=dollar_pos[0],
                     end_pos=dollar_pos[1],
                     name=var_name,
-                    cell_id=cell_id,
-                    cell_tag=cell_tag,
+                    cell_id= cell_id,
+                    cell_tag= cell_tag,
                     ref_qualifier=ref_qualifier)
                 )
                 dollar_pos = None
@@ -315,10 +390,10 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
 
     # print("UPDATES:", updates)
     update_refs(updates, dataflow_state, execution_count, input_tags)
-
+    
     return run_replacer(s, updates, replace_f)
 
-def convert_identifier(s, replace_f=ref_replacer):
+def convert_identifier(s, replace_f=ref_replacer, input_tags={}):
     class DataflowReplacer(ast.NodeVisitor):
         def __init__(self):
             self.updates = []
@@ -331,8 +406,10 @@ def convert_identifier(s, replace_f=ref_replacer):
                 ref = DataflowRef(
                     start_pos=(node.lineno, node.col_offset),
                     end_pos=(node.end_lineno, node.end_col_offset),
-                    **json.loads(node.slice.value)
+                    **json.loads(node.slice.value), 
+                    input_tags=input_tags
                 )
+            
                 self.updates.append(ref)
             self.generic_visit(node)
 
@@ -341,3 +418,22 @@ def convert_identifier(s, replace_f=ref_replacer):
     linker.visit(tree)
 
     return run_replacer(s, linker.updates, replace_f)
+
+def get_references(s):
+    class GetReferences(ast.NodeVisitor):
+        def visit_Subscript(self, node):
+            if (isinstance(node.value, ast.Name)
+                and node.value.id == '__dfvar__'):
+                node_value = json.loads(node.slice.value)
+                if not identifier_refs.get(node_value["cell_id"]):
+                    identifier_refs[node_value["cell_id"]] = set()
+                identifier_refs[node_value["cell_id"]].add(node_value["name"])
+                    
+            self.generic_visit(node)
+
+    identifier_refs=dict()
+    tree = ast.parse(s)
+    linker = GetReferences()
+    linker.visit(tree)
+
+    return identifier_refs
