@@ -121,6 +121,18 @@ function setOutputArea(cell: CodeCell) {
   cell._output = dfOutput;
 }
 
+function setDFMetadata(cell: CodeCell) {
+  if (!cell.model.getMetadata('dfmetadata')){
+    const dfmetadata = {
+      tag: "",
+      inputVars: { ref: {}, tag_refs: {} },
+      outputVars: {},
+      persistentCode: ""
+    };
+    cell.model.setMetadata('dfmetadata', dfmetadata);
+  }
+}
+
 export class DataflowCell<T extends ICellModel = ICellModel> extends Cell<T> {
   protected initializeDOM(): void {
     super.initializeDOM();
@@ -152,6 +164,9 @@ export class DataflowMarkdownCell extends MarkdownCell {
     super.initializeDOM();
     setInputArea(this);
     this.addClass('df-cell');
+    if(this.model.getMetadata('dfmetadata')){
+      this.model.deleteMetadata('dfmetadata')
+    }
   }
 }
 
@@ -160,6 +175,9 @@ export class DataflowRawCell extends RawCell {
     super.initializeDOM();
     setInputArea(this);
     this.addClass('df-cell');
+    if(this.model.getMetadata('dfmetadata')){
+      this.model.deleteMetadata('dfmetadata')
+    }
   }
 }
 
@@ -180,6 +198,7 @@ export class DataflowCodeCell extends CodeCell {
     setOutputArea(this);
     this.setPromptToId();
     this.addClass('df-cell');
+    setDFMetadata(this);
   }
 
   public setPromptToId() {
@@ -250,7 +269,7 @@ export namespace DataflowCodeCell {
           cellIdOutputsMap[cellId] = cellIdModelMap[cellId].outputs;
         }
       }
-
+      
       const msgPromise = DataflowOutputArea.execute(
         code,
         cell.outputArea,
@@ -345,6 +364,7 @@ export namespace DataflowCodeCell {
       let internalNodes = content.internal_nodes;
       let sessId = sessionContext.session.id;
       let graphUndefined = false;
+      
       //Set information about the graph based on sessionid
       if(GraphManager.graphs[sessId] === undefined){
         GraphManager.createGraph(sessId);
@@ -357,7 +377,7 @@ export namespace DataflowCodeCell {
       }
 
        if (content.update_downstreams) {
-                    GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+          GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
       }
 
       return msg;

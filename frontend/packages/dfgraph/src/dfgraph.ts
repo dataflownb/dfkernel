@@ -303,7 +303,7 @@ export class Graph {
     //         }
     that.cells = cells;
     that.nodes[uuid] = nodes || [];
-    if (uuid in that.uplinks) {
+    if (uuid in that.uplinks && that.uplinks[uuid]) {
       Object.keys(that.uplinks[uuid]).forEach(function (uplink) {
         that.downlinks[uplink] = [];
       });

@@ -24,12 +24,15 @@ export class DataflowInputArea extends InputArea {
   }
 
   public addTag(value: string | null) {
-    this.model?.setMetadata('tag', value);
+    const dfmetadata = this.model?.getMetadata('dfmetadata');
+    dfmetadata.tag = value;
+    this.model?.setMetadata('dfmetadata', dfmetadata);
     this.prompt.updatePromptNode(this.prompt.executionCount);
   }
 
   public get tag(): string | null {
-    return this.model?.getMetadata('tag') || null;
+    const dfmetadata = this.model?.getMetadata('dfmetadata');
+    return dfmetadata?.tag;
   }
 }
 
@@ -51,8 +54,9 @@ export class DataflowInputPrompt extends InputPrompt {
   }
 
   public updatePromptNode(value: string | null) {
-    if (this.model?.getMetadata('tag')) {
-      this.node.textContent = `[${this.model.getMetadata('tag')}]:`;
+    const dfmetadata = this.model?.getMetadata('dfmetadata');
+    if (dfmetadata && dfmetadata.tag) {
+      this.node.textContent = `[${dfmetadata.tag}]:`;
     } else if (value === null) {
       this.node.textContent = ' ';
     } else {
