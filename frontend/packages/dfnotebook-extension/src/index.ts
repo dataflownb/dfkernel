@@ -705,9 +705,9 @@ class ToggleTagsWidget extends Widget {
     };
 
     updateTooltip(true);
-    updateNotebookCells(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext);
+    updateNotebookCellsWithTag(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext);
 
-    input.addEventListener('change', (event) => {
+    input.addEventListener('change', async (event) => {
       const isChecked = (event.target as HTMLInputElement).checked;
       console.log(isChecked ? 'Tags are shown' : 'Tags are hidden');
       updateTooltip(isChecked);
@@ -731,7 +731,7 @@ class ToggleTagsWidget extends Widget {
       }
 
       nbPanel.model?.setMetadata("enable_tags", isChecked);
-      updateNotebookCells(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
+      await updateNotebookCellsWithTag(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
     });
 
     this.node.appendChild(containerDiv);
@@ -748,7 +748,7 @@ const ToggleTags: JupyterFrontEndPlugin<void> = {
   activate: (app: JupyterFrontEnd, nbTrackers: INotebookTracker) => {
     nbTrackers.widgetAdded.connect((sender,nbPanel) => {
       const session = nbPanel.sessionContext;
-        session.ready.then(() => {
+        session.ready.then(async () => {
           if(session.session?.kernel?.name == 'dfpython3'){
             const toggleSwitch = new ToggleTagsWidget(nbPanel, app);        
             nbPanel.toolbar.insertItem(12, 'customToggleTag', toggleSwitch);
@@ -2741,7 +2741,7 @@ function addCommands(
         inputArea.addTag(newTag);
         if (newTag && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
-          updateNotebookCells(notebook, cellUUID, tracker.currentWidget.sessionContext)
+          await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext)
         }
         console.log('Tag has been added.');
       }
@@ -2877,7 +2877,7 @@ function addCommands(
 
         if (updateReferences && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
-          updateNotebookCells(notebook, cellUUID, tracker.currentWidget.sessionContext)
+          await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext)
         } else if (updateReferences == false && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
           const all_tags: { [key: string]: string } = {};
@@ -2909,6 +2909,7 @@ function addCommands(
                 }
                 dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
                 notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+                await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext, false, true)
               }
             }
           }
@@ -2933,65 +2934,78 @@ function addCommands(
 /**
  * Update code based on add, delete or modified tag value
  */
-
-function updateNotebookCells(notebook: DataflowNotebookModel, cellUUID: string, sessionContext: ISessionContext, hideTags: boolean=false) {
+export async function updateNotebookCellsWithTag(notebook: DataflowNotebookModel, cellUUID: string, sessionContext: ISessionContext, hideTags: boolean=false, updateInputTagsOnly: boolean=false) {
   let dfData = getdfData(notebook, '')
-  let comm = sessionContext.session?.kernel?.createComm('dfcode');
-  if (comm) {
-    comm.open();
 
-    if (hideTags) {
-      dfData.dfMetadata.input_tags = {};
-    }
-
-    comm.send({
-      'dfMetadata': dfData.dfMetadata
-    });
+  const commPromise = new Promise<void>((resolve) => {
+    let comm = sessionContext.session?.kernel?.createComm('dfcode');
+    if (comm) {
+      comm.open();
     
-    comm.onMsg = (msg) => {
-      const content = msg.content.data;
-      const all_tags: { [key: string]: string } = {}
-      //Getting all the tags from notebook
-      for (let index = 0; index < notebook.cells.length; index++) {
-        const cAny = notebook.cells.get(index) as ICodeCellModel;
-        if (notebook.cells.get(index).type === 'code') {
-          const c = cAny as ICodeCellModel;
-          const cId = c.id.replace(/-/g, '').substring(0, 8);
-          const dfmetadata = c.getMetadata('dfmetadata');
-          if (dfmetadata.tag) {
-            all_tags[cId] = dfmetadata.tag;
-          }
-        }
+      if (hideTags) {
+        dfData.dfMetadata.input_tags = {};
       }
-      
-      for (let index = 0; index < notebook.cells.length; index++){
-        const cAny = notebook.cells.get(index) as ICodeCellModel;
-        const cId = cAny.id.replace(/-/g, '').substring(0, 8);
-        if (cAny.type == 'code') {
-          if(content.code_dict?.hasOwnProperty(cId)){
-            notebook.cells.get(index).sharedModel.setSource((content.code_dict as { [key: string]: any })[cId]);
-          }
-          
-          //Updating the dependent cell's df-metadata when any cell is tagged/untagged
-          if(cellUUID && !hideTags){
-            const dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
-            let inputVarsMetadata = dfmetadata.inputVars;
-            if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
-              const refValue = inputVarsMetadata.ref as { [key: string]: any };
-              let tagRefValue = inputVarsMetadata.tag_refs as { [key: string]: any };
-              for (const ref_key in refValue) {
-                if (ref_key == cellUUID && all_tags.hasOwnProperty(ref_key)) {
-                  tagRefValue[cellUUID] = all_tags[cellUUID];
-                }
-              }
-              dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
-              notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+
+      if (updateInputTagsOnly){
+        dfData.dfMetadata.all_refs = {}
+        dfData.dfMetadata.output_tags = {}
+        dfData.dfMetadata.code_dict = {}
+      }
+    
+      comm.send({
+        'dfMetadata': dfData.dfMetadata
+      });
+
+      comm.onMsg = (msg) => {
+        const content = msg.content.data;
+        const all_tags: { [key: string]: string } = {}
+        //Getting all the tags from notebook
+        for (let index = 0; index < notebook.cells.length; index++) {
+          const cAny = notebook.cells.get(index) as ICodeCellModel;
+          if (notebook.cells.get(index).type === 'code') {
+            const c = cAny as ICodeCellModel;
+            const cId = c.id.replace(/-/g, '').substring(0, 8);
+            const dfmetadata = c.getMetadata('dfmetadata');
+            if (dfmetadata.tag) {
+              all_tags[cId] = dfmetadata.tag;
             }
           }
         }
+
+        for (let index = 0; index < notebook.cells.length; index++){
+          const cAny = notebook.cells.get(index) as ICodeCellModel;
+          const cId = cAny.id.replace(/-/g, '').substring(0, 8);
+          if (cAny.type == 'code') {
+            if(content.code_dict?.hasOwnProperty(cId)){
+              notebook.cells.get(index).sharedModel.setSource((content.code_dict as { [key: string]: any })[cId]);
+            }
+
+            //Updating the dependent cell's df-metadata when any cell is tagged/untagged
+            if(cellUUID && !hideTags){
+              const dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
+              let inputVarsMetadata = dfmetadata.inputVars;
+              if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
+                const refValue = inputVarsMetadata.ref as { [key: string]: any };
+                let tagRefValue = inputVarsMetadata.tag_refs as { [key: string]: any };
+                for (const ref_key in refValue) {
+                  if (ref_key == cellUUID && all_tags.hasOwnProperty(ref_key)) {
+                    tagRefValue[cellUUID] = all_tags[cellUUID];
+                  }
+                }
+                dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
+                notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+              }
+            }
+          }
+        }
+        resolve(); // Resolve the promise when the message is received
+      };
+    }
+    else{
+      resolve(); // Resolve immediately if comm is not created
       }
-    };
-  }
+  });
+  await commPromise; // Wait for the comm message to be received and processed
 }
 
 /**

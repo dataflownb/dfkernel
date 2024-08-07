@@ -82,111 +82,114 @@ import { DataflowNotebookModel } from './model';
             let reply: KernelMessage.IExecuteReplyMsg | void;
             // !!! DATAFLOW NOTEBOOK CODE !!!
             if (notebook instanceof DataflowNotebookModel) {
-                const cellUUID =  cell.model.id.replace(/-/g, '').substring(0, 8) || ''
-                let dfData = getdfData(notebook, cellUUID)
-
-                if(!notebook.getMetadata('enable_tags')){
-                  dfData.dfMetadata.input_tags={};
-                }
-                
-                reply = await DataflowCodeCell.execute(
-                    cell as DataflowCodeCell,
-                    sessionContext,
-                    {
-                    deletedCells,
-                    recordTiming: notebookConfig.recordTiming
-                    },
-                    dfData.dfMetadata,
-                    dfData.cellIdModelMap
-                );
-
-                const content = (reply?.content as any);
-                
-                if (content) {
-                  const all_tags: { [key: string]: string } = {}
-                  for (let index = 0; index < notebook.cells.length; index++){
-                    const cAny = notebook.cells.get(index) as ICodeCellModel;
-                    if (notebook.cells.get(index).type === 'code') {
-                      const c = cAny as ICodeCellModel;
-                      const cId = c.id.replace(/-/g, '').substring(0, 8);
-                      const dfmetadata = c.getMetadata('dfmetadata');
-                      if (dfmetadata && dfmetadata.tag){
-                        all_tags[cId] = dfmetadata.tag;
-                      }
-                    }
-                  }
-
-                  for (let index = 0; index < notebook.cells.length; index++){
-                    const cAny = notebook.cells.get(index) as ICodeCellModel;
-                    if (notebook.cells.get(index).type === 'code') {
-                      const c = cAny as ICodeCellModel;
-                      const cId = c.id.replace(/-/g, '').substring(0, 8);
-                      const dfmetadata = c.getMetadata('dfmetadata');
-                      if(content.persistent_code[cId]){
-                        dfmetadata.persistentCode = content.persistent_code[cId];
-                      }
-
-                      if(content.identifier_refs[cId]){
-                        let inputVarsMetadata = { 'ref': {}, 'tag_refs': {}};
-                        inputVarsMetadata.ref = content.identifier_refs[cId];
-                        
-                        let tag_refs: { [key: string]: string } = {}
-                        for (const ref_keys in content.identifier_refs[cId]){
-                          if(all_tags.hasOwnProperty(ref_keys)){
-                            tag_refs[ref_keys] = all_tags[ref_keys];
-                          }
-                        }
-                        inputVarsMetadata.tag_refs = tag_refs;
-                        dfmetadata.inputVars = inputVarsMetadata;
-                      }
-
-                      if(content.persistent_code[cId] || content.identifier_refs[cId]){
-                        let cellOutputTags: string[] = [];
-                        for (let i = 0; i < cAny.outputs.length; ++i) {
-                          const out = c.outputs.get(i);
-                          cellOutputTags.push(out.metadata['output_tag'] as string);
-                        }
-                        dfmetadata.outputVars = cellOutputTags;
-                      }
-                      notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+              const cellUUID =  cell.model.id.replace(/-/g, '').substring(0, 8) || ''
+              let dfData = getdfData(notebook, cellUUID)
+            
+              if(!notebook.getMetadata('enable_tags')){
+                dfData.dfMetadata.input_tags={};
+              }
+              
+              reply = await DataflowCodeCell.execute(
+                  cell as DataflowCodeCell,
+                  sessionContext,
+                  {
+                  deletedCells,
+                  recordTiming: notebookConfig.recordTiming
+                  },
+                  dfData.dfMetadata,
+                  dfData.cellIdModelMap
+              );
+              
+              const content = (reply?.content as any);  
+              if (content) {
+                const all_tags: { [key: string]: string } = {}
+                for (let index = 0; index < notebook.cells.length; index++){
+                  const cAny = notebook.cells.get(index) as ICodeCellModel;
+                  if (cAny.type === 'code') {
+                    const cId = cAny.id.replace(/-/g, '').substring(0, 8);
+                    const dfmetadata = cAny.getMetadata('dfmetadata');
+                    if (dfmetadata && dfmetadata.tag){
+                      all_tags[cId] = dfmetadata.tag;
                     }
                   }
                 }
-
+              
+                for (let index = 0; index < notebook.cells.length; index++){
+                  const cAny = notebook.cells.get(index) as ICodeCellModel;
+                  if (cAny.type === 'code') {
+                    const cId = cAny.id.replace(/-/g, '').substring(0, 8);
+                    const dfmetadata = cAny.getMetadata('dfmetadata');
+                    if(content.persistent_code[cId]){
+                      dfmetadata.persistentCode = content.persistent_code[cId];
+                    }
+                
+                    if(content.identifier_refs[cId]){
+                      let inputVarsMetadata = { 'ref': {}, 'tag_refs': {}};
+                      inputVarsMetadata.ref = content.identifier_refs[cId];
+                      
+                      let tag_refs: { [key: string]: string } = {}
+                      for (const ref_keys in content.identifier_refs[cId]){
+                        if(all_tags.hasOwnProperty(ref_keys)){
+                          tag_refs[ref_keys] = all_tags[ref_keys];
+                        }
+                      }
+                      inputVarsMetadata.tag_refs = tag_refs;
+                      dfmetadata.inputVars = inputVarsMetadata;
+                    }
+                
+                    if(content.persistent_code[cId] || content.identifier_refs[cId]){
+                      let cellOutputTags: string[] = [];
+                      for (let i = 0; i < cAny.outputs.length; ++i) {
+                        const out = cAny.outputs.get(i);
+                        cellOutputTags.push(out.metadata['output_tag'] as string);
+                      }
+                      dfmetadata.outputVars = cellOutputTags;
+                    }
+                    notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+                  }
+                }
+              }
+              
+              const commPromise = new Promise<void>((resolve) => {
                 let comm = sessionContext.session?.kernel?.createComm('dfcode');
                 if (comm) {
                   comm.open();
                   dfData = getdfData(notebook, '');
-                  if(!notebook.getMetadata('enable_tags')){
-                    dfData.dfMetadata.input_tags={};
+                  if (!notebook.getMetadata('enable_tags')) {
+                    dfData.dfMetadata.input_tags = {};
                   }
                   comm.send({
                     'dfMetadata': dfData.dfMetadata
                   });
-
+                
                   comm.onMsg = (msg) => {
                     const content = msg.content.data;
                     if (content && content.code_dict && Object.keys(content.code_dict).length > 0) {
-                      for (let index = 0; index < notebook.cells.length; index++){
+                      for (let index = 0; index < notebook.cells.length; index++) {
                         const cAny = notebook.cells.get(index) as ICodeCellModel;
                         const cId = cAny.id.replace(/-/g, '').substring(0, 8);
-                        if(cAny.type == 'code' && content.code_dict.hasOwnProperty(cId)){
-                          notebook.cells.get(index).sharedModel.setSource((content.code_dict as { [key: string]: any })[cId]);
+                        if (cAny.type === 'code' && content.code_dict.hasOwnProperty(cId)) {
+                          cAny.sharedModel.setSource((content.code_dict as { [key: string]: any })[cId]);
                         }
                       }
                     }
+                    resolve(); // Resolve the promise when the message is received
                   };
+                } else {
+                  resolve(); // Resolve immediately if comm is not created
                 }
+              });
+              await commPromise; // Wait for the comm message to be received and processed
             } 
             else {
-                reply = await CodeCell.execute(
+              reply = await CodeCell.execute(
                 cell as CodeCell,
                 sessionContext,
                 {
                     deletedCells,
                     recordTiming: notebookConfig.recordTiming
                 }
-                );
+              );
             }
             // !!! END DATAFLOW NOTEBOOK CODE !!!
             
