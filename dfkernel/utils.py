@@ -42,9 +42,9 @@ class DataflowRef:
         
         reversed_input_tags = {id: tag for tag, id in self.input_tags.items()}
         if self.cell_id in reversed_input_tags:
-            return f'{self.name}${reversed_input_tags[self.cell_id]}'
+            return f'{self.name}${qualifier}{reversed_input_tags[self.cell_id]}'
 
-        return f'{self.name}${self.cell_id}'
+        return f'{self.name}${qualifier}{self.cell_id}'
         # return f'{self.name}${qualifier}{cell_tag}{self.cell_id}'
 
     def __repr__(self):

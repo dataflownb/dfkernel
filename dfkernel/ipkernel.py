@@ -91,6 +91,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         def _recv(msg):
             try:
                 dfMetadata = msg['content']['data']['dfMetadata']
+                self.shell.input_tags = dfMetadata['input_tags']
                 code_dict = self.update_code_cells(dfMetadata)
                 comm.send({'code_dict': code_dict})
             except Exception as e:
@@ -124,10 +125,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         # print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
 
         output_tags= {}
-        for op_id, op_tags in dfkernel_data['output_tags'].items():
-            for tag in op_tags:
-                if isinstance(tag, str):
-                    output_tags.setdefault(tag, set()).add(op_id)
+        if dfkernel_data.get('output_tags'):
+            for op_id, op_tags in dfkernel_data['output_tags'].items():
+                for tag in op_tags:
+                    if isinstance(tag, str):
+                        output_tags.setdefault(tag, set()).add(op_id)
         
         self._output_tags = output_tags
         self.shell.input_tags = input_tags
