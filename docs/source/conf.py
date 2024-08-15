@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'DataflowNotebooks'
+project = 'Dataflow Notebooks'
 copyright = '2024, David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
 author = 'David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
 release = '0.4.0-alpha.2'
@@ -51,14 +51,14 @@ html_static_path = ['_static']
 nbsphinx_prolog = """
 .. raw:: html
     
-    <style>
-    .highlighted-note {
-        background-color: DarkSlateGray;
-        color: white;
-        padding: 5px;
-        border-radius: 4px;
-    }
-    </style>
+    # <style>
+    # .highlighted-note {
+    #     background-color: DarkSlateGray;
+    #     color: white;
+    #     padding: 5px;
+    #     border-radius: 4px;
+    # }
+    # </style>
 
     <script>
         $(document).ready(function() {
@@ -75,10 +75,10 @@ nbsphinx_prolog = """
                 }
             }
 
-            // Highlight <p> elements containing the text "Dataflow notes"
-            $("p").filter(function() {
-                return $(this).text().indexOf("Dataflow notes") >= 0;
-            }).addClass("highlighted-note");
+            # // Highlight <p> elements containing the text "Dataflow notes"
+            # $("p").filter(function() {
+            #     return $(this).text().indexOf("Dataflow notes") >= 0;
+            # }).addClass("highlighted-note");
         });
     </script>
 """
