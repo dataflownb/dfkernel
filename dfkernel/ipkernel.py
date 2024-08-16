@@ -90,10 +90,15 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         @comm.on_msg
         def _recv(msg):
             try:
+                update_persistent_code = False
                 dfMetadata = msg['content']['data']['dfMetadata']
                 self.shell.input_tags = dfMetadata['input_tags']
-                code_dict = self.update_code_cells(dfMetadata)
-                comm.send({'code_dict': code_dict})
+
+                if msg['content']['data'].get('updatePersisentCode') and msg['content']['data']['updatePersisentCode']:
+                    update_persistent_code = True
+
+                code_dict, updated_persistent_code_dict = self.update_code_cells(dfMetadata, update_persistent_code)
+                comm.send({'code_dict': code_dict, 'persistent_code_dict': updated_persistent_code_dict})
             except Exception as e:
                 self.log.error('Error in conversion')
                 self.log.error(e)
@@ -141,7 +146,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
         self._identifier_refs = {}
-        self._persistent_code = {}
 
         res = await self.inner_execute_request(
             code,
@@ -222,7 +226,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             code = convert_dollar(
                 code, self.shell.dataflow_state, uuid, ref_replacer, input_tags
             )
-            self._persistent_code[uuid] = code
         except SyntaxError as e:
             # ignore this for now, catch it in do_execute
             pass
@@ -419,7 +422,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 reply_content["links"] = res.links
                 reply_content["cells"] = res.cells
                 reply_content["identifier_refs"] = self._identifier_refs
-                reply_content["persistent_code"] = self._persistent_code
 
                 reply_content["upstream_deps"] = res.all_upstream_deps
                 reply_content["downstream_deps"] = res.all_downstream_deps
@@ -474,9 +476,10 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return reply_content, res
 
-    def update_code_cells(self, dfmetadata):
+    def update_code_cells(self, dfmetadata, update_persistent_code=False):
         curr_output_tags = dict()
         updated_code_dict = {}
+        updated_persistent_code_dict = {}
         code_refs = dict()
 
         for id, tags in dfmetadata['output_tags'].items():
@@ -513,8 +516,33 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 except Exception as e:
                     self.log.error('Error in conversion for cell: {uuid}')
                     self.log.error(e)
+                    continue
+            
+            if update_persistent_code and dfmetadata['persisted_code'].get(uuid):
+                try:
+                    code = dfmetadata['persisted_code'][uuid]
+                    tag_refs = { value: key for key, value in refs['tag_refs'].items() }
+
+                    code = convert_dollar(
+                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs = tag_refs
+                    )
+
+                    code = ground_refs(
+                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=curr_output_tags, cell_refs=code_refs, reversion=True
+                    )
+
+                    code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
+                    
+                    if dfmetadata['code_dict'].get(uuid) and code != dfmetadata['code_dict'][uuid]:
+                        updated_persistent_code_dict[uuid] = code
+
+                except Exception as e:
+                    self.log.error('Error in conversion for cell: {uuid}')
+                    self.log.error(e)
+                    continue
+            
         
-        return updated_code_dict
+        return updated_code_dict, updated_persistent_code_dict
 
 # This exists only for backwards compatibility - use IPythonKernel instead
 class Kernel(IPythonKernel):
