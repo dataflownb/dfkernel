@@ -198,7 +198,6 @@ export class DataflowCodeCell extends CodeCell {
     setOutputArea(this);
     this.setPromptToId();
     this.addClass('df-cell');
-    setDFMetadata(this);
   }
 
   public setPromptToId() {
@@ -209,6 +208,8 @@ export class DataflowCodeCell extends CodeCell {
   initializeState(): this {
     super.initializeState();
     this.setPromptToId();
+    setDFMetadata(this);
+    this.model.contentChanged.connect(this._onContentChanged, this);
     return this;
   }
 
@@ -220,6 +221,17 @@ export class DataflowCodeCell extends CodeCell {
         break;
       default:
         break;
+    }
+  }
+
+  private _onContentChanged(): void {
+    let currentCode = this.model.sharedModel.getSource().trim();
+    let persistentCode = this.model.getMetadata('dfmetadata').persistentCode.trim();
+    if (persistentCode != '' && persistentCode == currentCode){
+      this.node.classList.add('df-cell-not-dirty');
+    }
+    else if(persistentCode != '') {
+      this.node.classList.remove('df-cell-not-dirty');
     }
   }
 }

@@ -2668,10 +2668,13 @@ function addCommands(
       let cells = tracker.currentWidget?.content.model?.cells;
       if (cells){
         for (let index = 0; index < cells.length; index++) {
-          const dfmetadata = cells.get(index).getMetadata('dfmetadata');
-          const cellTagvalue = dfmetadata.tag;
-          if(cellTagvalue){
-            existingCellTags.add(cellTagvalue);
+          let cAny = cells.get(index)
+          if (cAny.type == 'code'){
+            const dfmetadata = cAny.getMetadata('dfmetadata');
+            const cellTagvalue = dfmetadata.tag;
+            if(cellTagvalue){
+              existingCellTags.add(cellTagvalue);
+            }
           }
         }
       }
@@ -2766,10 +2769,13 @@ function addCommands(
       let cells = tracker.currentWidget?.content.model?.cells;
       if (cells){
         for (let index = 0; index < cells.length; index++) {
-          const dfmetadata = cells.get(index).getMetadata('dfmetadata');
-          const cellTagvalue = dfmetadata.tag;
-          if(cellTagvalue){
-            existingCellTags.add(cellTagvalue);
+          let cAny = cells.get(index)
+          if (cAny.type == 'code'){
+            const dfmetadata = cAny.getMetadata('dfmetadata');
+            const cellTagvalue = dfmetadata.tag;
+            if(cellTagvalue){
+              existingCellTags.add(cellTagvalue);
+            }
           }
         }
       }
@@ -2953,7 +2959,8 @@ export async function updateNotebookCellsWithTag(notebook: DataflowNotebookModel
       }
     
       comm.send({
-        'dfMetadata': dfData.dfMetadata
+        'dfMetadata': dfData.dfMetadata,
+        'updatePersisentCode': true
       });
 
       comm.onMsg = (msg) => {
@@ -2965,7 +2972,7 @@ export async function updateNotebookCellsWithTag(notebook: DataflowNotebookModel
           if (notebook.cells.get(index).type === 'code') {
             const c = cAny as ICodeCellModel;
             const cId = c.id.replace(/-/g, '').substring(0, 8);
-            const dfmetadata = c.getMetadata('dfmetadata');
+            let dfmetadata = c.getMetadata('dfmetadata');
             if (dfmetadata.tag) {
               all_tags[cId] = dfmetadata.tag;
             }
@@ -2976,13 +2983,19 @@ export async function updateNotebookCellsWithTag(notebook: DataflowNotebookModel
           const cAny = notebook.cells.get(index) as ICodeCellModel;
           const cId = cAny.id.replace(/-/g, '').substring(0, 8);
           if (cAny.type == 'code') {
-            if(content.code_dict?.hasOwnProperty(cId)){
-              notebook.cells.get(index).sharedModel.setSource((content.code_dict as { [key: string]: any })[cId]);
+            if (content.code_dict?.hasOwnProperty(cId)){
+              let updatedCode = (content.code_dict as { [key: string]: any })[cId]
+              if (content.persistent_code_dict?.hasOwnProperty(cId)){
+                let dfmetadata = cAny.getMetadata('dfmetadata')
+                dfmetadata.persistentCode = (content.persistent_code_dict as { [key: string]: any })[cId];
+                cAny.setMetadata('dfmetadata', dfmetadata);
+              }
+              cAny.sharedModel.setSource(updatedCode);
             }
 
             //Updating the dependent cell's df-metadata when any cell is tagged/untagged
             if(cellUUID && !hideTags){
-              const dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
+              let dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
               let inputVarsMetadata = dfmetadata.inputVars;
               if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
                 const refValue = inputVarsMetadata.ref as { [key: string]: any };
