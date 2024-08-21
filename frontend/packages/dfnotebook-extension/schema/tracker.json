@@ -25,6 +25,15 @@
       }
     ]
   },
+  "jupyter.lab.toolbars": {
+    "Cell": [
+      {
+        "name": "tag",
+        "command": "toolbar-button:tag-cell",
+        "rank": 1
+      }
+    ]
+  },
   "title": "Dataflow Notebook",
   "description": "Dataflow Notebook settings.",
   "definitions": {

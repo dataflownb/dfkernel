@@ -56,6 +56,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import {
   IFormRendererRegistry,
+  LabIcon,
   addAboveIcon,
   addBelowIcon,
   copyIcon,
@@ -97,6 +98,12 @@ import { DataflowInputArea } from '@dfnotebook/dfcells';
 import { cellExecutor } from './cellexecutor';
 import { CellBarExtension } from '@jupyterlab/cell-toolbar';
 import { Widget } from '@lumino/widgets';
+import tagSvgstr from '../style/tag.svg';
+
+export const tagIcon = new LabIcon({
+  name: 'tag',
+  svgstr: tagSvgstr
+});
 
 /**
  * The command IDs used by the notebook plugin.
@@ -288,6 +295,8 @@ namespace CommandIDs {
   export const addCellTag = 'notebook:add-cell-tag';
 
   export const modifyCellTag = 'notebook:modify-cell-tag';
+
+  export const tagCodeCell = 'toolbar-button:tag-cell';
 }
 
 /**
@@ -662,11 +671,6 @@ const cellToolbar: JupyterFrontEndPlugin<void> = {
 };
 
 /**
- * Map used to keep track of Tags toggle switch state across notebooks
- */
-const notebookTagsVisibleMap = new Map<string, boolean>();
-
-/**
  * Creates the toggle switch used for hiding/showing tags
  */
 class ToggleTagsWidget extends Widget {
@@ -711,7 +715,6 @@ class ToggleTagsWidget extends Widget {
       const isChecked = (event.target as HTMLInputElement).checked;
       console.log(isChecked ? 'Tags are shown' : 'Tags are hidden');
       updateTooltip(isChecked);
-      notebookTagsVisibleMap.set(nbPanel.id, isChecked);
       const notebook = nbPanel.content
 
       for (let index = 0; index < notebook.widgets.length; index++){
@@ -731,6 +734,7 @@ class ToggleTagsWidget extends Widget {
       }
 
       nbPanel.model?.setMetadata("enable_tags", isChecked);
+      app.commands.notifyCommandChanged('toolbar-button:tag-cell')
       await updateNotebookCellsWithTag(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
     });
 
@@ -752,7 +756,6 @@ const ToggleTags: JupyterFrontEndPlugin<void> = {
           if(session.session?.kernel?.name == 'dfpython3'){
             const toggleSwitch = new ToggleTagsWidget(nbPanel, app);        
             nbPanel.toolbar.insertItem(12, 'customToggleTag', toggleSwitch);
-            notebookTagsVisibleMap.set(nbPanel.id, true);
           }
         });
      });
@@ -1421,6 +1424,7 @@ function addCommands(
   tracker.activeCellChanged.connect(() => {
     commands.notifyCommandChanged(CommandIDs.moveUp);
     commands.notifyCommandChanged(CommandIDs.moveDown);
+    commands.notifyCommandChanged(CommandIDs.tagCodeCell);
   });
 
   commands.addCommand(CommandIDs.runAndAdvance, {
@@ -2751,10 +2755,17 @@ function addCommands(
     },
     isEnabled: () => {
       const cell = tracker.currentWidget?.content.activeCell as CodeCell;
-      const isTagsVisible = tracker.currentWidget?.id ? (notebookTagsVisibleMap.get(tracker.currentWidget.id) || false) : false;
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
       if(cell && cell.model.type == 'code' && cell.inputArea){
         const inputArea = cell.inputArea as DataflowInputArea;
         return (cell ? !Boolean(inputArea.tag) : true) && isTagsVisible;
+      }
+      return false;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      if (isDfnotebook == true){
+        return true;
       }
       return false;
     }
@@ -2925,15 +2936,48 @@ function addCommands(
     },
     isEnabled: () => {
       const cell = tracker.currentWidget?.content.activeCell as CodeCell;
-      const isTagsVisible = tracker.currentWidget?.id ? (notebookTagsVisibleMap.get(tracker.currentWidget.id) || false) : false;
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
       if (cell && cell.model.type == 'code' && cell.inputArea) {
         const inputArea = cell.inputArea as DataflowInputArea;
         return (cell ? Boolean(inputArea.tag) : false) && isTagsVisible;
       }
       return false;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      if (isDfnotebook == true){
+        return true;
+      }
+      return false;
     }
   });
-  
+
+  commands.addCommand(CommandIDs.tagCodeCell, {
+    label: trans.__('Tag'),
+    caption: trans.__('Tag'),
+    execute: args => {
+      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const inputArea = cell.inputArea as DataflowInputArea;
+      if(cell && inputArea && inputArea.tag){
+        commands.execute('notebook:modify-cell-tag');
+      }
+      else{
+        commands.execute('notebook:add-cell-tag');
+      }
+    },
+    isEnabled: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
+      return isDfnotebook === true && isTagsVisible === true;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      const activeCell = tracker.activeCell;
+      return Boolean(isDfnotebook) && activeCell?.model.type === 'code';
+    },
+    icon: args => (args.toolbar ? tagIcon : undefined)
+  });
+
   // !!! END DATAFLOW NOTEBOOK CHANGE !!!
 }
 
@@ -3118,7 +3162,8 @@ function populatePalette(
     CommandIDs.toggleRenderSideBySideCurrentNotebook,
     CommandIDs.setSideBySideRatio,
     CommandIDs.enableOutputScrolling,
-    CommandIDs.disableOutputScrolling
+    CommandIDs.disableOutputScrolling,
+    CommandIDs.tagCodeCell
   ].forEach(command => {
     palette.addItem({ command, category });
   });

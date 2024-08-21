@@ -78,3 +78,7 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+.tag-icon{
+  fill: none !important;
+}
