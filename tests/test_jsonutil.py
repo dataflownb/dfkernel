@@ -1,186 +1,120 @@
-"""Utilities to manipulate JSON objects."""
+"""Test suite for our JSON utilities."""
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-from binascii import b2a_base64
-import math
-import re
-import types
-from datetime import datetime
+import json
 import numbers
+from binascii import a2b_base64
+from datetime import date, datetime
 
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import unicode_type, iteritems
-from ipython_genutils.encoding import DEFAULT_ENCODING
+import pytest
+from jupyter_client._version import version_info as jupyter_client_version
 
-next_attr_name = '__next__' if py3compat.PY3 else 'next'
+from ipykernel import jsonutil
+from ipykernel.jsonutil import encode_images, json_clean
 
-# -----------------------------------------------------------------------------
-# Globals and constants
-# -----------------------------------------------------------------------------
-
-# timestamp formats
-ISO8601 = "%Y-%m-%dT%H:%M:%S.%f"
-ISO8601_PAT = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d{1,6})?Z?([\+\-]\d{2}:?\d{2})?$")
-
-# holy crap, strptime is not threadsafe.
-# Calling it once at import seems to help.
-datetime.strptime("1", "%d")
-
-# -----------------------------------------------------------------------------
-# Classes and functions
-# -----------------------------------------------------------------------------
+JUPYTER_CLIENT_MAJOR_VERSION: int = jupyter_client_version[0]  # type:ignore
 
 
-# constants for identifying png/jpeg data
-PNG = b'\x89PNG\r\n\x1a\n'
-# front of PNG base64-encoded
-PNG64 = b'iVBORw0KG'
-JPEG = b'\xff\xd8'
-# front of JPEG base64-encoded
-JPEG64 = b'/9'
-# constants for identifying gif data
-GIF_64 = b'R0lGODdh'
-GIF89_64 = b'R0lGODlh'
-# front of PDF base64-encoded
-PDF64 = b'JVBER'
+class MyInt:
+    def __int__(self):
+        return 389
 
 
-def encode_images(format_dict):
-    """b64-encodes images in a displaypub format dict
-    Perhaps this should be handled in json_clean itself?
-    Parameters
-    ----------
-    format_dict : dict
-        A dictionary of display data keyed by mime-type
-    Returns
-    -------
-    format_dict : dict
-        A copy of the same dictionary,
-        but binary image data ('image/png', 'image/jpeg' or 'application/pdf')
-        is base64-encoded.
-    """
-
-    # no need for handling of ambiguous bytestrings on Python 3,
-    # where bytes objects always represent binary data and thus
-    # base64-encoded.
-    if py3compat.PY3:
-        return format_dict
-
-    encoded = format_dict.copy()
-
-    pngdata = format_dict.get('image/png')
-    if isinstance(pngdata, bytes):
-        # make sure we don't double-encode
-        if not pngdata.startswith(PNG64):
-            pngdata = b2a_base64(pngdata)
-        encoded['image/png'] = pngdata.decode('ascii')
-
-    jpegdata = format_dict.get('image/jpeg')
-    if isinstance(jpegdata, bytes):
-        # make sure we don't double-encode
-        if not jpegdata.startswith(JPEG64):
-            jpegdata = b2a_base64(jpegdata)
-        encoded['image/jpeg'] = jpegdata.decode('ascii')
-
-    gifdata = format_dict.get('image/gif')
-    if isinstance(gifdata, bytes):
-        # make sure we don't double-encode
-        if not gifdata.startswith((GIF_64, GIF89_64)):
-            gifdata = b2a_base64(gifdata)
-        encoded['image/gif'] = gifdata.decode('ascii')
-
-    pdfdata = format_dict.get('application/pdf')
-    if isinstance(pdfdata, bytes):
-        # make sure we don't double-encode
-        if not pdfdata.startswith(PDF64):
-            pdfdata = b2a_base64(pdfdata)
-        encoded['application/pdf'] = pdfdata.decode('ascii')
-
-    return encoded
+numbers.Integral.register(MyInt)
 
 
-def json_clean(obj):
-    """Clean an object to ensure it's safe to encode in JSON.
-    Atomic, immutable objects are returned unmodified.  Sets and tuples are
-    converted to lists, lists are copied and dicts are also copied.
-    Note: dicts whose keys could cause collisions upon encoding (such as a dict
-    with both the number 1 and the string '1' as keys) will cause a ValueError
-    to be raised.
-    Parameters
-    ----------
-    obj : any python object
-    Returns
-    -------
-    out : object
-      A version of the input which will not cause an encoding error when
-      encoded as JSON.  Note that this function does not *encode* its inputs,
-      it simply sanitizes it so that there will be no encoding errors later.
-    """
-    # types that are 'atomic' and ok in json as-is.
-    atomic_ok = (unicode_type, type(None))
+class MyFloat:
+    def __float__(self):
+        return 3.14
 
-    # containers that we need to convert into lists
-    container_to_list = (tuple, set, types.GeneratorType)
 
-    # Since bools are a subtype of Integrals, which are a subtype of Reals,
-    # we have to check them in that order.
+numbers.Real.register(MyFloat)
 
-    if isinstance(obj, bool):
-        return obj
 
-    if isinstance(obj, numbers.Integral):
-        # cast int to int, in case subclasses override __str__ (e.g. boost enum, #4598)
-        return int(obj)
+@pytest.mark.skipif(JUPYTER_CLIENT_MAJOR_VERSION >= 7, reason="json_clean is a no-op")
+def test():
+    # list of input/expected output.  Use None for the expected output if it
+    # can be the same as the input.
+    pairs = [
+        (1, None),  # start with scalars
+        (1.0, None),
+        ("a", None),
+        (True, None),
+        (False, None),
+        (None, None),
+        # Containers
+        ([1, 2], None),
+        ((1, 2), [1, 2]),
+        ({1, 2}, [1, 2]),
+        (dict(x=1), None),
+        ({"x": 1, "y": [1, 2, 3], "1": "int"}, None),
+        # More exotic objects
+        ((x for x in range(3)), [0, 1, 2]),
+        (iter([1, 2]), [1, 2]),
+        (datetime(1991, 7, 3, 12, 00), "1991-07-03T12:00:00.000000"),
+        (date(1991, 7, 3), "1991-07-03T00:00:00.000000"),
+        (MyFloat(), 3.14),
+        (MyInt(), 389),
+    ]
 
-    if isinstance(obj, numbers.Real):
-        # cast out-of-range floats to their reprs
-        if math.isnan(obj) or math.isinf(obj):
-            return repr(obj)
-        return float(obj)
+    for val, jval in pairs:
+        if jval is None:
+            jval = val  # type:ignore
+        out = json_clean(val)
+        # validate our cleanup
+        assert out == jval
+        # and ensure that what we return, indeed encodes cleanly
+        json.loads(json.dumps(out))
 
-    if isinstance(obj, atomic_ok):
-        return obj
 
-    if isinstance(obj, bytes):
-        if py3compat.PY3:
-            # unanmbiguous binary data is base64-encoded
-            # (this probably should have happened upstream)
-            return b2a_base64(obj).decode('ascii')
-        else:
-            # Python 2 bytestr is ambiguous,
-            # needs special handling for possible binary bytestrings.
-            # imperfect workaround: if ascii, assume text.
-            # otherwise assume binary, base64-encode (py3 behavior).
-            try:
-                return obj.decode('ascii')
-            except UnicodeDecodeError:
-                return b2a_base64(obj).decode('ascii')
+@pytest.mark.skipif(JUPYTER_CLIENT_MAJOR_VERSION >= 7, reason="json_clean is a no-op")
+def test_encode_images():
+    # invalid data, but the header and footer are from real files
+    pngdata = b"\x89PNG\r\n\x1a\nblahblahnotactuallyvalidIEND\xaeB`\x82"
+    jpegdata = b"\xff\xd8\xff\xe0\x00\x10JFIFblahblahjpeg(\xa0\x0f\xff\xd9"
+    pdfdata = b"%PDF-1.\ntrailer<</Root<</Pages<</Kids[<</MediaBox[0 0 3 3]>>]>>>>>>"
+    bindata = b"\xff\xff\xff\xff"
 
-    if isinstance(obj, container_to_list) or (
-                hasattr(obj, '__iter__') and hasattr(obj, next_attr_name)):
-        obj = list(obj)
+    fmt = {
+        "image/png": pngdata,
+        "image/jpeg": jpegdata,
+        "application/pdf": pdfdata,
+        "application/unrecognized": bindata,
+    }
+    encoded = json_clean(encode_images(fmt))
+    for key, value in fmt.items():
+        # encoded has unicode, want bytes
+        decoded = a2b_base64(encoded[key])
+        assert decoded == value
+    encoded2 = json_clean(encode_images(encoded))
+    assert encoded == encoded2
 
-    if isinstance(obj, list):
-        return [json_clean(x) for x in obj]
+    for key, value in fmt.items():
+        decoded = a2b_base64(encoded[key])
+        assert decoded == value
 
-    if isinstance(obj, dict):
-        # First, validate that the dict won't lose data in conversion due to
-        # key collisions after stringification.  This can happen with keys like
-        # True and 'true' or 1 and '1', which collide in JSON.
-        nkeys = len(obj)
-        nkeys_collapsed = len(set(map(unicode_type, obj)))
-        if nkeys != nkeys_collapsed:
-            raise ValueError('dict cannot be safely converted to JSON: '
-                             'key collision would lead to dropped values')
-        # If all OK, proceed by making the new dict that will be json-safe
-        out = {}
-        for k, v in iteritems(obj):
-            out[unicode_type(k)] = json_clean(v)
-        return out
-    if isinstance(obj, datetime):
-        return obj.strftime(ISO8601)
 
-    # we don't understand it, it's probably an unserializable object
-    raise ValueError("Can't clean for JSON: %r" % obj)
+@pytest.mark.skipif(JUPYTER_CLIENT_MAJOR_VERSION >= 7, reason="json_clean is a no-op")
+def test_lambda():
+    with pytest.raises(ValueError):  # noqa: PT011
+        json_clean(lambda: 1)
+
+
+@pytest.mark.skipif(JUPYTER_CLIENT_MAJOR_VERSION >= 7, reason="json_clean is a no-op")
+def test_exception():
+    bad_dicts = [
+        {1: "number", "1": "string"},
+        {True: "bool", "True": "string"},
+    ]
+    for d in bad_dicts:
+        with pytest.raises(ValueError):  # noqa: PT011
+            json_clean(d)
+
+
+@pytest.mark.skipif(JUPYTER_CLIENT_MAJOR_VERSION >= 7, reason="json_clean is a no-op")
+def test_unicode_dict():
+    data = {"üniço∂e": "üniço∂e"}
+    clean = jsonutil.json_clean(data)
+    assert data == clean

@@ -1,31 +1,35 @@
-# -*- coding: utf-8 -*-
 """ Tests for zmq shell / display publisher. """
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
 import os
-try:
-    from queue import Queue
-except ImportError:
-    # py2
-    from Queue import Queue
-from threading import Thread
 import unittest
+import warnings
+from queue import Queue
+from threading import Thread
+from unittest.mock import MagicMock
 
-from traitlets import Int
+import pytest
 import zmq
-
-from dfkernel.zmqshell import ZMQDisplayPublisher
 from jupyter_client.session import Session
+from traitlets import Int
+
+from dfkernel.zmqshell import (  # type:ignore
+    InteractiveShell,
+    KernelMagics,
+    ZMQDisplayPublisher,
+    ZMQInteractiveShell,
+)
 
 
-class NoReturnDisplayHook(object):
+class NoReturnDisplayHook:
     """
     A dummy DisplayHook which allows us to monitor
     the number of times an object is called, but which
     does *not* return a message when it is called.
     """
+
     call_count = 0
 
     def __call__(self, obj):
@@ -38,8 +42,9 @@ class ReturnDisplayHook(NoReturnDisplayHook):
     as its base class, but which also returns the same
     message when it is called.
     """
+
     def __call__(self, obj):
-        super(ReturnDisplayHook, self).__call__(obj)
+        super().__call__(obj)
         return obj
 
 
@@ -49,6 +54,7 @@ class CounterSession(Session):
     the calls made to the session object by the display
     publisher.
     """
+
     send_count = Int(0)
 
     def send(self, *args, **kwargs):
@@ -57,7 +63,7 @@ class CounterSession(Session):
         with an increment to the send counter.
         """
         self.send_count += 1
-        super(CounterSession, self).send(*args, **kwargs)
+        super().send(*args, **kwargs)
 
 
 class ZMQDisplayPublisherTests(unittest.TestCase):
@@ -70,11 +76,7 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
         self.socket = self.context.socket(zmq.PUB)
         self.session = CounterSession()
 
-        self.disp_pub = ZMQDisplayPublisher(
-            session = self.session,
-            pub_socket = self.socket
-        )
-
+        self.disp_pub = ZMQDisplayPublisher(session=self.session, pub_socket=self.socket)
 
     def tearDown(self):
         """
@@ -93,38 +95,41 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
         that keyword args get assigned correctly, and override
         the defaults.
         """
-        self.assertEqual(self.disp_pub.session, self.session)
-        self.assertEqual(self.disp_pub.pub_socket, self.socket)
+        assert self.disp_pub.session == self.session
+        assert self.disp_pub.pub_socket == self.socket
 
     def test_thread_local_hooks(self):
         """
         Confirms that the thread_local attribute is correctly
         initialised with an empty list for the display hooks
         """
-        self.assertEqual(self.disp_pub._hooks, [])
+        assert self.disp_pub._hooks == []
+
         def hook(msg):
             return msg
-        self.disp_pub.register_hook(hook)
-        self.assertEqual(self.disp_pub._hooks, [hook])
 
-        q = Queue()
+        self.disp_pub.register_hook(hook)
+        assert self.disp_pub._hooks == [hook]
+
+        q: Queue = Queue()
+
         def set_thread_hooks():
             q.put(self.disp_pub._hooks)
+
         t = Thread(target=set_thread_hooks)
         t.start()
         thread_hooks = q.get(timeout=10)
-        self.assertEqual(thread_hooks, [])
+        assert thread_hooks == []
 
     def test_publish(self):
         """
         Publish should prepare the message and eventually call
         `send` by default.
         """
-        data = dict(a = 1)
-
-        self.assertEqual(self.session.send_count, 0)
+        data = dict(a=1)
+        assert self.session.send_count == 0
         self.disp_pub.publish(data)
-        self.assertEqual(self.session.send_count, 1)
+        assert self.session.send_count == 1
 
     def test_display_hook_halts_send(self):
         """
@@ -133,17 +138,17 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
         the message has been consumed, and should not be
         processed (`sent`) in the normal manner.
         """
-        data = dict(a = 1)
+        data = dict(a=1)
         hook = NoReturnDisplayHook()
 
         self.disp_pub.register_hook(hook)
-        self.assertEqual(hook.call_count, 0)
-        self.assertEqual(self.session.send_count, 0)
+        assert hook.call_count == 0
+        assert self.session.send_count == 0
 
         self.disp_pub.publish(data)
 
-        self.assertEqual(hook.call_count, 1)
-        self.assertEqual(self.session.send_count, 0)
+        assert hook.call_count == 1
+        assert self.session.send_count == 0
 
     def test_display_hook_return_calls_send(self):
         """
@@ -156,30 +161,30 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
         hook = ReturnDisplayHook()
 
         self.disp_pub.register_hook(hook)
-        self.assertEqual(hook.call_count, 0)
-        self.assertEqual(self.session.send_count, 0)
+        assert hook.call_count == 0
+        assert self.session.send_count == 0
 
         self.disp_pub.publish(data)
 
-        self.assertEqual(hook.call_count, 1)
-        self.assertEqual(self.session.send_count, 1)
+        assert hook.call_count == 1
+        assert self.session.send_count == 1
 
     def test_unregister_hook(self):
         """
         Once a hook is unregistered, it should not be called
         during `publish`.
         """
-        data = dict(a = 1)
+        data = dict(a=1)
         hook = NoReturnDisplayHook()
 
         self.disp_pub.register_hook(hook)
-        self.assertEqual(hook.call_count, 0)
-        self.assertEqual(self.session.send_count, 0)
+        assert hook.call_count == 0
+        assert self.session.send_count == 0
 
         self.disp_pub.publish(data)
 
-        self.assertEqual(hook.call_count, 1)
-        self.assertEqual(self.session.send_count, 0)
+        assert hook.call_count == 1
+        assert self.session.send_count == 0
 
         #
         # After unregistering the `NoReturn` hook, any calls
@@ -188,22 +193,65 @@ class ZMQDisplayPublisherTests(unittest.TestCase):
         # at the end.
         #
         # As a result, the hook call count should *not* increase,
-        # but the session send count *should* increase.
+        # but the session send count *should* increase.
         #
         first = self.disp_pub.unregister_hook(hook)
         self.disp_pub.publish(data)
 
-        self.assertTrue(first)
-        self.assertEqual(hook.call_count, 1)
-        self.assertEqual(self.session.send_count, 1)
+        assert bool(first)
+        assert hook.call_count == 1
+        assert self.session.send_count == 1
 
         #
         # If a hook is not installed, `unregister_hook`
         # should return false.
         #
         second = self.disp_pub.unregister_hook(hook)
-        self.assertFalse(second)
+        assert not bool(second)
 
 
-if __name__ == '__main__':
+def test_magics(tmp_path):
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    shell = InteractiveShell()
+    shell.user_ns["hi"] = 1
+    magics = KernelMagics(shell)
+
+    tmp_file = tmp_path / "test.txt"
+    tmp_file.write_text("hi", "utf8")
+    magics.edit(str(tmp_file))
+    payload = shell.payload_manager.read_payload()[0]
+    assert payload["filename"] == str(tmp_file)
+
+    magics.clear([])
+    magics.less(str(tmp_file))
+    if os.name == "posix":
+        magics.man("ls")
+    magics.autosave("10")
+
+    socket.close()
+    context.destroy()
+
+
+def test_zmq_interactive_shell(kernel):
+    shell = ZMQInteractiveShell()
+
+    with pytest.raises(RuntimeError):
+        shell.enable_gui("tk")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        shell.data_pub_class = MagicMock()  # type:ignore
+        shell.data_pub
+    shell.kernel = kernel
+    shell.set_next_input("hi")
+    assert shell.get_parent() is None
+    if os.name == "posix":
+        shell.system_piped("ls")
+    else:
+        shell.system_piped("dir")
+    shell.ask_exit()
+
+
+if __name__ == "__main__":
     unittest.main()

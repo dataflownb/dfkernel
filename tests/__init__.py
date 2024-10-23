@@ -5,45 +5,44 @@ import os
 import shutil
 import sys
 import tempfile
+from unittest.mock import patch
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+import pytest
 
-from jupyter_core import paths as jpaths
-from IPython import paths as ipaths
 from dfkernel.kernelspec import install
 
 pjoin = os.path.join
 
 tmp = None
-patchers = []
+patchers: list = []
 
-def setup():
+
+@pytest.fixture(autouse=True)
+def _global_setup():
     """setup temporary env for tests"""
     global tmp
     tmp = tempfile.mkdtemp()
     patchers[:] = [
-        patch.dict(os.environ, {
-            'HOME': tmp,
-            # Let tests work with --user install when HOME is changed:
-            'PYTHONPATH': os.pathsep.join(sys.path),
-        }),
+        patch.dict(
+            os.environ,
+            {
+                "HOME": tmp,
+                # Let tests work with --user install when HOME is changed:
+                "PYTHONPATH": os.pathsep.join(sys.path),
+            },
+        ),
     ]
     for p in patchers:
         p.start()
-    
+
     # install IPython in the temp home:
     install(user=True)
-
-
-def teardown():
+    yield
     for p in patchers:
         p.stop()
 
     try:
-        shutil.rmtree(tmp)
-    except (OSError, IOError):
+        shutil.rmtree(tmp)  # type:ignore
+    except OSError:
         # no such file
         pass
