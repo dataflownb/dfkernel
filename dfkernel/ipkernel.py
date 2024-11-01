@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 from functools import partial
 import ipykernel.ipkernel
 from ipykernel.ipkernel import *
@@ -129,14 +130,14 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         input_tags = dfkernel_data.get("input_tags", {})
         # print("SETTING INPUT TAGS:", input_tags, file=sys.__stdout__)
 
-        output_tags= {}
+        output_tags= defaultdict(set)
         if dfkernel_data.get('output_tags'):
             for op_id, op_tags in dfkernel_data['output_tags'].items():
                 for tag in op_tags:
-                    if isinstance(tag, str):
-                        output_tags.setdefault(tag, set()).add(op_id)
+                    output_tags[tag].add(op_id)
+            
         
-        self._output_tags = output_tags
+        self._output_tags = dict(output_tags)
         self.shell.input_tags = input_tags
 
         self._outer_stream = stream
@@ -477,24 +478,20 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         return reply_content, res
 
     def update_code_cells(self, dfmetadata, update_persistent_code=False):
-        curr_output_tags = dict()
+        curr_output_tags = defaultdict(set)
+        code_refs = defaultdict(set)
         updated_code_dict = {}
         updated_persistent_code_dict = {}
-        code_refs = dict()
 
         for id, tags in dfmetadata['output_tags'].items():
             for tag in tags:
-                if isinstance(tag, str):
-                    curr_output_tags.setdefault(tag, set()).add(id)
+                curr_output_tags[tag].add(id)
         
         for uuid, refs in dfmetadata['all_refs'].items():
             for ref_id, ref_tags in refs['ref'].items():
                 for tag in ref_tags:
-                    if code_refs.get(tag):
-                        code_refs[tag].add(ref_id)
-                    else:
-                        code_refs[tag] = {ref_id}
-
+                    code_refs[tag].add(ref_id)
+            
             if dfmetadata['code_dict'].get(uuid):
                 try:
                     code = dfmetadata['code_dict'][uuid]
@@ -505,7 +502,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     )
 
                     code = ground_refs(
-                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=curr_output_tags, cell_refs=code_refs, reversion=True
+                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
                     )
 
                     code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
@@ -528,7 +525,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     )
 
                     code = ground_refs(
-                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=curr_output_tags, cell_refs=code_refs, reversion=True
+                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
                     )
 
                     code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
@@ -540,8 +537,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     self.log.error('Error in conversion for cell: {uuid}')
                     self.log.error(e)
                     continue
-            
-        
+                        
         return updated_code_dict, updated_persistent_code_dict
 
 # This exists only for backwards compatibility - use IPythonKernel instead

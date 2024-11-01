@@ -45,7 +45,6 @@ class DataflowRef:
             return f'{self.name}${qualifier}{reversed_input_tags[self.cell_id]}'
 
         return f'{self.name}${qualifier}{self.cell_id}'
-        # return f'{self.name}${qualifier}{cell_tag}{self.cell_id}'
 
     def __repr__(self):
         return f'DataflowRef({self.start_pos}, {self.end_pos}, {self.name}, {self.cell_id}, {self.cell_tag}, {self.ref_qualifier})'
@@ -116,63 +115,40 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                 self.scope[-1].add(node.id)
             elif isinstance(node.ctx, ast.Del):
                 self.scope[-1].discard(node.id)
-            elif (not reversion) and (isinstance(node.ctx, ast.Load) and
-                    all(node.id not in s for s in self.scope) and
-                    dataflow_state.has_external_link(node.id, execution_count)):
-                cell_id = dataflow_state.get_external_link(node.id, execution_count)
-                if not (display_code_parsed and output_tags.get(node.id) and len(output_tags[node.id]) == 1 and cell_id in output_tags[node.id]):
-                    ref = DataflowRef(
-                        start_pos=(node.lineno, node.col_offset),
-                        end_pos=(node.end_lineno, node.end_col_offset),
-                        name=node.id,
-                        cell_id=cell_id
-                    )
-                    self.updates.append(ref)
-                
-            elif (not reversion) and (isinstance(node.ctx, ast.Load) and
-                    all(node.id not in s for s in self.scope) and
-                    ((output_tags.get(node.id) and len(output_tags[node.id]) == 1) or
-                     (cell_refs.get(node.id) and len(cell_refs[node.id]) == 1))
-                    ):
-                cell_id = list(output_tags[node.id])[0] if output_tags.get(node.id) else list(cell_refs[node.id])[0]
-                ref = DataflowRef(
-                    start_pos=(node.lineno, node.col_offset),
-                    end_pos=(node.end_lineno, node.end_col_offset),
-                    name=node.id,
-                    cell_id=cell_id
-                )
-                self.updates.append(ref)
-                    
-            elif reversion and isinstance(node.ctx, ast.Load) and all(node.id not in s for s in self.scope):
-                if (output_tags.get(node.id) and len(output_tags[node.id]) == 2 and cell_refs.get(node.id) 
-                     and len(cell_refs[node.id]) == 1 and list(cell_refs[node.id])[0] in output_tags[node.id]):
-                    ref = DataflowRef(
-                    start_pos=(node.lineno, node.col_offset),
-                    end_pos=(node.end_lineno, node.end_col_offset),
-                    name=node.id,
-                    cell_id=list(cell_refs[node.id])[0]
-                    )
-                    self.updates.append(ref)
-                
-                elif (not output_tags.get(node.id) and cell_refs.get(node.id) and len(cell_refs[node.id]) == 1):
-                    ref = DataflowRef(
-                    start_pos=(node.lineno, node.col_offset),
-                    end_pos=(node.end_lineno, node.end_col_offset),
-                    name=node.id,
-                    cell_id=list(cell_refs[node.id])[0]
-                    )
-                    self.updates.append(ref)
-                
-                elif cell_refs.get(node.id) and len(cell_refs[node.id]) == 1 and list(cell_refs[node.id])[0] not in output_tags[node.id]:
-                    ref = DataflowRef(
-                    start_pos=(node.lineno, node.col_offset),
-                    end_pos=(node.end_lineno, node.end_col_offset),
-                    name=node.id,
-                    cell_id=list(cell_refs[node.id])[0]
-                    )
-                    self.updates.append(ref)
-                 
+            elif isinstance(node.ctx, ast.Load) and all(node.id not in s for s in self.scope):
+                if not reversion:
+                    #check external link first
+                    if dataflow_state.has_external_link(node.id, execution_count):
+                        cell_id = dataflow_state.get_external_link(node.id, execution_count)
+                        if not (display_code_parsed and output_tags.get(node.id) and len(output_tags[node.id]) == 1 and cell_id in output_tags[node.id]):
+                            self._create_dataflow_ref(node, cell_id)
+
+                    #check outtags and cell refs
+                    elif (output_tags.get(node.id) and len(output_tags[node.id]) == 1) or (cell_refs.get(node.id) and len(cell_refs[node.id]) == 1):
+                        cell_id = list(output_tags[node.id])[0] if output_tags.get(node.id) else list(cell_refs[node.id])[0]
+                        self._create_dataflow_ref(node, cell_id)
+
+                else: # reversion case
+                    cell_refs_exists = cell_refs.get(node.id) and len(cell_refs[node.id]) == 1
+                    output_tags_exists = output_tags.get(node.id)
+
+                    if cell_refs_exists and (
+                        (output_tags_exists and len(output_tags[node.id]) == 2  and list(cell_refs[node.id])[0] in output_tags[node.id]) or
+                        not output_tags_exists or
+                        list(cell_refs[node.id])[0] not in output_tags[node.id] 
+                        ):
+                        self._create_dataflow_ref(node, list(cell_refs[node.id])[0])
+
             self.generic_visit(node)
+
+        def _create_dataflow_ref(self, node, cell_id):
+            ref = DataflowRef(
+                start_pos=(node.lineno, node.col_offset),
+                end_pos=(node.end_lineno, node.end_col_offset),
+                name=node.id,
+                cell_id=cell_id
+            )
+            self.updates.append(ref)
 
         # need to make sure we visit right side before left!
         def visit_Assign(self, node):
@@ -373,8 +349,8 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
                     start_pos=dollar_pos[0],
                     end_pos=dollar_pos[1],
                     name=var_name,
-                    cell_id= cell_id,
-                    cell_tag= cell_tag,
+                    cell_id=cell_id,
+                    cell_tag=cell_tag,
                     ref_qualifier=ref_qualifier)
                 )
                 dollar_pos = None
@@ -390,7 +366,6 @@ def convert_dollar(s, dataflow_state, execution_count, replace_f=ref_replacer, i
 
     # print("UPDATES:", updates)
     update_refs(updates, dataflow_state, execution_count, input_tags)
-    
     return run_replacer(s, updates, replace_f)
 
 def convert_identifier(s, replace_f=ref_replacer, input_tags={}):
@@ -431,7 +406,7 @@ def get_references(s):
                     
             self.generic_visit(node)
 
-    identifier_refs=dict()
+    identifier_refs = {}
     tree = ast.parse(s)
     linker = GetReferences()
     linker.visit(tree)
