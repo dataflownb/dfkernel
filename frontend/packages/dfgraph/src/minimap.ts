@@ -4,6 +4,7 @@ const uuidLength = 8;
 
 import * as d3 from 'd3';
 import $ from 'jquery';
+import { truncateCellId } from '@dfnotebook/dfutils';
 
 export class Minimap {
   radius: number;
@@ -91,7 +92,7 @@ export class Minimap {
   /** @method update the order that cells are present in the minimap **/
   updateOrder = function (order: any) {
     //Have to set uuids properly here in case we rely on cell array
-    this.order = order.map((uuid: string) => uuid.substring(0, uuidLength));
+    this.order = order.map((uuid: string) => truncateCellId(uuid));
     return true;
   };
 
@@ -731,7 +732,7 @@ export class Minimap {
         that.outputNodes[uuid] = that.getNodes(uuid);
         let outnames = that.outputNodes[uuid];
         that.dfgraph.getUpstreams(uuid).forEach(function (b: string) {
-          let sUuid = b.substring(0, uuidLength);
+          let sUuid = truncateCellId(b);
           let sNode = b.substring(uuidLength, b.length);
           outnames.forEach((out: any) => {
             that.edges.push({
