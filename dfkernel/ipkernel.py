@@ -91,15 +91,15 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         @comm.on_msg
         def _recv(msg):
             try:
-                update_persistent_code = False
+                update_latest_executed_code = False
                 dfMetadata = msg['content']['data']['dfMetadata']
                 self.shell.input_tags = dfMetadata['input_tags']
 
-                if msg['content']['data'].get('updatePersisentCode') and msg['content']['data']['updatePersisentCode']:
-                    update_persistent_code = True
+                if msg['content']['data'].get('updateExecutedCode') and msg['content']['data']['updateExecutedCode']:
+                    update_latest_executed_code = True
 
-                code_dict, updated_persistent_code_dict = self.update_code_cells(dfMetadata, update_persistent_code)
-                comm.send({'code_dict': code_dict, 'persistent_code_dict': updated_persistent_code_dict})
+                code_dict, executed_code_dict = self.update_code_cells(dfMetadata, update_latest_executed_code)
+                comm.send({'code_dict': code_dict, 'executed_code_dict': executed_code_dict})
             except Exception as e:
                 self.log.error('Error in conversion')
                 self.log.error(e)
@@ -147,6 +147,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         self._outer_allow_stdin = allow_stdin
         self._outer_dfkernel_data = dfkernel_data
         self._identifier_refs = {}
+        self._persistent_code = {}
 
         res = await self.inner_execute_request(
             code,
@@ -199,6 +200,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags, output_tags=self._output_tags
             )
             self._identifier_refs[uuid] = get_references(code)
+            self._persistent_code[uuid] = convert_identifier(code, dollar_replacer, input_tags={})
+
             code = convert_identifier(code, dollar_replacer, input_tags=input_tags)
             dollar_converted = False
         except SyntaxError as e:
@@ -423,6 +426,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 reply_content["links"] = res.links
                 reply_content["cells"] = res.cells
                 reply_content["identifier_refs"] = self._identifier_refs
+                reply_content["persistent_code"] = self._persistent_code
 
                 reply_content["upstream_deps"] = res.all_upstream_deps
                 reply_content["downstream_deps"] = res.all_downstream_deps
@@ -438,6 +442,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     "traceback": shell._last_traceback or [],
                     "ename": str(type(err).__name__),
                     "evalue": str(err),
+                    "persistent_code": self._persistent_code
                 }
             )
 
@@ -477,68 +482,51 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
         return reply_content, res
 
-    def update_code_cells(self, dfmetadata, update_persistent_code=False):
+    def update_code_cells(self, dfmetadata, update_latest_executed_code=False):	
         curr_output_tags = defaultdict(set)
         code_refs = defaultdict(set)
         updated_code_dict = {}
-        updated_persistent_code_dict = {}
+        updated_executed_code_dict = {}
 
         for id, tags in dfmetadata['output_tags'].items():
             for tag in tags:
                 curr_output_tags[tag].add(id)
-        
+    
+        def convert_code(code, uuid, refs):
+            try:
+                tag_refs = { value: key for key, value in refs['tag_refs'].items() }
+                code = convert_dollar(
+                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs=tag_refs
+                )
+                
+                code = ground_refs(
+                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
+                )
+                
+                code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
+                return code
+            except Exception as e:
+                self.log.error(f'Error in conversion for cell: {uuid}')
+                self.log.error(e)
+                return None
+
+
         for uuid, refs in dfmetadata['all_refs'].items():
             for ref_id, ref_tags in refs['ref'].items():
                 for tag in ref_tags:
                     code_refs[tag].add(ref_id)
             
             if dfmetadata['code_dict'].get(uuid):
-                try:
-                    code = dfmetadata['code_dict'][uuid]
-                    tag_refs = { value: key for key, value in refs['tag_refs'].items() }
+                code = convert_code(dfmetadata['code_dict'][uuid], uuid, refs)
+                if code is not None and code != dfmetadata['code_dict'][uuid]:
+                    updated_code_dict[uuid] = code
 
-                    code = convert_dollar(
-                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs = tag_refs
-                    )
+                if update_latest_executed_code and dfmetadata['executed_code'].get(uuid):
+                    code = convert_code(dfmetadata['executed_code'][uuid],  uuid, refs)
+                    if code is not None and code != dfmetadata['executed_code'][uuid]:
+                        updated_executed_code_dict[uuid] = code
 
-                    code = ground_refs(
-                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
-                    )
-
-                    code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
-                    
-                    if dfmetadata['code_dict'].get(uuid) and code != dfmetadata['code_dict'][uuid]:
-                        updated_code_dict[uuid] = code
-
-                except Exception as e:
-                    self.log.error('Error in conversion for cell: {uuid}')
-                    self.log.error(e)
-                    continue
-            
-            if update_persistent_code and dfmetadata['persisted_code'].get(uuid):
-                try:
-                    code = dfmetadata['persisted_code'][uuid]
-                    tag_refs = { value: key for key, value in refs['tag_refs'].items() }
-
-                    code = convert_dollar(
-                    code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs = tag_refs
-                    )
-
-                    code = ground_refs(
-                        code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
-                    )
-
-                    code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
-                    
-                    if dfmetadata['code_dict'].get(uuid) and code != dfmetadata['code_dict'][uuid]:
-                        updated_persistent_code_dict[uuid] = code
-
-                except Exception as e:
-                    self.log.error('Error in conversion for cell: {uuid}')
-                    self.log.error(e)
-                    continue
-                        
-        return updated_code_dict, updated_persistent_code_dict
+        return updated_code_dict, updated_executed_code_dict
 
 # This exists only for backwards compatibility - use IPythonKernel instead
 class Kernel(IPythonKernel):
