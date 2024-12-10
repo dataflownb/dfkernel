@@ -258,9 +258,11 @@ export class Graph {
     that.executed[uuid] = true;
     //We have to execute upstreams either way
     console.log(that.uplinks[uuid]);
-    Object.keys(that.uplinks[uuid]).forEach(function (upuuid: string) {
-      that.states[upuuid] = 'Fresh';
-    });
+    if(that.uplinks[uuid]){
+      Object.keys(that.uplinks[uuid]).forEach(function (upuuid: string) {
+        that.states[upuuid] = 'Fresh';
+      });
+    }
 
     if (revert == true) {
       //Restore downstream statuses

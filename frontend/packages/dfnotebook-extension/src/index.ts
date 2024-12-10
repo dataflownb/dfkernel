@@ -89,11 +89,13 @@ import {
   DataflowNotebookPanel,
   DataflowNotebookWidgetFactory,
   IDataflowNotebookWidgetFactory,
-  getdfData
+  getCellsMetadata,
+  getAllTags,
+  dfCommGetData
 } from '@dfnotebook/dfnotebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { IChangedArgs, PageConfig } from '@jupyterlab/coreutils';
-import { DataflowInputArea } from '@dfnotebook/dfcells';
+import { DataflowCodeCell, DataflowInputArea, getNotebookId, notebookCellMap } from '@dfnotebook/dfcells';
 
 import { cellExecutor } from './cellexecutor';
 import { CellBarExtension } from '@jupyterlab/cell-toolbar';
@@ -546,7 +548,7 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
           // Add the command to the palette.
           palette.addItem({ command, category: 'Tutorial' });
         }
-    };
+};
 
 // /**
 //  * Initialization data for the Minimap extension.
@@ -709,16 +711,15 @@ class ToggleTagsWidget extends Widget {
     };
 
     updateTooltip(true);
-    updateNotebookCellsWithTag(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext);
+    updateNotebookCellsWithTag(nbPanel.id, nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext);
 
     input.addEventListener('change', async (event) => {
       const isChecked = (event.target as HTMLInputElement).checked;
-      console.log(isChecked ? 'Tags are shown' : 'Tags are hidden');
-      updateTooltip(isChecked);
       const notebook = nbPanel.content
+      const cellsArray = Array.from(notebook.widgets);
+      updateTooltip(isChecked);
 
-      for (let index = 0; index < notebook.widgets.length; index++){
-        const cAny = notebook.widgets[index];
+      cellsArray.forEach(cAny => {
         const dfmetadata = cAny.model.getMetadata('dfmetadata');
         if (cAny.model.type == 'code' && dfmetadata.tag){
           const inputArea = (cAny as any).inputArea;
@@ -731,11 +732,11 @@ class ToggleTagsWidget extends Widget {
             cAny.model.setMetadata('dfmetadata', dfmetadata);
           }
         }
-      }
+      });
 
       nbPanel.model?.setMetadata("enable_tags", isChecked);
       app.commands.notifyCommandChanged('toolbar-button:tag-cell')
-      await updateNotebookCellsWithTag(nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
+      await updateNotebookCellsWithTag(nbPanel.id, nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
     });
 
     this.node.appendChild(containerDiv);
@@ -762,6 +763,59 @@ const ToggleTags: JupyterFrontEndPlugin<void> = {
   }
 };
 
+const NotebookCellTrackerPlugin: JupyterFrontEndPlugin<void> = {
+  id: 'notebook-cell-tracker',
+  autoStart: true,
+  requires: [INotebookTracker],
+  activate: (app: JupyterFrontEnd, tracker: INotebookTracker) => {
+    console.log('Notebook Cell Tracker Extension Activated.');
+    
+    tracker.widgetAdded.connect((_, notebookPanel) => {
+      const notebookModel = notebookPanel.content.model;
+      
+      if (!notebookModel) {
+        console.warn('Notebook model not found.');
+        return;
+      }
+
+      const notebookId  = notebookPanel.id;
+      
+      if (!notebookCellMap.has(notebookId)) {
+        notebookCellMap.set(notebookId, new Map<string, string>());
+      }
+
+      const cellMap = notebookCellMap.get(notebookId)!;
+      notebookModel.cells.changed.connect((_, changes) => {
+        if (changes.type === 'add') {
+          for (const cell of changes.newValues) {
+            if (cell.type === 'code') {
+              const codeCell = cell as ICodeCellModel;
+              const cellId = codeCell.id.replace(/-/g, '').substring(0, 8);
+              console.log(`Added Cell ID: ${cellId} in Notebook: ${notebookId}`);
+
+              cellMap.set(cellId, codeCell.sharedModel.getSource());
+              console.log('Cell added to map:', cellId, codeCell.sharedModel.getSource());
+            }
+          }
+        }
+        else if (changes.type === 'remove') {
+          for (const deletedCellId of notebookModel.deletedCells) {
+            const cellId = deletedCellId.replace(/-/g, '').substring(0, 8);
+            console.log('Deleted Cell ID:', cellId);
+            cellMap.delete(cellId);
+          }
+        }
+      });
+
+      //notebook closed
+      notebookPanel.disposed.connect(() => {
+        console.log(`Cleaning up Notebook: ${notebookId}`);
+        notebookCellMap.delete(notebookId);
+      });
+    });
+  }
+};
+
 const plugins: JupyterFrontEndPlugin<any>[] = [
   cellExecutor,
   factory,
@@ -771,7 +825,8 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   DepViewer,
   MiniMap,
   GraphManagerPlugin,
-  ToggleTags
+  ToggleTags,
+  NotebookCellTrackerPlugin
 ];
 export default plugins;
 
@@ -2743,12 +2798,13 @@ function addCommands(
   
       const result = await showAddTagDialog();
       const cellUUID = cell.model.id.replace(/-/g, '').substring(0, 8);
+      const notebookId = getNotebookId(cell as DataflowCodeCell);
       if (result) {
         const { newTag } = result;
         inputArea.addTag(newTag);
         if (newTag && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
-          await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext)
+          await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext)
         }
         console.log('Tag has been added.');
       }
@@ -2888,13 +2944,14 @@ function addCommands(
   
       const result = await showModifyTagDialog();
       const cellUUID = cell.model.id.replace(/-/g, '').substring(0, 8);
+      const notebookId = getNotebookId(cell as DataflowCodeCell);
       if (result) {
         const { newTag, updateReferences } = result;
         inputArea.addTag(newTag);
 
         if (updateReferences && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
-          await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext)
+          await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext)
         } else if (updateReferences == false && tracker.currentWidget?.content.model) {
           let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
           const all_tags: { [key: string]: string } = {};
@@ -2926,7 +2983,7 @@ function addCommands(
                 }
                 dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
                 notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
-                await updateNotebookCellsWithTag(notebook, cellUUID, tracker.currentWidget.sessionContext, false, true)
+                await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext, false, true)
               }
             }
           }
@@ -2984,85 +3041,76 @@ function addCommands(
 /**
  * Update code based on add, delete or modified tag value
  */
-export async function updateNotebookCellsWithTag(notebook: DataflowNotebookModel, cellUUID: string, sessionContext: ISessionContext, hideTags: boolean=false, updateInputTagsOnly: boolean=false) {
-  let dfData = getdfData(notebook, '')
+export async function updateNotebookCellsWithTag(notebookId: string|undefined, notebook: DataflowNotebookModel, cellUUID: string, sessionContext: ISessionContext, hideTags: boolean=false, updateInputTagsOnly: boolean=false) {
+  let dfData = getCellsMetadata(notebook, '');
+  let cellMap = notebookId ? notebookCellMap.get(notebookId): new Map<string, string>();
+  if(cellMap){
+    const executedCode: { [key: string]: string } = {};
+    cellMap.forEach((value, key) => {
+      executedCode[key] = value;
+    });
+    dfData.dfMetadata.executed_code = executedCode;
+  }
 
-  const commPromise = new Promise<void>((resolve) => {
-    let comm = sessionContext.session?.kernel?.createComm('dfcode');
-    if (comm) {
-      comm.open();
-    
-      if (hideTags) {
-        dfData.dfMetadata.input_tags = {};
+  if (hideTags) {
+    dfData.dfMetadata.input_tags = {};
+  }
+
+  if (updateInputTagsOnly){
+    dfData.dfMetadata.all_refs = {}
+    dfData.dfMetadata.output_tags = {}
+    dfData.dfMetadata.code_dict = {}
+  }
+
+  try {
+    const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata, 'updateExecutedCode': true});
+    console.log('Received data from kernel:', response);
+    updateNotebookCells(notebookId, notebook, response, cellUUID, hideTags);
+  } catch (error) {
+    console.error('Error during kernel communication:', error);
+  }
+}
+
+function updateNotebookCells(notebookId: string|undefined, notebook: DataflowNotebookModel, content: any, cellUUID: string, hideTags: boolean): void {
+  const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
+  const all_Tags = getAllTags(notebook);
+  const cellsArray = Array.from(notebook.cells);
+
+  cellsArray.forEach((cell, index) => {
+    if (cell.type === 'code') {
+      const cAny = cell as ICodeCellModel;
+      const cId = cAny.id.replace(/-/g, '').substring(0, 8);
+
+      // Handle executed code updates
+      if (content.executed_code_dict?.hasOwnProperty(cId)) {
+        const updatedCode = content.executed_code_dict[cId];
+        cellMap?.set(cId, updatedCode.trim());
       }
 
-      if (updateInputTagsOnly){
-        dfData.dfMetadata.all_refs = {}
-        dfData.dfMetadata.output_tags = {}
-        dfData.dfMetadata.code_dict = {}
+      // Handle code dictionary updates
+      if (content.code_dict?.hasOwnProperty(cId)) {
+        const updatedCode = content.code_dict[cId];
+        cAny.sharedModel.setSource(updatedCode);
       }
-    
-      comm.send({
-        'dfMetadata': dfData.dfMetadata,
-        'updatePersisentCode': true
-      });
 
-      comm.onMsg = (msg) => {
-        const content = msg.content.data;
-        const all_tags: { [key: string]: string } = {}
-        //Getting all the tags from notebook
-        for (let index = 0; index < notebook.cells.length; index++) {
-          const cAny = notebook.cells.get(index) as ICodeCellModel;
-          if (notebook.cells.get(index).type === 'code') {
-            const c = cAny as ICodeCellModel;
-            const cId = c.id.replace(/-/g, '').substring(0, 8);
-            let dfmetadata = c.getMetadata('dfmetadata');
-            if (dfmetadata.tag) {
-              all_tags[cId] = dfmetadata.tag;
+      //Updating the dependent cell's df-metadata when any cell is tagged/untagged
+      if (cellUUID && !hideTags) {
+        const dfmetadata = cAny.getMetadata('dfmetadata');
+        const inputVarsMetadata = dfmetadata.inputVars;
+        if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
+          const refValue = inputVarsMetadata.ref as { [key: string]: any };
+          let tagRefValue = inputVarsMetadata.tag_refs as { [key: string]: any };
+          for (const ref_key in refValue) {
+            if (ref_key == cellUUID && all_Tags.hasOwnProperty(ref_key)) {
+              tagRefValue[cellUUID] = all_Tags[cellUUID];
             }
           }
+          dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
+          notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
         }
-
-        for (let index = 0; index < notebook.cells.length; index++){
-          const cAny = notebook.cells.get(index) as ICodeCellModel;
-          const cId = cAny.id.replace(/-/g, '').substring(0, 8);
-          if (cAny.type == 'code') {
-            if (content.code_dict?.hasOwnProperty(cId)){
-              let updatedCode = (content.code_dict as { [key: string]: any })[cId]
-              if (content.persistent_code_dict?.hasOwnProperty(cId)){
-                let dfmetadata = cAny.getMetadata('dfmetadata')
-                dfmetadata.persistentCode = (content.persistent_code_dict as { [key: string]: any })[cId];
-                cAny.setMetadata('dfmetadata', dfmetadata);
-              }
-              cAny.sharedModel.setSource(updatedCode);
-            }
-
-            //Updating the dependent cell's df-metadata when any cell is tagged/untagged
-            if(cellUUID && !hideTags){
-              let dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
-              let inputVarsMetadata = dfmetadata.inputVars;
-              if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
-                const refValue = inputVarsMetadata.ref as { [key: string]: any };
-                let tagRefValue = inputVarsMetadata.tag_refs as { [key: string]: any };
-                for (const ref_key in refValue) {
-                  if (ref_key == cellUUID && all_tags.hasOwnProperty(ref_key)) {
-                    tagRefValue[cellUUID] = all_tags[cellUUID];
-                  }
-                }
-                dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
-                notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
-              }
-            }
-          }
-        }
-        resolve(); // Resolve the promise when the message is received
-      };
+      }
     }
-    else{
-      resolve(); // Resolve immediately if comm is not created
-      }
   });
-  await commPromise; // Wait for the comm message to be received and processed
 }
 
 /**

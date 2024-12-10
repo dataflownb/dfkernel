@@ -37,7 +37,6 @@
     "schema/*.json",
     "style/*.css",
     "style/index.js",
-    "src/**/*.{ts,tsx}",
     "src/**/*.{d.ts,ts,tsx}",
     "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
   ],

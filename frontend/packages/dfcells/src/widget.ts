@@ -20,6 +20,7 @@ import { IChangedArgs } from '@jupyterlab/coreutils';
 import { ISessionContext } from '@jupyterlab/apputils';
 import { JSONObject } from '@lumino/coreutils';
 import { Panel } from '@lumino/widgets';
+import { NotebookPanel } from '@jupyterlab/notebook';
 
 // FIXME need to add this back when dfgraph is working
 import { Manager as GraphManager } from '@dfnotebook/dfgraph';
@@ -32,6 +33,8 @@ const CELL_INPUT_AREA_CLASS = 'jp-Cell-inputArea';
  * The CSS class added to the cell output area.
  */
 const CELL_OUTPUT_AREA_CLASS = 'jp-Cell-outputArea';
+
+export const notebookCellMap = new Map<string, Map<string, string>>();
 
 function setInputArea<T extends ICellModel = ICellModel>(cell: Cell) {
   // FIXME may be able to get panel via (this.layout as PanelLayout).widgets?
@@ -225,15 +228,33 @@ export class DataflowCodeCell extends CodeCell {
   }
 
   private _onContentChanged(): void {
-    let currentCode = this.model.sharedModel.getSource().trim();
-    let persistentCode = this.model.getMetadata('dfmetadata').persistentCode.trim();
-    if (persistentCode != '' && persistentCode == currentCode){
-      this.node.classList.add('df-cell-not-dirty');
-    }
-    else if(persistentCode != '') {
-      this.node.classList.remove('df-cell-not-dirty');
+    let notebookpanelId = getNotebookId(this)
+
+    if(notebookpanelId){
+      const currentCode = this.model.sharedModel.getSource().trim();
+      const cId = this.model.sharedModel.getId().replace(/-/g, '').substring(0, 8);
+      const executedCode = notebookCellMap.get(notebookpanelId)?.get(cId)?.trim();
+      if (executedCode != ''){
+        if(executedCode === currentCode){
+          this.node.classList.add('df-cell-not-dirty');
+        }
+        else{
+          this.node.classList.remove('df-cell-not-dirty');
+        }
+      }
     }
   }
+}
+
+export function getNotebookId(cell: DataflowCodeCell): string|undefined {
+  let parent = cell.parent;
+    while (parent) {
+      if (parent instanceof NotebookPanel) {
+        return parent.id;
+      }
+      parent = parent.parent;
+    }
+  return undefined;
 }
 
 export namespace DataflowCodeCell {
