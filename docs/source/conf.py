@@ -9,7 +9,7 @@
 project = 'Dataflow Notebooks'
 copyright = '2024, David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
 author = 'David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
-release = '0.4.0-alpha.2'
+#release = '0.4.0-alpha.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -42,9 +42,20 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 
+
+# html_theme_options = {
+#     "secondary_sidebar_items": {
+#         "path/to/page": [],
+#     },
+# }
+
+html_sidebars = {
+  "**": []
+  
+}
 
 
 # Create rules to show errors as they are shown in notebooks
