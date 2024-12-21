@@ -217,7 +217,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
         #print("FIRST CODE:", code)
         if not silent:
             if len(parsed_code) > 0:
-                display_code = ground_refs(parsed_code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags, output_tags=self._output_tags, display_code_parsed=True)
+                display_code = ground_refs(parsed_code, self.shell.dataflow_state, uuid, identifier_replacer, input_tags, output_tags=self._output_tags, display_code=True)
                 display_code = convert_identifier(display_code, dollar_replacer, input_tags=input_tags)
                 self._publish_execute_input(display_code, parent, execution_count)
             else:
@@ -498,11 +498,11 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                 code = convert_dollar(
                     code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), reversion=True, tag_refs=tag_refs
                 )
-                
+
                 code = ground_refs(
                     code, self.shell.dataflow_state, uuid, identifier_replacer, dfmetadata.get("input_tags", {}), output_tags=dict(curr_output_tags), cell_refs=dict(code_refs), reversion=True
                 )
-                
+
                 code = convert_identifier(code, dollar_replacer, input_tags=dfmetadata.get("input_tags", {}))
                 return code
             except Exception as e:

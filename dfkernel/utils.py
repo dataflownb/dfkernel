@@ -99,7 +99,7 @@ def run_replacer(s, refs, replace_f):
             line[:ref.start_pos[1]] + replace_f(ref) + line[ref.end_pos[1]:]
     return '\n'.join(code_arr)    
 
-def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}, output_tags={}, cell_refs = {}, reversion = False, display_code_parsed = False):
+def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, input_tags={}, output_tags={}, cell_refs = {}, reversion = False, display_code = False):
     updates = []
 
     class DataflowLinker(ast.NodeVisitor):
@@ -116,28 +116,34 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
             elif isinstance(node.ctx, ast.Del):
                 self.scope[-1].discard(node.id)
             elif isinstance(node.ctx, ast.Load) and all(node.id not in s for s in self.scope):
+                output_tags_exists = output_tags.get(node.id)
+                is_variable_exported_only_once = output_tags_exists and len(output_tags[node.id]) == 1
+                is_variable_ref_exist_in_cell_refs = cell_refs.get(node.id) and len(cell_refs[node.id]) == 1
+                
                 if not reversion:
-                    #check external link first
                     if dataflow_state.has_external_link(node.id, execution_count):
                         cell_id = dataflow_state.get_external_link(node.id, execution_count)
-                        if not (display_code_parsed and output_tags.get(node.id) and len(output_tags[node.id]) == 1 and cell_id in output_tags[node.id]):
+
+                        if not (display_code and is_variable_exported_only_once and cell_id in output_tags[node.id]):
                             self._create_dataflow_ref(node, cell_id)
 
-                    #check outtags and cell refs
-                    elif (output_tags.get(node.id) and len(output_tags[node.id]) == 1) or (cell_refs.get(node.id) and len(cell_refs[node.id]) == 1):
+                    elif (is_variable_exported_only_once or is_variable_ref_exist_in_cell_refs):
                         cell_id = list(output_tags[node.id])[0] if output_tags.get(node.id) else list(cell_refs[node.id])[0]
                         self._create_dataflow_ref(node, cell_id)
 
                 else: # reversion case
-                    cell_refs_exists = cell_refs.get(node.id) and len(cell_refs[node.id]) == 1
-                    output_tags_exists = output_tags.get(node.id)
+                    
+                    if is_variable_ref_exist_in_cell_refs: 
+                        
+                        # first exported variable's cell id
+                        cell_id = list(cell_refs[node.id])[0]
 
-                    if cell_refs_exists and (
-                        (output_tags_exists and len(output_tags[node.id]) == 2  and list(cell_refs[node.id])[0] in output_tags[node.id]) or
-                        not output_tags_exists or
-                        list(cell_refs[node.id])[0] not in output_tags[node.id] 
-                        ):
-                        self._create_dataflow_ref(node, list(cell_refs[node.id])[0])
+                        is_variable_deleted = not output_tags_exists
+                        is_variable_exported_second_time = output_tags_exists and len(output_tags[node.id]) == 2 and cell_id in output_tags[node.id]
+                        is_variable_UUID_changed = output_tags_exists and cell_id not in output_tags[node.id] 
+
+                        if is_variable_exported_second_time or is_variable_deleted or is_variable_UUID_changed:
+                            self._create_dataflow_ref(node, cell_id)
 
             self.generic_visit(node)
 
@@ -188,8 +194,7 @@ def ground_refs(s, dataflow_state, execution_count, replace_f=ref_replacer, inpu
                         self.updates.append(ref)
 
             self.generic_visit(node)
-                        
-
+        
         def process_function(self, node, add_name=True):
             if add_name:
                 self.scope[-1].add(node.name)
