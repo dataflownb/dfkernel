@@ -1,15 +1,16 @@
 import { runCell } from '../src/cellexecutor';
 import { type ICodeCellModel } from '@jupyterlab/cells';
 import { SessionContext, ISessionContext } from '@jupyterlab/apputils';
-import { DataflowCodeCell } from '@dfnotebook/dfcells';
+import { DataflowCodeCell, getNotebookId, notebookCellMap } from '@dfnotebook/dfcells';
 import { createSessionContext } from '@jupyterlab/apputils/lib/testutils';
 import { JupyterServer } from '@jupyterlab/testing';
 import { DataflowNotebookModel, DataflowNotebook as Notebook } from '../src';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import * as utils from './utils';
-import { INotebookModel, StaticNotebook as StaticNotebookType } from '@jupyterlab/notebook';
+import { INotebookModel, NotebookPanel, StaticNotebook as StaticNotebookType } from '@jupyterlab/notebook';
 import { NBTestUtils } from '@jupyterlab/notebook/lib/testutils';
-import { updateNotebookCellsWithTag }  from '../../dfnotebook-extension/src/index'
+import { Context } from '@jupyterlab/docregistry';
+import { updateNotebookCellsWithTag }  from '../../dfnotebook-extension/src/index';
 
 describe('Identifier reference update', () => {
   let sessionContext: ISessionContext;
@@ -17,7 +18,9 @@ describe('Identifier reference update', () => {
   let widget: Notebook;
   let rendermime: IRenderMimeRegistry;
   let notebook: INotebookModel;
-  
+  let context: Context<INotebookModel>;
+  let panel: NotebookPanel;
+
   beforeAll(async () => {
     rendermime = utils.defaultRenderMime();
     await server.start({'additionalKernelSpecs':{'dfpython3':{'argv':['python','-m','dfkernel','-f','{connection_file}'],'display_name':'DFPython 3','language':'python'}}});
@@ -45,6 +48,10 @@ describe('Identifier reference update', () => {
         windowingMode: 'none'
       }
     });
+    context = await utils.createMockContext();
+    panel = utils.createNotebookPanel(context);
+    panel.id = 'mock-notebook-panel';
+    
     const model = new DataflowNotebookModel();
     widget.model = model;
     model.sharedModel.clearUndoHistory();
@@ -66,6 +73,12 @@ describe('Identifier reference update', () => {
       rendermime: rendermime,
       contentFactory: NBTestUtils.createBaseCellFactory()
     });
+
+    cell.parent = panel;
+    let notebookId = getNotebookId(cell as DataflowCodeCell);
+    if(notebookId){
+      notebookCellMap.set(notebookId, new Map<string, string>());
+    }
 
     const result = await runCell({
       cell,
@@ -111,7 +124,7 @@ describe('Identifier reference update', () => {
           trusted: false
         }
       });
-  
+
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
       let result = await runNotebookCell(notebook, cellModel);
       
@@ -222,7 +235,7 @@ describe('Identifier reference update', () => {
           trusted: false
         }
       });
-  
+
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
       let result = await runNotebookCell(notebook, cellModel);
       expect(result).toBe(true);
@@ -251,6 +264,7 @@ describe('Identifier reference update', () => {
   
       cellModel = notebook?.cells.get(2) as ICodeCellModel;
       result = await runNotebookCell(notebook, cellModel);
+      expect(result).toBe(true);
       
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
       const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
@@ -467,7 +481,7 @@ describe('Identifier reference update', () => {
       dfmetadata.tag = "Tag1";
       notebook.cells.get(0).setMetadata('dfmetadata', dfmetadata);
 
-      await updateNotebookCellsWithTag(notebook as DataflowNotebookModel, '', sessionContext)
+      await updateNotebookCellsWithTag("", notebook as DataflowNotebookModel, '', sessionContext)
       
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
       expect(cAny.sharedModel.source).toBe('a=5\ntest=a+99\nb=a$Tag1+99');
@@ -559,7 +573,7 @@ describe('Identifier reference update', () => {
       dfmetadata.tag = "";
       notebook.cells.get(0).setMetadata('dfmetadata', dfmetadata);
 
-      await updateNotebookCellsWithTag(notebook as DataflowNotebookModel, refId, sessionContext)
+      await updateNotebookCellsWithTag("", notebook as DataflowNotebookModel, refId, sessionContext)
 
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
       expect(cAny.outputs.length).toBe(1);

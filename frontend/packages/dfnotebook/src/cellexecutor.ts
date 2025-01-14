@@ -184,7 +184,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
       const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata});
       console.log('Received data from kernel:', response);
       if (response?.code_dict && Object.keys(response.code_dict).length > 0) {
-        updateNotebookCells(notebook, notebookId, response.code_dict);
+        await updateNotebookCells(notebook, notebookId, response.code_dict);
       }
     } catch (error) {
       console.error('Error during kernel communication:', error);
@@ -207,7 +207,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
     });
   }
 
-  function updateNotebookCells(notebook: DataflowNotebookModel, notebookId:string|undefined, codeDict: { [key: string]: any }) {
+  async function updateNotebookCells(notebook: DataflowNotebookModel, notebookId:string|undefined, codeDict: { [key: string]: any }) {
     const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
     const cellsArray = Array.from(notebook.cells);
     cellsArray.forEach(cell => {

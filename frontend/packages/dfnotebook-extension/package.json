@@ -38,7 +38,7 @@
     "style/*.css",
     "style/index.js",
     "src/**/*.{d.ts,ts,tsx}",
-    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+    "style/tag.svg"
   ],
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",

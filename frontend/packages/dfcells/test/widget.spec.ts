@@ -565,8 +565,7 @@ describe('cells/widget', () => {
           contentFactory
         });
 
-        widget['initializeDOM']();
-        
+        widget.initializeState();
         const dfmetadata = widget.model.getMetadata('dfmetadata');
         expect(dfmetadata).toBeDefined();
         expect(dfmetadata).toEqual(expect.objectContaining({
@@ -608,23 +607,27 @@ describe('cells/widget', () => {
           model: model1,
           rendermime,
           contentFactory
-        }).initializeState();
-  
+        })
+
+        widget1.initializeState();
+
         const model2 = new CodeCellModel();
         const widget2 = new CodeCell({
           model: model2,
           rendermime,
           contentFactory
-        }).initializeState();
+        })
         
+        widget2.initializeState();
+
         const dfmetadata1 = widget1.model.getMetadata('dfmetadata');
         const dfmetadata2 = widget2.model.getMetadata('dfmetadata');
         
         expect(dfmetadata1).toBeDefined();
         expect(dfmetadata2).toBeDefined();
         expect(dfmetadata1).not.toBe(dfmetadata2);
-        expect(dfmetadata1.outputVars).toBeInstanceOf(Set);
-        expect(dfmetadata2.outputVars).toBeInstanceOf(Set);
+        expect(dfmetadata1.outputVars).toBeInstanceOf(Array);
+        expect(dfmetadata2.outputVars).toBeInstanceOf(Array);
         expect(dfmetadata1.outputVars).not.toBe(dfmetadata2.outputVars);
       });
     });
@@ -927,7 +930,7 @@ describe('cells/widget', () => {
       it('should fire when model metadata changes', () => {
         const method = 'onMetadataChanged';
         const widget = new LogCodeCell().initializeState();
-        expect(widget.methods).not.toContain(method);
+        expect(widget.methods).not.toContain([method]);
         widget.model.setMetadata('foo', 1);
         expect(widget.methods).toContain(method);
       });
