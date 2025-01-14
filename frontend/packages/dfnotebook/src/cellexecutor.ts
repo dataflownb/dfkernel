@@ -12,6 +12,7 @@ import { KernelError, INotebookModel, INotebookCellExecutor } from '@jupyterlab/
 import { DataflowCodeCell } from '@dfnotebook/dfcells';
 import { DataflowNotebookModel } from './model';
 import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
+import { truncateCellId } from '@dfnotebook/dfutils';
 
 /**
  * Run a single notebook cell.
@@ -84,7 +85,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
             let reply: KernelMessage.IExecuteReplyMsg | void;
             // !!! DATAFLOW NOTEBOOK CODE !!!
             if (notebook instanceof DataflowNotebookModel) {
-              const cellUUID =  cell.model.id.replace(/-/g, '').substring(0, 8) || ''
+              const cellUUID =  truncateCellId(cell.model.id.replace(/-/g, ''));
               let dfData = getCellsMetadata(notebook, cellUUID)
             
               if(!notebook.getMetadata('enable_tags')){
@@ -212,7 +213,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
     const cellsArray = Array.from(notebook.cells);
     cellsArray.forEach(cell => {
       if (cell.type === 'code') {
-        const cId = cell.id.replace(/-/g, '').substring(0, 8);
+        const cId = truncateCellId(cell.id.replace(/-/g, ''));
         if (codeDict.hasOwnProperty(cId)) {
           const updatedCode = codeDict[cId];
           const dfmetadata = cell.getMetadata('dfmetadata');
@@ -249,7 +250,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
   }
 
   function updateCellMetadata(cellModel: ICodeCellModel, content: any, allTags: { [key: string]: string }, cellMap: Map<string, string> | undefined): void {
-    const cId = cellModel.id.replace(/-/g, '').substring(0, 8);
+    const cId = truncateCellId(cellModel.id.replace(/-/g, ''));
     const dfmetadata = cellModel.getMetadata('dfmetadata') || {};
 
     if (content.persistent_code?.[cId]) {
@@ -300,7 +301,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
         const dfmetadata = cell.getMetadata('dfmetadata');
         const tag = dfmetadata?.tag;
         if (tag) {
-          const cId = cell.id.replace(/-/g, '').substring(0, 8);
+          const cId = truncateCellId(cell.id.replace(/-/g, ''));
           allTags[cId] = tag;
         }
       }
@@ -320,7 +321,7 @@ import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
     cellsArray.forEach(cell => {
       if (cell.type === 'code') {
         const c = cell as ICodeCellModel;
-        const cId = c.id.replace(/-/g, '').substring(0, 8);
+        const cId = truncateCellId(c.id.replace(/-/g, ''));
         const dfmetadata = c.getMetadata('dfmetadata');
         if(!dfmetadata.persistentCode)
         {
