@@ -484,7 +484,6 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
     def update_code_cells(self, dfmetadata, update_latest_executed_code=False):	
         curr_output_tags = defaultdict(set)
-        code_refs = defaultdict(set)
         updated_code_dict = {}
         updated_executed_code_dict = {}
 
@@ -512,6 +511,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
 
 
         for uuid, refs in dfmetadata['all_refs'].items():
+            code_refs = defaultdict(set)
             for ref_id, ref_tags in refs['ref'].items():
                 for tag in ref_tags:
                     code_refs[tag].add(ref_id)
