@@ -183,7 +183,6 @@ import { truncateCellId } from '@dfnotebook/dfutils';
     }
     try {
       const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata});
-      console.log('Received data from kernel:', response);
       if (response?.code_dict && Object.keys(response.code_dict).length > 0) {
         await updateNotebookCells(notebook, notebookId, response.code_dict);
       }
