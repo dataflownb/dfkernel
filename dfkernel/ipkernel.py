@@ -442,7 +442,8 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
                     "traceback": shell._last_traceback or [],
                     "ename": str(type(err).__name__),
                     "evalue": str(err),
-                    "persistent_code": self._persistent_code
+                    "persistent_code": self._persistent_code,
+                    "identifier_refs": self._identifier_refs
                 }
             )
 
