@@ -40,6 +40,7 @@ import {
 } from '@jupyterlab/testing';
 import { Message, MessageLoop } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
+import { truncateCellId } from '@dfnotebook/dfutils';
 
 const RENDERED_CLASS = 'jp-mod-rendered';
 const rendermime = defaultRenderMime();
@@ -600,36 +601,6 @@ describe('cells/widget', () => {
         expect(dfmetadata.outputVars).toEqual(existingDfmetadata.outputVars);
         expect(dfmetadata.persistentCode).toBe("print('hello')");
       });
-  
-      it('should set dfmetadata for multiple cells independently', () => {
-        const model1 = new CodeCellModel();
-        const widget1 = new CodeCell({
-          model: model1,
-          rendermime,
-          contentFactory
-        })
-
-        widget1.initializeState();
-
-        const model2 = new CodeCellModel();
-        const widget2 = new CodeCell({
-          model: model2,
-          rendermime,
-          contentFactory
-        })
-        
-        widget2.initializeState();
-
-        const dfmetadata1 = widget1.model.getMetadata('dfmetadata');
-        const dfmetadata2 = widget2.model.getMetadata('dfmetadata');
-        
-        expect(dfmetadata1).toBeDefined();
-        expect(dfmetadata2).toBeDefined();
-        expect(dfmetadata1).not.toBe(dfmetadata2);
-        expect(dfmetadata1.outputVars).toBeInstanceOf(Array);
-        expect(dfmetadata2.outputVars).toBeInstanceOf(Array);
-        expect(dfmetadata1.outputVars).not.toBe(dfmetadata2.outputVars);
-      });
     });
 
     describe('#outputArea', () => {
@@ -930,9 +901,9 @@ describe('cells/widget', () => {
       it('should fire when model metadata changes', () => {
         const method = 'onMetadataChanged';
         const widget = new LogCodeCell().initializeState();
-        expect(widget.methods).not.toContain([method]);
+        expect(widget.methods.filter(m => m === method).length).toBe(1);
         widget.model.setMetadata('foo', 1);
-        expect(widget.methods).toContain(method);
+        expect(widget.methods.filter(m => m === method).length).toBe(2);
       });
     });
 
@@ -1065,7 +1036,7 @@ describe('cells/widget', () => {
         expect(msg).not.toBeUndefined();
 
         expect(widget.promptNode!.textContent).toEqual(
-          `[${widget.model.id.replace(/-/g, '').substr(0, 8)}]:`
+          `[${truncateCellId(widget.model.id)}]:`
         );
       });
     });

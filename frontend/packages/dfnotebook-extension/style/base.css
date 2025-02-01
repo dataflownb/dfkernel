@@ -82,3 +82,23 @@ input:checked + .slider:before {
 .tag-icon{
   fill: none !important;
 }
+
+/* add & modify tag dialog css*/
+.rename-tag-input {
+  margin: 10px 0;
+}
+
+.update-references-label {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.update-references-checkbox {
+  vertical-align: middle;
+  margin-top: 6px;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
+}

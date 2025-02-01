@@ -55,7 +55,7 @@ export class DataflowInputPrompt extends InputPrompt {
 
   public updatePromptNode(value: string | null) {
     const dfmetadata = this.model?.getMetadata('dfmetadata');
-    if (dfmetadata && dfmetadata.tag) {
+    if (dfmetadata && dfmetadata.tag && value != '*') {
       this.node.textContent = `[${dfmetadata.tag}]:`;
     } else if (value === null) {
       this.node.textContent = ' ';

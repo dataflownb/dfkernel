@@ -1,7 +1,8 @@
 import { runCell } from '../src/cellexecutor';
 import { type ICodeCellModel } from '@jupyterlab/cells';
 import { SessionContext, ISessionContext } from '@jupyterlab/apputils';
-import { DataflowCodeCell, getNotebookId, notebookCellMap } from '@dfnotebook/dfcells';
+import { DataflowCodeCell, DataflowInputArea, getNotebookId, notebookCellMap } from '@dfnotebook/dfcells';
+import { truncateCellId } from '@dfnotebook/dfutils';
 import { createSessionContext } from '@jupyterlab/apputils/lib/testutils';
 import { JupyterServer } from '@jupyterlab/testing';
 import { DataflowNotebookModel, DataflowNotebook as Notebook } from '../src';
@@ -20,6 +21,7 @@ describe('Identifier reference update', () => {
   let notebook: INotebookModel;
   let context: Context<INotebookModel>;
   let panel: NotebookPanel;
+  let notebookId:  string | undefined;
 
   beforeAll(async () => {
     rendermime = utils.defaultRenderMime();
@@ -64,6 +66,8 @@ describe('Identifier reference update', () => {
   });
     
   afterEach(() => {
+    panel.dispose();
+    widget.dispose();
     return sessionContext.shutdown();
   });
 
@@ -75,8 +79,8 @@ describe('Identifier reference update', () => {
     });
 
     cell.parent = panel;
-    let notebookId = getNotebookId(cell as DataflowCodeCell);
-    if(notebookId){
+    notebookId = getNotebookId(cell as DataflowCodeCell);
+    if(notebookId && !notebookCellMap.has(notebookId)){
       notebookCellMap.set(notebookId, new Map<string, string>());
     }
 
@@ -124,7 +128,7 @@ describe('Identifier reference update', () => {
           trusted: false
         }
       });
-
+           
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
       let result = await runNotebookCell(notebook, cellModel);
       
@@ -142,7 +146,7 @@ describe('Identifier reference update', () => {
           trusted: false
         }
       });
-  
+      
       cellModel = notebook?.cells.get(1) as ICodeCellModel;
       result = await runNotebookCell(notebook, cellModel);
   
@@ -166,7 +170,7 @@ describe('Identifier reference update', () => {
   
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
       let result = await runNotebookCell(notebook, cellModel);
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       //Code cell 2
       notebook?.sharedModel.insertCell(1, {
         cell_type: 'code',
@@ -213,7 +217,7 @@ describe('Identifier reference update', () => {
       result = await runNotebookCell(notebook, cellModel);
   
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       let dfmetadata = cAny.getMetadata("dfmetadata")
       expect(result).toBe(true);    
       expect(dfmetadata).toBeDefined();
@@ -267,7 +271,7 @@ describe('Identifier reference update', () => {
       expect(result).toBe(true);
       
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       expect(result).toBe(true);
       expect(cAny.sharedModel.source).toBe('b=a$'+refId+'+9');
     });
@@ -312,7 +316,7 @@ describe('Identifier reference update', () => {
       result = await runNotebookCell(notebook, cellModel);
       
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       expect(result).toBe(true);
       expect(cAny.sharedModel.source).toBe('b=a$'+refId+'+9');
 
@@ -337,7 +341,7 @@ describe('Identifier reference update', () => {
   
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
       let result = await runNotebookCell(notebook, cellModel);
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       expect(result).toBe(true);
   
       //Code cell 2
@@ -370,7 +374,7 @@ describe('Identifier reference update', () => {
       let cAny = notebook?.cells.get(0) as ICodeCellModel;
       expect(result).toBe(true);
       expect(cAny.sharedModel.source).toBe('b=a$'+refId+'+9');
-    })
+    });
   
     it('Reference UUID is added to identifier when its ref is removed by updating cell', async () => {
       // Code cell 1
@@ -405,13 +409,124 @@ describe('Identifier reference update', () => {
       result = await runNotebookCell(notebook, cellModel);
   
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       expect(result).toBe(true);
       expect(cAny.sharedModel.source).toBe('b=a$'+refId+'+9');
-    })
+    });
+
+    it('NotebookCellMap should store the last executed code', async () => {
+      // Code cell 1
+      notebook?.sharedModel.insertCell(0, {
+        cell_type: 'code',
+        source: 'a=9',
+        metadata: {
+          trusted: false
+        }
+      });
+
+      let cellModel = notebook?.cells.get(0) as ICodeCellModel;
+      let result = await runNotebookCell(notebook, cellModel);
+      expect(result).toBe(true);
+  
+      //Code cell 2
+      notebook?.sharedModel.insertCell(1, {
+        cell_type: 'code',
+        source: 'a=10',
+        metadata: {
+          trusted: false
+        }
+      });
+  
+      cellModel = notebook?.cells.get(1) as ICodeCellModel;
+      result = await runNotebookCell(notebook, cellModel);
+      expect(result).toBe(true);
+      
+      //Code cell 3
+      notebook?.sharedModel.insertCell(2, {
+        cell_type: 'code',
+        source: 'b=9',
+        metadata: {
+          trusted: false
+        }
+      });
+  
+      cellModel = notebook?.cells.get(2) as ICodeCellModel;
+      result = await runNotebookCell(notebook, cellModel);
+      expect(result).toBe(true);
+
+      //Code cell 4
+      notebook?.sharedModel.insertCell(3, {
+        cell_type: 'code',
+        source: 'c=a+b',
+        metadata: {
+          trusted: false
+        }
+      });
+  
+      cellModel = notebook?.cells.get(3) as ICodeCellModel;
+      result = await runNotebookCell(notebook, cellModel);
+      expect(result).toBe(true);
+
+      const refId = truncateCellId((notebook?.cells.get(1) as ICodeCellModel).id)
+      const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
+      let executedCode = cellMap ? cellMap.get(truncateCellId((notebook?.cells.get(3) as ICodeCellModel).id)) : '';
+      
+      notebook.cells.get(3).sharedModel.setSource('c=a$'+ refId);
+
+      expect(executedCode).toBe('c=a$'+refId+'+b');
+    });
   });
 
   describe('Update references with Tags', () => {
+    it('Should update prompt when tag is added', async () => {
+      // Create a new code cell
+      notebook.sharedModel.insertCell(0, {
+        cell_type: 'code',
+        source: 'a=9',
+        metadata: { trusted: false }
+      });
+
+      const notebookWidget = panel.content;
+      const cellWidget = notebookWidget.widgets[0];
+      const inputArea = (cellWidget as any).inputArea as DataflowInputArea;
+
+      // Add a tag and check if the prompt and metadata are updated
+      inputArea?.addTag("Tag1");
+
+      const promptNode = inputArea.prompt.node.textContent;
+      expect(promptNode).toBe('[Tag1]:');
+      
+      // Check metadata
+      const cellModel = (cellWidget.model as ICodeCellModel);
+      const dfmetadata = cellModel.getMetadata('dfmetadata');
+      expect(dfmetadata.tag).toBe('Tag1');
+    });
+
+    it('Should update prompt when tag is deleted', async () => {
+      // Create a new code cell
+      notebook.sharedModel.insertCell(0, {
+        cell_type: 'code',
+        source: 'a=9',
+        metadata: { trusted: false }
+      });
+
+      const notebookWidget = panel.content;
+      const cellWidget = notebookWidget.widgets[0];
+      const inputArea = (cellWidget as any).inputArea as DataflowInputArea;
+      const refId = truncateCellId(cellWidget.model.id)
+      
+      // Add an empty tag and check if the prompt and metadata are updated
+      inputArea?.addTag("");
+
+      const promptNode = inputArea.prompt.node.textContent;
+      expect(promptNode).toBe(`[${refId}]:`);
+
+      // Check metadata
+      const cellModel = (cellWidget.model as ICodeCellModel);
+      const dfmetadata = cellModel.getMetadata('dfmetadata');
+      expect(dfmetadata.tag).toBe('');
+    });
+
     it('Should able to use tag as identifier ref', async () => {
       // Code cell 1
       notebook.setMetadata("enable_tags", true);
@@ -448,7 +563,7 @@ describe('Identifier reference update', () => {
       expect(cAny.outputs.get(0).data['text/plain']).toBe('108');
       expect(cAny.sharedModel.source).toBe('a=5\ntest=a+99\nb=a$Tag1+99');
     });
-  
+    
     it('CellId should be replaced with tag in codecells when tag is added', async () => {
       // Code cell 1
       notebook.setMetadata("enable_tags", true);
@@ -461,7 +576,7 @@ describe('Identifier reference update', () => {
       });
 
       let cellModel = notebook?.cells.get(0) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       let result = await runNotebookCell(notebook, cellModel);
       expect(result).toBe(true);
 
@@ -518,7 +633,7 @@ describe('Identifier reference update', () => {
       result = await runNotebookCell(notebook, cellModel);
       
       let cAny = notebook?.cells.get(1) as ICodeCellModel;
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       dfmetadata = cAny.sharedModel.getMetadata('dfmetadata')
       
       expect(result).toBe(true);
@@ -551,7 +666,7 @@ describe('Identifier reference update', () => {
       let result = await runNotebookCell(notebook, cellModel);
       expect(result).toBe(true);
 
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       let dfmetadata = (notebook?.cells.get(0) as ICodeCellModel).getMetadata('dfmetadata');
       dfmetadata.tag = "Tag1";
       notebook.cells.get(0).setMetadata('dfmetadata', dfmetadata);
@@ -596,7 +711,7 @@ describe('Identifier reference update', () => {
       let result = await runNotebookCell(notebook, cellModel);
       expect(result).toBe(true);
 
-      const refId = (notebook?.cells.get(0) as ICodeCellModel).id.replace(/-/g, '').substring(0, 8);
+      const refId = truncateCellId((notebook?.cells.get(0) as ICodeCellModel).id);
       let dfmetadata = (notebook?.cells.get(0) as ICodeCellModel).getMetadata('dfmetadata');
       dfmetadata.tag = "Tag1";
       notebook.cells.get(0).setMetadata('dfmetadata', dfmetadata);

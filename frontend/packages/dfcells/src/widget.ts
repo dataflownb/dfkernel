@@ -232,7 +232,7 @@ export class DataflowCodeCell extends CodeCell {
 
     if(notebookpanelId){
       const currentCode = this.model.sharedModel.getSource().trim();
-      const cId = this.model.sharedModel.getId().replace(/-/g, '').substring(0, 8);
+      const cId = truncateCellId(this.model.sharedModel.getId());
       const executedCode = notebookCellMap.get(notebookpanelId)?.get(cId)?.trim();
       if (executedCode != ''){
         if(executedCode === currentCode){

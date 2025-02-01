@@ -1,3 +1,4 @@
+import { truncateCellId } from '@dfnotebook/dfutils';
 import { DepView } from './depview';
 import { Minimap } from './minimap';
 
@@ -126,7 +127,7 @@ class GraphManager {
     }
     this.graphs[this.currentGraph].updateOrder(neworder);
     let modifiedorder = neworder.map(
-      (cellid: any) => cellid.replace(/-/g, '').substr(0, 8) as string
+      (cellid: any) => truncateCellId(cellid) as string
     );
     this.minimap.updateOrder(modifiedorder);
     this.depview.updateOrder(modifiedorder,true);
