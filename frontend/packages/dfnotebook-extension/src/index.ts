@@ -27,7 +27,7 @@ import {
   Toolbar
 } from '@jupyterlab/apputils';
 import { Graph, Manager as GraphManager, ViewerWidget } from '@dfnotebook/dfgraph';
-import { Cell, CodeCell, ICellModel, MarkdownCell } from '@jupyterlab/cells';
+import { Cell, CodeCell, ICellModel, ICodeCellModel, MarkdownCell } from '@jupyterlab/cells';
 import { IEditorServices } from '@jupyterlab/codeeditor';
 import { IEditorExtensionRegistry } from '@jupyterlab/codemirror';
 import { ToolbarItems as DocToolbarItems } from '@jupyterlab/docmanager-extension';
@@ -57,6 +57,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import {
   IFormRendererRegistry,
+  LabIcon,
   addAboveIcon,
   addBelowIcon,
   copyIcon,
@@ -88,14 +89,24 @@ import {
   DataflowNotebookModelFactory,
   DataflowNotebookPanel,
   DataflowNotebookWidgetFactory,
-  IDataflowNotebookWidgetFactory
+  IDataflowNotebookWidgetFactory,
+  getCellsMetadata,
+  getAllTags,
+  dfCommGetData
 } from '@dfnotebook/dfnotebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { IChangedArgs, PageConfig } from '@jupyterlab/coreutils';
-import { DataflowInputArea } from '@dfnotebook/dfcells';
+import { DataflowCodeCell, DataflowInputArea, getNotebookId, notebookCellMap } from '@dfnotebook/dfcells';
 
 import { cellExecutor } from './cellexecutor';
 import { CellBarExtension } from '@jupyterlab/cell-toolbar';
+import { Widget } from '@lumino/widgets';
+import tagSvgstr from '../style/tag.svg';
+
+export const tagIcon = new LabIcon({
+  name: 'tag',
+  svgstr: tagSvgstr
+});
 
 /**
  * The command IDs used by the notebook plugin.
@@ -284,7 +295,11 @@ namespace CommandIDs {
 
   export const tocRunCells = 'toc:run-cells';
 
-  export const tagCell = 'notebook:tag-cell';
+  export const addCellTag = 'notebook:add-cell-tag';
+
+  export const modifyCellTag = 'notebook:modify-cell-tag';
+
+  export const tagCodeCell = 'toolbar-button:tag-cell';
 }
 
 /**
@@ -394,7 +409,7 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
 
                 cellList.map(function(cell:any)
                 {
-                let cellId = truncateCellId(cell.id.replace(/-/g, '')) as string;
+                let cellId = truncateCellId(cell.id);
                 if(cell?.cell_type != "code"){return;}
                 cellContents[cellId] = cell.source;
                 outputTags[cellId] =
@@ -433,8 +448,8 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
             });
             nbPanel.content.activeCellChanged.connect(() =>{
                 let prevActive = GraphManager.getActive();
-                if(typeof prevActive == 'object'){
-                    let uuid = truncateCellId(prevActive.id.replace(/-/g, ''));
+                if(typeof prevActive == 'object' && prevActive.id != undefined ){
+                    let uuid = truncateCellId(prevActive.id);
                     if(prevActive.sharedModel.source != GraphManager.getText(uuid)){
                         GraphManager.markStale(uuid);
                     }
@@ -534,7 +549,7 @@ const DepViewer: JupyterFrontEndPlugin<void> = {
           // Add the command to the palette.
           palette.addItem({ command, category: 'Tutorial' });
         }
-    };
+};
 
 // /**
 //  * Initialization data for the Minimap extension.
@@ -625,7 +640,7 @@ const MiniMap: JupyterFrontEndPlugin<void> = {
           // Add the command to the palette.
           palette.addItem({ command, category: 'Tutorial' });
         }
-    };
+};
 
 
 const cellToolbar: JupyterFrontEndPlugin<void> = {
@@ -657,7 +672,143 @@ const cellToolbar: JupyterFrontEndPlugin<void> = {
   },
   optional: [ISettingRegistry, IToolbarWidgetRegistry, ITranslator]
 };
-    
+
+/**
+ * Creates the toggle switch used for hiding/showing tags
+ */
+class ToggleTagsWidget extends Widget {
+  constructor(nbPanel: NotebookPanel, app: JupyterFrontEnd) {
+    super();
+    this.addClass('jupyter-toggle-switch-widget');
+
+    const containerDiv = document.createElement('div');
+    containerDiv.className = 'toggle-container';
+
+    const labelText = document.createElement('span');
+    labelText.textContent = 'Tags';
+    labelText.className = 'toggle-label';
+
+    const label = document.createElement('label');
+    label.className = 'switch';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = true;
+
+    const slider = document.createElement('span');
+    slider.className = 'slider round';
+
+    label.appendChild(input);
+    label.appendChild(slider);
+
+    containerDiv.appendChild(labelText);
+    containerDiv.appendChild(label);
+
+    const updateTooltip = (isChecked: boolean) => {
+      const tooltipText = isChecked ? `Toggle to hide the tags in the notebook`: `Toggle to show the tags in the notebook`;
+      label.title = tooltipText;
+      labelText.title = tooltipText;
+      slider.title = tooltipText;
+    };
+
+    updateTooltip(true);
+    updateNotebookCellsWithTag(nbPanel.id, nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext);
+
+    input.addEventListener('change', async (event) => {
+      const isChecked = (event.target as HTMLInputElement).checked;
+      const notebook = nbPanel.content
+      const cellsArray = Array.from(notebook.widgets);
+      updateTooltip(isChecked);
+
+      cellsArray.forEach(cAny => {
+        const dfmetadata = cAny.model.getMetadata('dfmetadata');
+        if (cAny.model.type == 'code' && dfmetadata.tag){
+          const inputArea = (cAny as any).inputArea;
+          let currTag = dfmetadata.tag;
+          if (isChecked){
+            inputArea.addTag(currTag);
+          } else{
+            inputArea.addTag("");
+            dfmetadata.tag = currTag;
+            cAny.model.setMetadata('dfmetadata', dfmetadata);
+          }
+        }
+      });
+
+      nbPanel.model?.setMetadata("enable_tags", isChecked);
+      app.commands.notifyCommandChanged('toolbar-button:tag-cell')
+      await updateNotebookCellsWithTag(nbPanel.id, nbPanel.model as DataflowNotebookModel, "", nbPanel.sessionContext, !isChecked);
+    });
+
+    this.node.appendChild(containerDiv);
+  }
+}
+
+/**
+ * Adds Tags toggle switch in frontend toolbar for dfkernels notebooks 
+ */
+const ToggleTags: JupyterFrontEndPlugin<void> = {
+  id: 'toggle-tags',
+  autoStart: true,
+  requires: [INotebookTracker],
+  activate: (app: JupyterFrontEnd, nbTrackers: INotebookTracker) => {
+    nbTrackers.widgetAdded.connect((sender,nbPanel) => {
+      const session = nbPanel.sessionContext;
+        session.ready.then(async () => {
+          if(session.session?.kernel?.name == 'dfpython3'){
+            const toggleSwitch = new ToggleTagsWidget(nbPanel, app);        
+            nbPanel.toolbar.insertItem(12, 'customToggleTag', toggleSwitch);
+          }
+        });
+     });
+  }
+};
+
+const NotebookCellTrackerPlugin: JupyterFrontEndPlugin<void> = {
+  id: 'notebook-cell-tracker',
+  autoStart: true,
+  requires: [INotebookTracker],
+  activate: (app: JupyterFrontEnd, tracker: INotebookTracker) => {
+    tracker.widgetAdded.connect((_, notebookPanel) => {
+      const notebookModel = notebookPanel.content.model;
+      
+      if (!notebookModel) {
+        console.warn('Notebook model not found.');
+        return;
+      }
+
+      const notebookId  = notebookPanel.id;
+      
+      if (!notebookCellMap.has(notebookId)) {
+        notebookCellMap.set(notebookId, new Map<string, string>());
+      }
+
+      const cellMap = notebookCellMap.get(notebookId)!;
+      notebookModel.cells.changed.connect((_, changes) => {
+        if (changes.type === 'add') {
+          for (const cell of changes.newValues) {
+            if (cell.type === 'code') {
+              const codeCell = cell as ICodeCellModel;
+              const cellId = truncateCellId(codeCell.id);
+              cellMap.set(cellId, codeCell.sharedModel.getSource());
+            }
+          }
+        }
+        else if (changes.type === 'remove') {
+          for (const deletedCellId of notebookModel.deletedCells) {
+            const cellId = truncateCellId(deletedCellId);
+            cellMap.delete(cellId);
+          }
+        }
+      });
+
+      //notebook closed
+      notebookPanel.disposed.connect(() => {
+        notebookCellMap.delete(notebookId);
+      });
+    });
+  }
+};
 
 const plugins: JupyterFrontEndPlugin<any>[] = [
   cellExecutor,
@@ -667,7 +818,9 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   cellToolbar,
   DepViewer,
   MiniMap,
-  GraphManagerPlugin
+  GraphManagerPlugin,
+  ToggleTags,
+  NotebookCellTrackerPlugin
 ];
 export default plugins;
 
@@ -1320,6 +1473,7 @@ function addCommands(
   tracker.activeCellChanged.connect(() => {
     commands.notifyCommandChanged(CommandIDs.moveUp);
     commands.notifyCommandChanged(CommandIDs.moveDown);
+    commands.notifyCommandChanged(CommandIDs.tagCodeCell);
   });
 
   commands.addCommand(CommandIDs.runAndAdvance, {
@@ -2555,43 +2709,390 @@ function addCommands(
     }
   });
 
-  // !!! DATAFLOW NOTEBOOK CHANGE !!!
-  commands.addCommand(CommandIDs.tagCell, {
-    label: trans.__('Tag Cell'),
-    execute: args => {
+  commands.addCommand(CommandIDs.addCellTag, {
+    label: 'Add Cell Tag',
+    execute: async args => {
       const cell = tracker.currentWidget?.content.activeCell as CodeCell;
-
       if (cell == null) {
         return;
       }
 
-      const inputArea = cell.inputArea as DataflowInputArea;
-
-      // Get value from user and check if it is 8 hex digits or follows pythonic identifier conventions.
-      // If it is 8 hex digits, it matches generated uuid, ask for different input.
-      // If it does not follow conventions, it can cause errors in the code so ask for different input.
-      // If cancel is hit, do not update the tag
-      const hexRegexp = new RegExp('^[0-9a-f]{8}$');
-      const pythonVarRegexp = new RegExp('^[a-zA-Z0-9_]*$');
-
-      let tagPrompt = 'Tag this cell:';
-      let tagValue = inputArea.tag; // populate with existing tag
-      do {
-        tagValue = prompt(tagPrompt, tagValue || '')
-        if (tagValue !== null) { // not a cancel
-          if (!pythonVarRegexp.test(tagValue))
-            tagPrompt = 'Invalid name (follow python identifier rules). Enter a valid tag:'
-          else if (hexRegexp.test(tagValue))
-            tagPrompt = 'Cell tags cannot be 8 hex values. Enter a valid tag:'
-          else { // update tag
-            inputArea.addTag(tagValue);
-            break
+      const existingCellTags = new Set();
+      let cells = tracker.currentWidget?.content.model?.cells;
+      if (cells){
+        for (let index = 0; index < cells.length; index++) {
+          let cAny = cells.get(index)
+          if (cAny.type == 'code'){
+            const dfmetadata = cAny.getMetadata('dfmetadata');
+            const cellTagvalue = dfmetadata.tag;
+            if(cellTagvalue){
+              existingCellTags.add(cellTagvalue);
+            }
           }
         }
-      } while (tagValue !== null);
+      }
+
+      const inputArea = cell.inputArea as any;  
+      const hexRegexp = new RegExp('^[0-9a-f]{8}$');
+      const pythonVarRegexp = new RegExp('^[a-zA-Z0-9_]*$');
+  
+      // Function to create the dialog node
+      const createTagNode = (oldTag: string, errorMessage: string = ''): HTMLElement => {
+        const body = document.createElement('div');
+  
+        const input = document.createElement('input');
+        input.name = 'tag-name';
+        input.placeholder = 'Enter tag name';
+        input.style.margin = '10px 0 10px 0';
+
+        const message = document.createElement('div');
+        message.style.color = 'red';
+        message.style.marginTop = '10px';
+        message.id = 'error-message';
+        message.textContent = errorMessage;
+  
+        body.appendChild(input);
+        body.appendChild(document.createElement('br'));
+        body.appendChild(message);
+  
+        return body;
+      };
+      
+      const showAddTagDialog = async (errorMessage: string = ''): Promise<{ newTag: string } | null> => {
+        const dialogNode = createTagNode(inputArea.tag, errorMessage);
+        const widgetNode = new Widget();
+        widgetNode.node.appendChild(dialogNode);
+  
+        const result = await showDialog({
+          title: 'Add Cell Tag',
+          body: widgetNode,
+          buttons: [
+            Dialog.cancelButton(),
+            Dialog.okButton({ label: 'Add' })
+          ],
+          focusNodeSelector: 'input[name="tag-name"]',
+        });
+  
+        if (result.button.accept) {
+          const newTag = (dialogNode.querySelector('input[name="tag-name"]') as HTMLInputElement).value;
+          if (newTag.trim() === '') {
+            return await showAddTagDialog('Tag cannot be empty or whitespace. Enter a valid tag.');
+          } else if (!pythonVarRegexp.test(newTag)) {
+            return await showAddTagDialog('Invalid name (follow python identifier rules). Enter a valid tag.');
+          } else if (hexRegexp.test(newTag)) {
+            return await showAddTagDialog('Cell tags cannot be 8 hex values. Enter a valid tag.');
+          } else if (existingCellTags.has(newTag)){
+            return await showAddTagDialog('This tag already exists. Enter a different tag.');
+          } else {
+            return { newTag };
+          }
+        }
+        return null;
+      };
+  
+      const result = await showAddTagDialog();
+      const cellUUID = truncateCellId(cell.model.id)
+      const notebookId = getNotebookId(cell as DataflowCodeCell);
+      if (result) {
+        const { newTag } = result;
+        inputArea.addTag(newTag);
+        if (newTag && tracker.currentWidget?.content.model) {
+          let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
+          await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext)
+        }
+      }
+    },
+    isEnabled: () => {
+      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
+      if(cell && cell.model.type == 'code' && cell.inputArea){
+        const inputArea = cell.inputArea as DataflowInputArea;
+        return (inputArea.tag?.length ? false : true) && isTagsVisible;
+      }
+      return false;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      return isDfnotebook === true;
     }
   });
+  
+  commands.addCommand(CommandIDs.modifyCellTag, {
+    label: 'Modify Cell Tag',
+    execute: async args => {
+      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const existingCellTags = new Set();
+
+      let cells = tracker.currentWidget?.content.model?.cells;
+      if (cells){
+        for (let index = 0; index < cells.length; index++) {
+          let cAny = cells.get(index)
+          if (cAny.type == 'code'){
+            const dfmetadata = cAny.getMetadata('dfmetadata');
+            const cellTagvalue = dfmetadata.tag;
+            if(cellTagvalue){
+              existingCellTags.add(cellTagvalue);
+            }
+          }
+        }
+      }
+
+      if (cell == null) {
+        return;
+      }
+  
+      const inputArea = cell.inputArea as any;
+  
+      if (!inputArea.tag) {
+        alert('This cell does not have a tag.');
+        return;
+      }
+  
+      const hexRegexp = new RegExp('^[0-9a-f]{8}$');
+      const pythonVarRegexp = new RegExp('^[a-zA-Z0-9_]*$');
+  
+      // Function to create the dialog node
+      const createRenameTagNode = (oldTag: string, errorMessage: string = ''): HTMLElement => {
+        const body = document.createElement('div');
+  
+        const inputLabel = document.createElement('label');
+        inputLabel.textContent = `Current Tag: ${oldTag}`;
+  
+        const input = document.createElement('input');
+        input.name = 'new-tag';
+        input.placeholder = 'Enter new tag';
+        input.classList.add('rename-tag-input');
+  
+        const updateReferencesLabel = document.createElement('label');
+        updateReferencesLabel.textContent = 'Update references';
+        updateReferencesLabel.classList.add('update-references-label');
+      
+        const updateReferencesCheckbox = document.createElement('input');
+        updateReferencesCheckbox.name = 'update-references';
+        updateReferencesCheckbox.type = 'checkbox';
+        updateReferencesCheckbox.checked = true;
+        updateReferencesCheckbox.classList.add('update-references-checkbox');
+
+        const message = document.createElement('div');
+        message.id = 'error-message';
+        message.textContent = errorMessage;
+        message.classList.add('error-message');
+  
+        body.appendChild(inputLabel);
+        body.appendChild(document.createElement('br'));
+        body.appendChild(input);
+        body.appendChild(document.createElement('br'));
+        body.appendChild(updateReferencesLabel);
+        body.appendChild(updateReferencesCheckbox);
+        body.appendChild(message);
+  
+        return body;
+      };
+  
+      const showModifyTagDialog = async (errorMessage: string = ''): Promise<{ newTag: string, updateReferences: boolean } | null> => {
+        const dialogNode = createRenameTagNode(inputArea.tag, errorMessage);
+        const widgetNode = new Widget();
+        widgetNode.node.appendChild(dialogNode);
+        
+        const result = await showDialog({
+          title: 'Modify Cell Tag',
+          body: widgetNode,
+          buttons: [
+            Dialog.cancelButton(),
+            Dialog.okButton({ label: 'Delete' }),
+            Dialog.okButton({ label: 'Modify' })
+          ],
+          focusNodeSelector: 'input[name="new-tag"]',
+        });
+  
+        if (result.button.accept) {
+          const newTag = (dialogNode.querySelector('input[name="new-tag"]') as HTMLInputElement).value;
+          const updateReferences = (dialogNode.querySelector('input[name="update-references"]') as HTMLInputElement).checked;
+          const deleteTag = result.button.label === 'Delete';
+
+          if (deleteTag) {
+            return { newTag: '', updateReferences };
+          }
+
+          if (newTag.trim() === '') {
+            return await showModifyTagDialog('Tag cannot be empty or whitespace. Enter a valid tag.');
+          } else if (!pythonVarRegexp.test(newTag)) {
+            return await showModifyTagDialog('Invalid name (follow python identifier rules). Enter a valid tag.');
+          } else if (hexRegexp.test(newTag)) {
+            return await showModifyTagDialog('Cell tags cannot be 8 hex values. Enter a valid tag.');
+          } else if (existingCellTags.has(newTag)){
+            return await showModifyTagDialog('This tag already exists. Enter a different tag.');
+          } else {
+            return { newTag, updateReferences };
+          }
+        }
+        return null;
+      };
+  
+      const result = await showModifyTagDialog();
+      const cellUUID = truncateCellId(cell.model.id);
+      const notebookId = getNotebookId(cell as DataflowCodeCell);
+      if (result) {
+        const { newTag, updateReferences } = result;
+        inputArea.addTag(newTag);
+
+        if (updateReferences && tracker.currentWidget?.content.model) {
+          let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
+          await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext)
+        } else if (updateReferences == false && tracker.currentWidget?.content.model) {
+          let notebook = tracker.currentWidget.content.model as DataflowNotebookModel;
+          const all_tags: { [key: string]: string } = {};
+
+          for (let index = 0; index < notebook.cells.length; index++) {
+            const cAny = notebook.cells.get(index) as ICodeCellModel;
+            if (notebook.cells.get(index).type === 'code') {
+              const c = cAny as ICodeCellModel;
+              const cId = truncateCellId(c.id);
+              const dfmetadata = c.getMetadata('dfmetadata');
+              if (dfmetadata.tag){
+                all_tags[cId] = dfmetadata.tag;
+              }
+            }
+          }
+          
+          for (let index = 0; index < notebook.cells.length; index++) {
+            const cAny = notebook.cells.get(index) as ICodeCellModel;
+            if (cAny.type == 'code') {
+              const dfmetadata = notebook.cells.get(index).getMetadata('dfmetadata');
+              let inputVarsMetadata = dfmetadata.inputVars;
+              if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
+                const refValue = inputVarsMetadata.ref as { [key: string]: any };
+                const tagRefValue: { [key: string]: any } = {};
+                for (const ref_key in refValue) {
+                  if (ref_key != cellUUID && all_tags.hasOwnProperty(ref_key)) {
+                    tagRefValue[ref_key] = all_tags[ref_key];
+                  }
+                }
+                dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
+                notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+                await updateNotebookCellsWithTag(notebookId, notebook, cellUUID, tracker.currentWidget.sessionContext, false, true)
+              }
+            }
+          }
+        }
+      }
+    },
+    isEnabled: () => {
+      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
+      if (cell && cell.model.type == 'code' && cell.inputArea) {
+        const inputArea = cell.inputArea as DataflowInputArea;
+        return inputArea.tag?.length && isTagsVisible;
+      }
+      return false;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      return isDfnotebook === true;
+    }
+  });
+
+  commands.addCommand(CommandIDs.tagCodeCell, {
+    label: trans.__('Tag'),
+    caption: trans.__('Tag'),
+    execute: args => {
+      const cell = tracker.currentWidget?.content.activeCell as CodeCell;
+      const inputArea = cell.inputArea as DataflowInputArea;
+      if(cell && inputArea && inputArea.tag){
+        commands.execute('notebook:modify-cell-tag');
+      }
+      else{
+        commands.execute('notebook:add-cell-tag');
+      }
+    },
+    isEnabled: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      const isTagsVisible = tracker.currentWidget?.model?.getMetadata('enable_tags');
+      return isDfnotebook && isTagsVisible;
+    },
+    isVisible: () => {
+      const isDfnotebook = tracker.currentWidget?.model?.getMetadata('dfnotebook')
+      const activeCell = tracker.activeCell;
+      return isDfnotebook && activeCell?.model.type === 'code';
+    },
+    icon: args => (args.toolbar ? tagIcon : undefined)
+  });
+
   // !!! END DATAFLOW NOTEBOOK CHANGE !!!
+}
+
+/**
+ * Update code based on add, delete or modified tag value
+ */
+export async function updateNotebookCellsWithTag(notebookId: string|undefined, notebook: DataflowNotebookModel, cellUUID: string, sessionContext: ISessionContext, hideTags: boolean=false, updateInputTagsOnly: boolean=false) {
+  let dfData = getCellsMetadata(notebook, '');
+  let cellMap = notebookId ? notebookCellMap.get(notebookId): new Map<string, string>();
+  if(cellMap){
+    const executedCode: { [key: string]: string } = {};
+    cellMap.forEach((value, key) => {
+      executedCode[key] = value;
+    });
+    dfData.dfMetadata.executed_code = executedCode;
+  }
+
+  if (hideTags) {
+    dfData.dfMetadata.input_tags = {};
+  }
+
+  if (updateInputTagsOnly){
+    dfData.dfMetadata.all_refs = {}
+    dfData.dfMetadata.output_tags = {}
+    dfData.dfMetadata.code_dict = {}
+  }
+
+  try {
+    const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata, 'updateExecutedCode': true});
+    updateNotebookCells(notebookId, notebook, response, cellUUID, hideTags);
+  } catch (error) {
+    console.error('Error occured during kernel communication', error);
+  }
+}
+
+function updateNotebookCells(notebookId: string|undefined, notebook: DataflowNotebookModel, content: any, cellUUID: string, hideTags: boolean): void {
+  const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
+  const all_Tags = getAllTags(notebook);
+  const cellsArray = Array.from(notebook.cells);
+
+  cellsArray.forEach((cell, index) => {
+    if (cell.type === 'code') {
+      const cAny = cell as ICodeCellModel;
+      const cId = truncateCellId(cAny.id);
+
+      // Handle executed code updates
+      if (content.executed_code_dict?.hasOwnProperty(cId)) {
+        const updatedCode = content.executed_code_dict[cId];
+        cellMap?.set(cId, updatedCode.trim());
+      }
+
+      // Handle code dictionary updates
+      if (content.code_dict?.hasOwnProperty(cId)) {
+        const updatedCode = content.code_dict[cId];
+        cAny.sharedModel.setSource(updatedCode);
+      }
+
+      //Updating the dependent cell's df-metadata when any cell is tagged/untagged
+      if (cellUUID && !hideTags) {
+        const dfmetadata = cAny.getMetadata('dfmetadata');
+        const inputVarsMetadata = dfmetadata.inputVars;
+        if (inputVarsMetadata && typeof inputVarsMetadata === 'object' && 'ref' in inputVarsMetadata) {
+          const refValue = inputVarsMetadata.ref as { [key: string]: any };
+          let tagRefValue = inputVarsMetadata.tag_refs as { [key: string]: any };
+          for (const ref_key in refValue) {
+            if (ref_key == cellUUID && all_Tags.hasOwnProperty(ref_key)) {
+              tagRefValue[cellUUID] = all_Tags[cellUUID];
+            }
+          }
+          dfmetadata.inputVars = { 'ref': refValue, 'tag_refs': tagRefValue };
+          notebook.cells.get(index).setMetadata('dfmetadata', dfmetadata);
+        }
+      }
+    }
+  });
 }
 
 /**
@@ -2691,7 +3192,8 @@ function populatePalette(
     CommandIDs.toggleRenderSideBySideCurrentNotebook,
     CommandIDs.setSideBySideRatio,
     CommandIDs.enableOutputScrolling,
-    CommandIDs.disableOutputScrolling
+    CommandIDs.disableOutputScrolling,
+    CommandIDs.tagCodeCell
   ].forEach(command => {
     palette.addItem({ command, category });
   });

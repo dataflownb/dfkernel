@@ -40,6 +40,7 @@ import {
 } from '@jupyterlab/testing';
 import { Message, MessageLoop } from '@lumino/messaging';
 import { Widget } from '@lumino/widgets';
+import { truncateCellId } from '@dfnotebook/dfutils';
 
 const RENDERED_CLASS = 'jp-mod-rendered';
 const rendermime = defaultRenderMime();
@@ -556,6 +557,52 @@ describe('cells/widget', () => {
       });
     });
 
+    describe('#dfmetadata', () => {
+      it('should set dfmetadata when initializing', () => {
+        const model = new CodeCellModel();
+        const widget = new CodeCell({
+          model,
+          rendermime,
+          contentFactory
+        });
+
+        widget.initializeState();
+        const dfmetadata = widget.model.getMetadata('dfmetadata');
+        expect(dfmetadata).toBeDefined();
+        expect(dfmetadata).toEqual(expect.objectContaining({
+          tag: "",
+          inputVars: { ref: {}, tag_refs: {} },
+          outputVars: [],
+          persistentCode: ""
+        }));
+      });
+  
+      it('should not overwrite existing dfmetadata', () => {
+        const model = new CodeCellModel();
+        const existingDfmetadata = {
+          tag: "existing",
+          inputVars: { ref: { 'a': '1' }, tag_refs: { 'b': '2' } },
+          outputVars: ['c', 'd'],
+          persistentCode: "print('hello')"
+        };
+        model.setMetadata('dfmetadata', existingDfmetadata);
+  
+        const widget = new CodeCell({
+          model,
+          rendermime,
+          contentFactory
+        });
+
+        widget['initializeDOM']();
+        
+        const dfmetadata = widget.model.getMetadata('dfmetadata');
+        expect(dfmetadata.inputVars).toEqual(existingDfmetadata.inputVars);
+        expect(dfmetadata.outputVars.length).toBe(2);
+        expect(dfmetadata.outputVars).toEqual(existingDfmetadata.outputVars);
+        expect(dfmetadata.persistentCode).toBe("print('hello')");
+      });
+    });
+
     describe('#outputArea', () => {
       it('should be the output area used by the cell', () => {
         const widget = new CodeCell({
@@ -854,9 +901,9 @@ describe('cells/widget', () => {
       it('should fire when model metadata changes', () => {
         const method = 'onMetadataChanged';
         const widget = new LogCodeCell().initializeState();
-        expect(widget.methods).not.toContain(method);
+        expect(widget.methods.filter(m => m === method).length).toBe(1);
         widget.model.setMetadata('foo', 1);
-        expect(widget.methods).toContain(method);
+        expect(widget.methods.filter(m => m === method).length).toBe(2);
       });
     });
 
@@ -989,7 +1036,7 @@ describe('cells/widget', () => {
         expect(msg).not.toBeUndefined();
 
         expect(widget.promptNode!.textContent).toEqual(
-          `[${widget.model.id.replace(/-/g, '').substr(0, 8)}]:`
+          `[${truncateCellId(widget.model.id)}]:`
         );
       });
     });

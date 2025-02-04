@@ -5,14 +5,32 @@
     "main": [
       {
         "id": "jp-mainmenu-edit",
-        "items": [{ "command": "notebook:tag-cell", "rank": 9 }]
+        "items": [{ "command": "notebook:add-cell-tag", "rank": 9 }]
+      },
+      {
+        "id": "jp-mainmenu-edit",
+        "items": [{ "command": "notebook:modify-cell-tag", "rank": 9 }]
       }
     ],
     "context": [
       {
-        "command": "notebook:tag-cell",
+        "command": "notebook:add-cell-tag",
         "selector": ".jp-Notebook .jp-Cell",
         "rank": 7
+      },
+      {
+        "command": "notebook:modify-cell-tag",
+        "selector": ".jp-Notebook .jp-Cell",
+        "rank": 7
+      }
+    ]
+  },
+  "jupyter.lab.toolbars": {
+    "Cell": [
+      {
+        "name": "tag",
+        "command": "toolbar-button:tag-cell",
+        "rank": 1
       }
     ]
   },

@@ -1770,6 +1770,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7
     "@babel/preset-env": ^7
+    "@dfnotebook/dfutils": ">0.4.0-a"
     "@hpcc-js/wasm": ^2.15.3
     "@jupyterlab/builder": ^4.2.1
     "@jupyterlab/testing": ^4.2.1
@@ -1826,6 +1827,7 @@ __metadata:
   dependencies:
     "@dfnotebook/dfcells": ">0.4.0-a"
     "@dfnotebook/dfnotebook": ">0.4.0-a"
+    "@dfnotebook/dfutils": ">0.4.0-a"
     "@jupyterlab/application": ^4.2.1
     "@jupyterlab/apputils": ^4.3.1
     "@jupyterlab/builder": ^4.2.1

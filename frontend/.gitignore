@@ -134,5 +134,7 @@ Untitled*.ipynb
 
 #Compiled files
 *.d.ts
+!packages/dfnotebook-extension/src/svg.d.ts
+!packages/dfnotebook/test/svg.d.ts
 packages/*/src/*.js
 packages/dfnotebook/fonts/*.*

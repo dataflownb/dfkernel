@@ -1,3 +1,4 @@
+import { truncateCellId } from '@dfnotebook/dfutils';
 import { DepView } from './depview';
 import { Minimap } from './minimap';
 
@@ -126,7 +127,7 @@ class GraphManager {
     }
     this.graphs[this.currentGraph].updateOrder(neworder);
     let modifiedorder = neworder.map(
-      (cellid: any) => cellid.replace(/-/g, '').substr(0, 8) as string
+      (cellid: any) => truncateCellId(cellid) as string
     );
     this.minimap.updateOrder(modifiedorder);
     this.depview.updateOrder(modifiedorder,true);
@@ -154,7 +155,7 @@ class GraphManager {
       }
       this.minimap.startMinimapCreation();
     }
-    if (this.depWidget.isOpen && !mini) {
+    if (this.depwidget.isOpen && !mini) {
       if (newView) {
         this.depview.startGraphCreation();
       } else {
@@ -258,9 +259,11 @@ export class Graph {
     that.executed[uuid] = true;
     //We have to execute upstreams either way
     console.log(that.uplinks[uuid]);
-    Object.keys(that.uplinks[uuid]).forEach(function (upuuid: string) {
-      that.states[upuuid] = 'Fresh';
-    });
+    if(that.uplinks[uuid]){
+      Object.keys(that.uplinks[uuid]).forEach(function (upuuid: string) {
+        that.states[upuuid] = 'Fresh';
+      });
+    }
 
     if (revert == true) {
       //Restore downstream statuses
@@ -303,7 +306,7 @@ export class Graph {
     //         }
     that.cells = cells;
     that.nodes[uuid] = nodes || [];
-    if (uuid in that.uplinks) {
+    if (uuid in that.uplinks && that.uplinks[uuid]) {
       Object.keys(that.uplinks[uuid]).forEach(function (uplink) {
         that.downlinks[uplink] = [];
       });

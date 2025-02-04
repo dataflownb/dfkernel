@@ -37,7 +37,8 @@
     "schema/*.json",
     "style/*.css",
     "style/index.js",
-    "src/**/*.{ts,tsx}"
+    "src/**/*.{d.ts,ts,tsx}",
+    "style/tag.svg"
   ],
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",
