@@ -72,7 +72,7 @@ class GraphManager {
     //         if(this.depWidget.is_open){
     //             console.log("Update dep viewer here");
     //         }
-    if (this.miniWidget && this.miniWidget.isOpen) {
+    if (this.miniWidget.isOpen) {
       this.minimap.updateActiveByID(activeid);
     }
   };
@@ -146,7 +146,7 @@ class GraphManager {
     mini: boolean = false,
     mini2: boolean = false
   ) {
-    if (this.miniWidget && this.miniWidget.isOpen) {
+    if (this.miniWidget.isOpen) {
       if (mini2) {
         return;
       }
@@ -155,7 +155,7 @@ class GraphManager {
       }
       this.minimap.startMinimapCreation();
     }
-    if (this.depwidget && this.depWidget.isOpen && !mini) {
+    if (this.depwidget.isOpen && !mini) {
       if (newView) {
         this.depview.startGraphCreation();
       } else {
