@@ -439,11 +439,12 @@ class DataflowState:
 
     def add_link(self, tag, cell_id, make_current=True):
         # print("OUTER ADD_LINK:", cell_id, tag)
-        self.all_links[tag].add(cell_id)
-        self.rev_links[cell_id].add(tag)
-        if make_current:
-            # print('ADDING TAG (ADD_LINK):', cell_id, tag)
-            self.links[tag].append(cell_id)
+        if isinstance(tag, str):
+            self.all_links[tag].add(cell_id)
+            self.rev_links[cell_id].add(tag)
+            if make_current:
+                # print('ADDING TAG (ADD_LINK):', cell_id, tag)
+                self.links[tag].append(cell_id)
 
     def reset_cell(self, cell_id):
         # print(f"{cell_id} LINKS: {self.links} REV LINKS: {self.rev_links} ALL_LINKS: {self.all_links}")
