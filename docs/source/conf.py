@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Dataflow Notebooks'
-copyright = '2024, David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
-author = 'David Koop, Colin Brown, Ramakrishna Reddy Loka, Bradley Pohlman'
+copyright = '2024, Dataflow Notebooks Team'
+author = 'Dataflow Notebooks Team'
 #release = '0.4.0-alpha.2'
 
 # -- General configuration ---------------------------------------------------
