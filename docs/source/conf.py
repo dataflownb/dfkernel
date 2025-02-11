@@ -62,15 +62,15 @@ html_sidebars = {
 # Create rules to show errors as they are shown in notebooks
 nbsphinx_prolog = """
 .. raw:: html
-    
-    # <style>
-    # .highlighted-note {
-    #     background-color: DarkSlateGray;
-    #     color: white;
-    #     padding: 5px;
-    #     border-radius: 4px;
-    # }
-    # </style>
+
+    <style>
+    .highlighted-note {
+        background-color: DarkSlateGray;
+        color: white;
+        padding: 5px;
+        border-radius: 4px;
+    }
+    </style>
 
     <script>
         $(document).ready(function() {
@@ -87,10 +87,10 @@ nbsphinx_prolog = """
                 }
             }
 
-            # // Highlight <p> elements containing the text "Dataflow notes"
-            # $("p").filter(function() {
-            #     return $(this).text().indexOf("Dataflow notes") >= 0;
-            # }).addClass("highlighted-note");
+            // Highlight <p> elements containing the text "Dataflow notes"
+            $("p").filter(function() {
+                return $(this).text().indexOf("Dataflow notes") >= 0;
+            }).addClass("highlighted-note");
         });
     </script>
 """
