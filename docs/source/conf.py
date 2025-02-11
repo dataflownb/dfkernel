@@ -28,6 +28,7 @@ def setup(app): #add the lexer
 pygments_style = 'jupyterlab_pygments.JupyterStyle'
 
 extensions = ['nbsphinx',
+              'myst_parser',
               'sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.viewcode']
