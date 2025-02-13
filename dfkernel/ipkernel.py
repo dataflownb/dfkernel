@@ -24,7 +24,7 @@ except ImportError:
     _asyncio_runner = None
 
 from .zmqshell import ZMQInteractiveShell
-from .utils import (
+from dfnbutils import (
     ground_refs,
     convert_dollar,
     convert_identifier,

@@ -31,6 +31,7 @@ dependencies = [
     'ipykernel>=6',
     'notebook>=5.0',
     'nest_asyncio>=1.4',
+    "dfnbutils",
     'packaging',
 ]
 dynamic=["version"]
