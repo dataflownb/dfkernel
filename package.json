@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "bower": "*",
-    "less": "^3.0.4",
+    "less": "^3.13.1",
     "requirejs": "^2.1.17"
   },
   "dependencies": {}
