@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfigbase",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src",
+    "types": ["graphlib", "d3-graphviz"]
+  },
+  "include": ["src/*"]
+}
