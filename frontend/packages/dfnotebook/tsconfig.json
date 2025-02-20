@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfigbase",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src"
+  },
+  "include": ["src/*",  "src/default.json"],
+  "references": [
+    {
+      "path": "../dfcells",
+      "composite": true
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+.jp-Notebook.jp-mod-showHiddenCellsButton .jp-showHiddenCellsButton {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-ActiveCellTool .jp-InputPrompt {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
+
+.jp-Notebook-footer {
+  --jp-cell-prompt-width: var(--df-cell-prompt-width);
+}
