@@ -16,7 +16,7 @@ import zmq.asyncio
 from jupyter_client.session import Session
 
 from ipykernel.iostream import IOPubThread, BackgroundSocket, MASTER
-from dfkernel.iostream import OutStream
+from dfnotebook.kernel.iostream import OutStream
 
 
 @pytest.fixture()

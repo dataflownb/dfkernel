@@ -7,7 +7,7 @@ import pytest
 from IPython.core.history import DummyDB
 
 from ipykernel.comm.comm import BaseComm
-from dfkernel.ipkernel import IPythonKernel
+from dfnotebook.kernel.ipkernel import IPythonKernel
 from ipykernel.ipkernel import _create_comm
 
 from .conftest import MockIPyKernel

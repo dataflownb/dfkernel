@@ -23,7 +23,7 @@ class IPKernelApp(ipykernel.kernelapp.IPKernelApp):
     name='dfpython-kernel'
     classes = [IPythonKernel, ZMQInteractiveShell, ProfileDir, Session]
     # the kernel class, as an importstring
-    kernel_class = Type('dfkernel.ipkernel.IPythonKernel',
+    kernel_class = Type('dfnotebook.kernel.ipkernel.IPythonKernel',
                         klass='ipykernel.kernelbase.Kernel',
     help="""The Kernel subclass to be used.
 
@@ -33,14 +33,14 @@ class IPKernelApp(ipykernel.kernelapp.IPKernelApp):
 
     subcommands = {
         'install': (
-            'dfkernel.kernelspec.InstallIPythonKernelSpecApp',
+            'dfnotebook.kernel.kernelspec.InstallIPythonKernelSpecApp',
             'Install the DFPython kernel'
         ),
     }
 
-    outstream_class = DottedObjectName('dfkernel.iostream.OutStream',
+    outstream_class = DottedObjectName('dfnotebook.kernel.iostream.OutStream',
         help="The importstring for the OutStream factory").tag(config=True)
-    displayhook_class = DottedObjectName('dfkernel.displayhook.ZMQDisplayHook',
+    displayhook_class = DottedObjectName('dfnotebook.kernel.displayhook.ZMQDisplayHook',
         help="The importstring for the DisplayHook factory").tag(config=True)
 
     def init_kernel(self):

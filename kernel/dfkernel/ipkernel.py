@@ -535,7 +535,7 @@ class Kernel(IPythonKernel):
         import warnings
 
         warnings.warn(
-            "Kernel is a deprecated alias of dfkernel.ipkernel.IPythonKernel",
+            "Kernel is a deprecated alias of dfnotebook.kernel.ipkernel.IPythonKernel",
             DeprecationWarning,
         )
         super(Kernel, self).__init__(*args, **kwargs)

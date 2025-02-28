@@ -12,7 +12,7 @@ from unittest import mock
 import pytest
 from jupyter_core.paths import jupyter_data_dir
 
-from dfkernel.kernelspec import (
+from dfnotebook.kernel.kernelspec import (
     KERNEL_NAME,
     RESOURCES,
     InstallIPythonKernelSpecApp,

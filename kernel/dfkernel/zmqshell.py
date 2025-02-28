@@ -28,9 +28,9 @@ from IPython.core.magic import magics_class, Magics, cell_magic, line_magic, \
 from IPython.core.history import HistoryManager
 from IPython.core.error import InputRejected
 from ipykernel.jsonutil import json_clean, encode_images
-from dfkernel.dflink import LinkedResult
-from dfkernel.displayhook import ZMQShellDisplayHook
-from dfkernel.safe_attr import safe_attr
+from dfnotebook.kernel.dflink import LinkedResult
+from dfnotebook.kernel.displayhook import ZMQShellDisplayHook
+from dfnotebook.kernel.safe_attr import safe_attr
 from traitlets import (
     Integer, Instance, Type, Unicode, validate
 )

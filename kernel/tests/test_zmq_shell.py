@@ -15,7 +15,7 @@ import zmq
 from jupyter_client.session import Session
 from traitlets import Int
 
-from dfkernel.zmqshell import (  # type:ignore
+from dfnotebook.kernel.zmqshell import (  # type:ignore
     InteractiveShell,
     KernelMagics,
     ZMQDisplayPublisher,

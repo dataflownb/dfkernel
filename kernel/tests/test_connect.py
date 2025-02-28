@@ -15,7 +15,7 @@ import zmq
 from traitlets.config.loader import Config
 
 from ipykernel import connect
-from dfkernel.kernelapp import IPKernelApp
+from dfnotebook.kernel.kernelapp import IPKernelApp
 
 from .utils import TemporaryWorkingDirectory
 

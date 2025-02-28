@@ -12,9 +12,9 @@ from anyio import create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from jupyter_client.session import Session
 
-from dfkernel.ipkernel import IPythonKernel
+from dfnotebook.kernel.ipkernel import IPythonKernel
 from ipykernel.kernelbase import Kernel
-from dfkernel.zmqshell import ZMQInteractiveShell
+from dfnotebook.kernel.zmqshell import ZMQInteractiveShell
 
 try:
     import resource

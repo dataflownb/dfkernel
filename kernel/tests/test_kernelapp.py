@@ -7,7 +7,7 @@ import pytest
 from jupyter_core.paths import secure_write
 from traitlets.config.loader import Config
 
-from dfkernel.kernelapp import IPKernelApp
+from dfnotebook.kernel.kernelapp import IPKernelApp
 
 from .conftest import MockKernel
 from .utils import TemporaryWorkingDirectory

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from dfkernel.kernelspec import install
+from dfnotebook.kernel.kernelspec import install
 
 pjoin = os.path.join
 

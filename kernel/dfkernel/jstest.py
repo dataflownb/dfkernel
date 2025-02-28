@@ -201,7 +201,7 @@ class TestController(object):
 
 
 def get_js_test_dir():
-    import dfkernel.tests as t
+    import dfnotebook.kernel.tests as t
     return os.path.join(os.path.dirname(t.__file__), '')
 
 def all_js_groups():

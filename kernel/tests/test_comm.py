@@ -3,7 +3,7 @@ import unittest.mock
 import pytest
 
 from ipykernel.comm import Comm, CommManager
-from dfkernel.ipkernel import IPythonKernel
+from dfnotebook.kernel.ipkernel import IPythonKernel
 from ipykernel.kernelbase import Kernel
 
 
