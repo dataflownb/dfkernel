@@ -12,5 +12,5 @@ if __name__ == '__main__':
     if sys.path[0] == '':
         del sys.path[0]
 
-    from dfkernel import kernelapp as app
+    from dfnotebook.kernel import kernelapp as app
     app.launch_new_instance()
