@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dfnotebook"
-description = "Dataflow Python Kernel for Jupyter"
+description = "Dataflow Notebook for Jupyter"
 authors = [
     {name = "Dataflow Notebook Development Team", email = "dataflownb@users.noreply.github.com"},
 ]
@@ -29,7 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-urls = {Homepage = "https://github.com/dataflownb/dfkernel"}
+urls = {Homepage = "https://github.com/dataflownb/dfnotebook"}
 dependencies = [
     'ipython>=7.17.0',
     'traitlets>=4.1.0',
@@ -48,30 +48,19 @@ dependencies = [
 dynamic=["version"]
 
 [tool.hatch.version]
-path = "_version.py"
+path = "dfnotebook/_version.py"
 source = "code"
-
-[tool.hatch.build]
-include = ["kernel/dfkernel/**/*"]
-
-
-[tool.hatch.packages]
-include = [
-    { from = "kernel/dfkernel", to = "dfnotebook/kernel" }
-]
 
 # Used to call hatch_build.py
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "data_kernelspec" = "share/jupyter/kernels/dfpython3"
-"frontend/dfnotebook/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
+"dfnotebook/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
 "frontend/install.json" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension/install.json"
 
 [tool.hatch.build.force-include]
 "dfkernel_launcher.py" = "dfkernel_launcher.py"
-"./kernel/dfkernel" = "dfnotebook/kernel"
-"./kernel/_version.py" = "dfnotebook/kernel/version.py"
 
 [tool.check-wheel-contents]
 toplevel = ["dfnotebook/kernel/", "dfkernel_launcher.py"]
@@ -82,42 +71,37 @@ fields = ["description", "authors", "urls"]
 path = "frontend/package.json"
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["frontend/dfnotebook/labextension"]
+artifacts = ["dfnotebook/labextension"]
 exclude = [".github", "binder"]
-include = ["kernel/dfkernel/**/*"]
+include = ["dfnotebook/**/*"]
 
 
 [tool.hatch.build.hooks.version]
-path = "kernel/dfkernel/_version.py"
+path = "dfnotebook/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "frontend/dfnotebook/labextension/static/style.js",
-    "frontend/dfnotebook/labextension/package.json",
+    "dfnotebook/labextension/static/style.js",
+    "dfnotebook/labextension/package.json",
 ]
-skip-if-exists = ["frontend/dfnotebook/labextension/static/style.js"]
+skip-if-exists = ["dfnotebook/labextension/static/style.js"]
 
 
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
 npm = ["jlpm"]
-source_dir = "frontend/packages"
-build_dir = "frontend/dfnotebook/labextension"
+source_dir = "frontend"
+build_dir = "dfnotebook/labextension"
 path = "frontend"
-
-[tool.hatch.jupyter_builder]
-source = "frontend"
-path = "frontend"
-
 
 [tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
 build_cmd = "build"
 npm = ["jlpm"]
-source_dir = "frontend/packages"
-build_dir = "frontend/dfnotebook/labextension"
+source_dir = "frontend"
+build_dir = "dfnotebook/labextension"
 path = "frontend"
 
 [tool.jupyter-releaser.options]

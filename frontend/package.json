@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/top",
-  "version": "0.4.0-a.2",
+  "version": "0.4.2-a.1",
   "private": true,
   "description": "A JupyterLab extension for running dataflow notebooks",
   "keywords": [
@@ -8,13 +8,13 @@
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/dataflownb/dfnotebook-extension",
+  "homepage": "https://github.com/dataflownb/dfnotebook",
   "bugs": {
-    "url": "https://github.com/dataflownb/dfnotebook-extension/issues"
+    "url": "https://github.com/dataflownb/dfnotebook/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dataflownb/dfnotebook-extension.git"
+    "url": "https://github.com/dataflownb/dfnotebook.git"
   },
   "license": "BSD-3-Clause",
   "author": {
@@ -191,7 +191,7 @@
   "jupyterlab": {
     "extension": true,
     "schemaDir": "packages/dfnotebook-extension/schema",
-    "outputDir": "dfnotebook/labextension",
+    "outputDir": "../dfnotebook/labextension",
     "disabledExtensions": [
       "@jupyterlab/notebook-extension:tracker"
     ]
