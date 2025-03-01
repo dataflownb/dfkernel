@@ -104,8 +104,8 @@ skip-if-exists = ["frontend/dfnotebook/labextension/static/style.js"]
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
 npm = ["jlpm"]
-source_dir = "packages"
-build_dir = "dfnotebook/labextension"
+source_dir = "frontend/packages"
+build_dir = "frontend/dfnotebook/labextension"
 path = "frontend"
 
 [tool.hatch.jupyter_builder]
@@ -116,8 +116,8 @@ path = "frontend"
 [tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
 build_cmd = "build"
 npm = ["jlpm"]
-source_dir = "packages"
-build_dir = "dfnotebook/labextension"
+source_dir = "frontend/packages"
+build_dir = "frontend/dfnotebook/labextension"
 path = "frontend"
 
 [tool.jupyter-releaser.options]
