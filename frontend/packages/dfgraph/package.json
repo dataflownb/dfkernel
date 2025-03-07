@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/dfgraph",
-  "version": "0.4.0-a.0",
+  "version": "4.2.0-beta.0",
   "description": "Dataflow Notebook Cells",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
@@ -154,7 +154,7 @@
     }
   },
   "dependencies": {
-    "@dfnotebook/dfutils": ">0.4.0-a",
+    "@dfnotebook/dfutils": "^4.2.0-beta.0",
     "@hpcc-js/wasm": "^2.15.3",
     "@lumino/widgets": "^2.3.2",
     "@types/d3": "^7.4.3",

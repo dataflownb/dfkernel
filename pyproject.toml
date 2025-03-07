@@ -48,8 +48,8 @@ dependencies = [
 dynamic=["version"]
 
 [tool.hatch.version]
-path = "dfnotebook/_version.py"
-source = "code"
+source = "nodejs"
+path = "frontend/packages/dfnotebook-extension/package.json"
 
 # Used to call hatch_build.py
 [tool.hatch.build.hooks.custom]

@@ -1,6 +1,6 @@
 {
     "name": "@dfnotebook/dfutils",
-    "version": "0.4.0-a.2",
+    "version": "4.2.0-beta.0",
     "description": "Dataflow Notebook Utilities",
     "homepage": "https://github.com/dataflownb/dfnotebook-extension",
     "bugs": {

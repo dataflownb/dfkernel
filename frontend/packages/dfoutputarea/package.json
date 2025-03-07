@@ -1,6 +1,6 @@
 {
   "name": "@dfnotebook/dfoutputarea",
-  "version": "0.4.0-a.0",
+  "version": "4.2.0-beta.0",
   "description": "Dataflow Notebook Output Area",
   "homepage": "https://github.com/dataflownb/dfnotebook-extension",
   "bugs": {
@@ -153,7 +153,7 @@
     }
   },
   "dependencies": {
-    "@dfnotebook/dfutils": ">0.4.0-a",
+    "@dfnotebook/dfutils": "^4.2.0-beta.0",
     "@jupyterlab/apputils": "^4.3.1",
     "@jupyterlab/nbformat": "^4.2.1",
     "@jupyterlab/observables": "^5.2.1",
