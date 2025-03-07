@@ -4,6 +4,17 @@ The extension can be published to `PyPI` and `npm` manually or using the [Jupyte
 
 ## Manual release
 
+### Versioning
+
+dfnotebook pulls version information from the nodejs package.json file in dfnotebook-extension. We set all of the internal packages to the same version using `lerna version <version-spec>`. We can use the `--no-git-tag-version` and `--no-push` flags to do this without worrying about git tags and upstream commits.
+
+We also need to make sure that all dependencies are up to date. We can do this by using the `update-dependency` script jupyterlab provides in buildutils. For example,
+
+* `jlpm update-dependency --regex '^@dfnotebook/' '^4.2.0'`
+* `jlpm update-dependency --regex '^@jupyterlab/' '^4.2.0'`
+
+The problem for `@jupyterlab` and `@lumnio` is the packages that are out-of-step with the numbering so that they have major releases above the other packages. Check `@jupyter/ydoc` and `@lumino` dependencies as well.
+
 ### Python package
 
 This extension can be distributed as Python packages. All of the Python
@@ -12,13 +23,6 @@ Python package. Before generating a package, you first need to install some tool
 
 ```bash
 pip install build twine hatch
-```
-
-Bump the version using `hatch`. By default this will create a tag.
-See the docs on [hatch-nodejs-version](https://github.com/agoose77/hatch-nodejs-version#semver) for details.
-
-```bash
-hatch version <new-version>
 ```
 
 Make sure to clean up all the development files before building the package:
