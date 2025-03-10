@@ -62,6 +62,7 @@
   "dependencies": {
     "@dfnotebook/dfutils": "^4.2.0-beta.0",
     "@hpcc-js/wasm": "^2.15.3",
+    "@hpcc-js/wasm-graphviz": "^1.7.0",
     "@lumino/widgets": "^2.3.2",
     "@types/d3": "^7.4.3",
     "@types/d3-graphviz": "^2.6.10",

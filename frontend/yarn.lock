@@ -1607,6 +1607,7 @@ __metadata:
   dependencies:
     "@dfnotebook/dfutils": ^4.2.0-beta.0
     "@hpcc-js/wasm": ^2.15.3
+    "@hpcc-js/wasm-graphviz": ^1.7.0
     "@jupyterlab/testing": ^4.2.7
     "@lumino/widgets": ^2.3.2
     "@types/d3": ^7.4.3
@@ -1736,6 +1737,7 @@ __metadata:
     "@types/json-schema": ^7.0.11
     "@types/react": ^18.0.26
     "@types/react-addons-linked-state-mixin": ^0.14.22
+    "@types/react-dom": 18.3
     "@typescript-eslint/eslint-plugin": ^6.1.0
     "@typescript-eslint/parser": ^6.1.0
     css-loader: ^6.7.1
@@ -1840,6 +1842,13 @@ __metadata:
   version: 5.15.4
   resolution: "@fortawesome/fontawesome-free@npm:5.15.4"
   checksum: 32281c3df4075290d9a96dfc22f72fadb3da7055d4117e48d34046b8c98032a55fa260ae351b0af5d6f6fb57a2f5d79a4abe52af456da35195f7cb7dda27b4a2
+  languageName: node
+  linkType: hard
+
+"@hpcc-js/wasm-graphviz@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@hpcc-js/wasm-graphviz@npm:1.7.0"
+  checksum: 599eaa29b6d7fde107c1f54e0e7d1134f8a9f0ccedaafc720d544f6e477e070481599cf22daced1916a71ce012d7cce140eb84507ac9010db84825af59c35988
   languageName: node
   linkType: hard
 
@@ -4733,6 +4742,15 @@ __metadata:
     "@types/create-react-class": "*"
     "@types/react": "*"
   checksum: a78007698a236335a50c74ddd27669028213ff363219f97a6ea1f000ddb8714c83838002ea07c33024f964112a229e447127b457fa3f9b3db352dd41d6b8d328
+  languageName: node
+  linkType: hard
+
+"@types/react-dom@npm:18.3":
+  version: 18.3.5
+  resolution: "@types/react-dom@npm:18.3.5"
+  peerDependencies:
+    "@types/react": ^18.0.0
+  checksum: 95c757684f71e761515c5a11299e5feec550c72bb52975487f360e6f0d359b26454c26eaf2ce45dd22748205aa9b2c2fe0abe7005ebcbd233a7615283ac39a7d
   languageName: node
   linkType: hard
 

@@ -2,6 +2,7 @@ const jestJupyterLab = require('@jupyterlab/testutils/lib/jest-config');
 
 const esModules = [
   '@codemirror',
+  '@hpcc/wasm-graphviz',
   '@jupyter/ydoc',
   '@jupyterlab/',
   '@jupyter/react-components',
@@ -34,5 +35,5 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['lcov', 'text'],
   reporters: ['default', 'github-actions'],
-  transformIgnorePatterns: [`/node_modules/(?!${esModules}).+`]
+  transformIgnorePatterns: [`<rootDir>/../../node_modules/(?!${esModules}).+`]
 };
