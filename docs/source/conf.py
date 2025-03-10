@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Dataflow Notebooks'
-copyright = '2024, Dataflow Notebooks Team'
+copyright = '2025, Dataflow Notebooks Team'
 author = 'Dataflow Notebooks Team'
 #release = '0.4.0-alpha.2'
 
@@ -44,6 +44,7 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'pydata_sphinx_theme'
+html_title = "Dataflow Notebooks"
 html_static_path = ['_static']
 html_css_files = ['css/extra.css']
 
