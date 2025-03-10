@@ -1,3 +1,7 @@
-div.nbinput div.prompt, div.nboutput div.prompt{
-    min-width: 15ex !important;
+div.nbinput.container div.prompt, div.nboutput.container div.prompt{
+    width: 0ex;
+}
+
+.bd-main .bd-content .bd-article-container {
+    padding-left: 12ex;
 }
