@@ -332,7 +332,7 @@ namespace CommandIDs {
 
   export const reactiveCodeCell = 'toolbar-button:reactive-cell';
 
-  export const toggleTagsCmd = 'dfnotebook:toggle-tags';
+  export const toggleCellNamesCmd = 'dfnotebook:toggle-cell-names';
 
   export const toggleReactiveCmd = 'dfnotebook:toggle-reactive';
 
@@ -698,7 +698,7 @@ const panelToolbar: JupyterFrontEndPlugin<void> = {
   autoStart: true,
   requires: [INotebookTracker],
   activate: (app: JupyterFrontEnd, tracker: INotebookTracker) => {
-    app.commands.addCommand(CommandIDs.toggleTagsCmd, {
+    app.commands.addCommand(CommandIDs.toggleCellNamesCmd, {
       label: 'Toggle Cell Names',
       caption: 'Toggle Cell Names',
       execute: args => {
@@ -726,7 +726,7 @@ const panelToolbar: JupyterFrontEndPlugin<void> = {
           });
           current.model?.setMetadata("enable_tags", tagsEnabled);
           app.commands.notifyCommandChanged(CommandIDs.setCellName);
-          app.commands.notifyCommandChanged(CommandIDs.toggleTagsCmd);
+          app.commands.notifyCommandChanged(CommandIDs.toggleCellNamesCmd);
           updateNotebookCellsWithTag(current.id, current.model as DataflowNotebookModel, "", current.sessionContext, !tagsEnabled);          
         }
       },
