@@ -30,7 +30,7 @@ git config --global user.email foo@bar.com
 pip install -q --upgrade pip --user
 pip --version
 # Show a verbose install if the install fails, for debugging
-pip install -e ".[dev,test]" || pip install -v -e ".[dev,test]"
+pip install -e "../[dev,test]" || pip install -v -e "../[dev,test]"
 node -p process.versions
 jlpm config
 
