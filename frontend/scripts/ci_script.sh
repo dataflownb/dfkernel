@@ -32,7 +32,7 @@ fi
 
 if [[ $GROUP == js* ]]; then
 
-    python -m pip install -e .
+    python -m pip install -e ../
     jlpm install
     jlpm build
 
@@ -51,7 +51,7 @@ fi
 
 if [[ $GROUP == docs ]]; then
     # Build the docs (includes API docs)
-    python -m pip install .[docs]
+    python -m pip install ../[docs]
     pushd docs
     make html
     popd
