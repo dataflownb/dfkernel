@@ -27,7 +27,6 @@ jobs:
 
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-        working-directory: ./frontend
 
       - name: Install dependencies
         env:
