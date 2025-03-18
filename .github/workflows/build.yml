@@ -57,13 +57,6 @@ jobs:
         python -m build
         pip uninstall -y "dfnotebook" jupyterlab
 
-    - name: Upload extension packages
-      uses: actions/upload-artifact@v3
-      with:
-        name: extension-artifacts
-        path: dist/dfnotebook*
-        if-no-files-found: error
-
   test_isolated:
     needs: build
     runs-on: ubuntu-latest
