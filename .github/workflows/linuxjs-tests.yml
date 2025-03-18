@@ -27,15 +27,20 @@ jobs:
 
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        working-directory: ./frontend
 
       - name: Install dependencies
         env:
           GROUP: ${{ matrix.group }}
+        working-directory: ./frontend
         run: |
           bash ./scripts/ci_install.sh
+        
 
       - name: Run test ${{ matrix.group }}
         env:
           GROUP: ${{ matrix.group }}
+        working-directory: ./frontend
         run: |
           bash ./scripts/ci_script.sh
+        
