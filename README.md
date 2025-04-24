@@ -1,6 +1,6 @@
 # Dataflow Notebook for Jupyter/Python
 
-[![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfkernel/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-BSD3-blue.svg)](https://github.com/dataflownb/dfnotebook/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/dfnotebook.svg)](https://badge.fury.io/py/dfnotebook)
 <!--
 [![Build Status](https://travis-ci.org/dataflownb/dfkernel.svg?branch=master)](https://travis-ci.org/dataflownb/dfkernel)
@@ -8,20 +8,13 @@
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/dataflownb/dfexamples/master)
 -->
 
-This package provides the Dataflow Notebook interface and kernel for JupyterLab.
-Dataflow notebooks seek to elevate _outputs_ as memorable waypoints during exploratory computation. To that end,
+Dataflow notebooks are Jupyter notebooks written in Python that elevate outputs to link cells. Outputs of cells are labeled by their identifiers. Referencing an output of one cell in another cell creates a dependency between between the two cells, allowing the system to ensure upstream cells are up-to-date before executing a cell. Dataflow notebooks allow identifiers to be reassigned in different cells by tracking references by the identifier **and** persistent cell id, ensuring each reference is not ambiguous. Identifiers are disambiguated by suffixes indicating the cell by an assigned name or unique hexadecimal identifier.
 
-- Cell identifiers are **persistent** across sessions and are random UUIDs to signal they do not depend on top-down order.
-- As with standard IPython, outputs are designated by being written as expressions or assignments on the **last line** of a cell.
-- Each output is identified by its variable name if one is specified (e.g. `a`, `c,d = 4,5`), and the cell identifier if not (e.g. `4 + c`)
-- Variable names **can be reused** across cells.
-- Cells are executed as closures so only the outputs are accessible from other cells.
-- An output can then be referenced in three ways:
-  1. unscoped: `foo` refers to the most recent execution output named `foo`
-  2. persistent: `foo$ba012345` refers to output `foo` from cell `ba012345`
-  3. tagged: `foo$bar` refers to output `foo` from the cell tagged as `bar`
-- All output references are transformed to **persistent** names upon execution. However, these references are only shown when the reference may be ambiguous (i.e. when the notebook has two cells each with an output with the same name).
-- Output references implicitly define a dataflow in a directed acyclic graph, and the kernel automatically executes dependencies.
+## Quickstart
+
+1. Install dfnotebook: `pip install dfnotebook`
+2. Start JupyterLab: `jupyter lab`
+3. Create a new notebook using the `DFPython 3` kernel.
 
 ## Example Notebook
 
