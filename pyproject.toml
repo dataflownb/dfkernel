@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling>=1.4", "jupyter_client>=6"]
+requires = ["hatchling>=1.5.0", "jupyter_client>=6", "jupyterlab~=4.2.0", "hatch-nodejs-version>=0.3.2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "dfkernel"
-description = "Dataflow Python Kernel for Jupyter"
+name = "dfnotebook"
+description = "Dataflow Notebook for Jupyter"
 authors = [
     {name = "Dataflow Notebook Development Team", email = "dataflownb@users.noreply.github.com"},
 ]
@@ -16,39 +16,93 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter :: JupyterLab :: 4",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-urls = {Homepage = "https://github.com/dataflownb/dfkernel"}
+urls = {Homepage = "https://github.com/dataflownb/dfnotebook"}
 dependencies = [
-    'ipython>=7.17.0',
-    'traitlets>=4.1.0',
-    'jupyter_client>=6.1.12',
-    'jupyter_core>=4.12,!=5.0.*',
-    'tornado>=6.1',
-    'pyzmq>=24',
-    'psutil',
+    'ipython>=8',
     'ipykernel>=6',
-    'notebook>=5.0',
     'nest_asyncio>=1.4',
     "dfnbutils",
-    'packaging',
+    'jupyterlab>=4.2',
 ]
 dynamic=["version"]
 
 [tool.hatch.version]
-path = "dfkernel/_version.py"
+source = "nodejs"
+path = "frontend/packages/dfnotebook-extension/package.json"
 
 # Used to call hatch_build.py
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "data_kernelspec" = "share/jupyter/kernels/dfpython3"
+"dfnotebook/labextension" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension"
+"frontend/install.json" = "share/jupyter/labextensions/@dfnotebook/dfnotebook-extension/install.json"
 
 [tool.hatch.build.force-include]
-"./dfkernel_launcher.py" = "dfkernel_launcher.py"
+"dfkernel_launcher.py" = "dfkernel_launcher.py"
 
 [tool.check-wheel-contents]
-toplevel = ["dfkernel/", "dfkernel_launcher.py"]
+toplevel = ["dfnotebook/kernel/", "dfkernel_launcher.py"]
 ignore = ["W002"]
 
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls"]
+path = "frontend/package.json"
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["dfnotebook/labextension"]
+exclude = [".github", "binder"]
+include = ["dfnotebook/**/*"]
+
+
+[tool.hatch.build.hooks.version]
+path = "dfnotebook/_version.py"
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.5"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "dfnotebook/labextension/static/style.js",
+    "dfnotebook/labextension/package.json",
+]
+skip-if-exists = ["dfnotebook/labextension/static/style.js"]
+
+
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+build_cmd = "build:prod"
+npm = ["jlpm"]
+source_dir = "frontend"
+build_dir = "dfnotebook/labextension"
+path = "frontend"
+
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_cmd = "build"
+npm = ["jlpm"]
+source_dir = "frontend"
+build_dir = "dfnotebook/labextension"
+path = "frontend"
+
+[tool.jupyter-releaser.options]
+version_cmd = "hatch version"
+
+[tool.jupyter-releaser.hooks]
+before-build-npm = [
+    "python -m pip install 'jupyterlab~=4.2.0'",
+    "jlpm",
+    "jlpm build:prod"
+]
+before-build-python = ["jlpm clean:all"]

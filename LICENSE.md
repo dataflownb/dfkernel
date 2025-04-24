@@ -1,6 +1,6 @@
-## BSD 3-Clause License ###
+## BSD 3-Clause License
 
-Copyright (c) 2017-2020, Dataflow Notebook Development Team
+Copyright (c) 2017-, Dataflow Notebook Development Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,12 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## IPython and Jupyter Dependencies ##
+## Third-Party Licenses
 
-This code extends the IPython and Jupyter projects. In a few cases, code from those projects is included in this repository. That code remains subject to those licenses.
+This code extends IPython and Jupyter projects. In a few cases, code from those projects is included in this repository. That code remains subject to those licenses.
+
+- JupyterLab (BSD 3-Clause License): https://github.com/jupyterlab/jupyterlab
+- IPython (BSD 3-Clause License): https://github.com/ipython/ipython
+- ipykernel (BSD 3-Clause License): https://github.com/ipython/ipykernel
+
+Each of these components is subject to its respective license terms, which are included in the [licenses](licenses/) directory.

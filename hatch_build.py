@@ -12,7 +12,7 @@ class CustomHook(BuildHookInterface):
     def initialize(self, version, build_data):
         """Initialize the hook."""
         here = Path(__file__).parent.resolve()
-        sys.path.insert(0, str(here / "dfkernel"))
+        sys.path.insert(0, str(here / "dfnotebook/kernel"))
         from kernelspec import make_ipkernel_cmd, write_kernel_spec
 
         overrides = {}

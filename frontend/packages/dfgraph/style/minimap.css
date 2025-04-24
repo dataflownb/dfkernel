@@ -1,0 +1,207 @@
+#minimap {
+  --active-color: #3b5fc0;
+  --default-color: #000000;
+  --inactive-color: #c4c4c4;
+  width: 800px;
+  height: 100%;
+  z-index: -999;
+  background-color: rgba(255, 255, 255, 0.5);
+  overflow-x: hidden;
+  transition: 0.5s;
+}
+
+.cells {
+  fill: none;
+  stroke-width: 1px;
+  stroke: var(--default-color);
+  stroke-dasharray: 4;
+  stroke-dashoffset: 2;
+}
+
+#minisvg {
+  display: block;
+  width: 500px;
+  height: 500px !important;
+}
+
+#minisvg circle,
+rect,
+path,
+text,
+g {
+  display: block;
+}
+
+#minimap text {
+  font-family: monospace;
+}
+
+#minimap path {
+  stroke: currentColor;
+}
+
+#minimap circle {
+  fill: currentColor;
+}
+
+#minimap text {
+  fill: currentColor;
+  stroke: none;
+}
+
+#minimap .active_node {
+  color: var(--active-color);
+}
+
+#minimap rect:not(.cells) {
+  stroke: none;
+}
+
+#minimap .active:not(.gray) {
+  color: var(--active-color);
+}
+
+#minimap .move_left {
+  transform: translate(19px, 0);
+}
+
+#minimap .move_right {
+  transform: translate(-19px, 0);
+}
+
+#minimap .hidden {
+  display: none;
+}
+
+#minimap tspan {
+  color: var(--inactive-color);
+}
+
+#minimap .active:not(.gray) tspan {
+  color: var(--active-color);
+  font-weight: bold;
+}
+
+#minimap tspan.outtag {
+  color: var(--default-color);
+}
+
+#minimap text.active > tspan.outtag {
+  color: var(--active-color);
+  font-weight: bold;
+}
+
+#minimap .active_node:not(.gray) {
+  color: var(--active-color);
+}
+
+.active:not(.gray),
+.imm {
+  color: var(--active-color);
+}
+
+.imm .source,
+.imm .destination,
+.active:not(.gray) .source,
+.active:not(.gray) .destination {
+  color: var(--active-color);
+}
+
+.move_left {
+  transform: translate(19px, 0);
+}
+
+.move_right {
+  transform: translate(-19px, 0);
+}
+
+.hidden {
+  display: none;
+}
+
+.gray {
+  color: var(--inactive-color);
+}
+
+.gray .source,
+.gray .destination {
+  color: var(--inactive-color);
+}
+
+.source {
+  color: var(--default-color);
+}
+
+.destination {
+  color: var(--default-color);
+}
+
+#side-panel-mini {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  float: right;
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #2196f3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196f3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

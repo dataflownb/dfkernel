@@ -1,0 +1,69 @@
+{
+    "name": "@dfnotebook/dfutils",
+    "version": "4.2.0-beta.0",
+    "description": "Dataflow Notebook Utilities",
+    "homepage": "https://github.com/dataflownb/dfnotebook-extension",
+    "bugs": {
+        "url": "https://github.com/dataflownb/dfnotebook-extension/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dataflownb/dfnotebook-extension.git"
+    },
+    "license": "BSD-3-Clause",
+    "author": {
+        "name": "Dataflow Notebook Development Team",
+        "email": "dataflownb@users.noreply.github.com"
+    },
+    "sideEffects": [
+        "style/*.css",
+        "style/index.js"
+    ],
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "style": "style/index.css",
+    "directories": {
+        "lib": "lib/"
+    },
+    "files": [
+        "lib/*.d.ts",
+        "lib/*.js.map",
+        "lib/*.js",
+        "style/*.css",
+        "style/index.js"
+    ],
+    "scripts": {
+        "build": "tsc -b",
+        "build:lib": "tsc --sourceMap",
+        "build:lib:prod": "tsc",
+        "build:prod": "jlpm clean && jlpm build:lib:prod",
+        "build:test": "tsc --build tsconfig.test.json",
+        "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+        "docs": "typedoc src",
+        "eslint": "jlpm eslint:check --fix",
+        "eslint:check": "eslint . --cache --ext .ts,.tsx",
+        "lint": "jlpm stylelint && jlpm prettier && jlpm eslint",
+        "lint:check": "jlpm stylelint:check && jlpm prettier:check && jlpm eslint:check",
+        "prepublishOnly": "npm run build",
+        "prettier": "jlpm prettier:base --write --list-different",
+        "prettier:base": "prettier \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
+        "prettier:check": "jlpm prettier:base --check",
+        "stylelint": "jlpm stylelint:check --fix",
+        "stylelint:check": "stylelint --cache \"style/**/*.css\"",
+        "test": "jest",
+        "test:cov": "jest --collect-coverage",
+        "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+        "test:debug:watch": "node --inspect-brk node_modules/.bin/jest --runInBand --watch",
+        "test:watch": "jest --runInBand --watch",
+        "watch": "run-p watch:src",
+        "watch:src": "tsc -w --sourceMap"
+    },
+    "devDependencies": {
+        "rimraf": "^5.0.5",
+        "typescript": "~5.1.6"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "styleModule": "style/index.js"
+}

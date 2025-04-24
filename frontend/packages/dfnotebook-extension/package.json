@@ -1,0 +1,118 @@
+{
+  "name": "@dfnotebook/dfnotebook-extension",
+  "version": "4.2.0-beta.0",
+  "description": "A JupyterLab interface to support dataflow notebooks",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension"
+  ],
+  "homepage": "https://github.com/dataflownb/dfnotebook",
+  "bugs": {
+    "url": "https://github.com/dataflownb/dfnotebook/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dataflownb/dfnotebook.git"
+  },
+  "license": "BSD-3-Clause",
+  "author": {
+    "name": "Dataflow Notebook Development Team",
+    "email": "dataflownb@users.noreply.github.com"
+  },
+  "sideEffects": [
+    "style/**/*",
+    "style/index.js"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "style": "style/index.css",
+  "directories": {
+    "lib": "lib/"
+  },
+  "files": [
+    "lib/**/*.d.ts",
+    "lib/**/*.js.map",
+    "lib/**/*.js",
+    "schema/*.json",
+    "style/*.css",
+    "style/index.js",
+    "src/**/*.{d.ts,ts,tsx}",
+    "style/tag.svg"
+  ],
+  "scripts": {
+    "build": "jlpm build:lib && jlpm build:labextension:dev",
+    "build:dev": "jlpm build:labextension:dev",
+    "build:labextension": "jupyter labextension build .",
+    "build:labextension:dev": "jupyter labextension build --development True .",
+    "build:lib": "tsc --sourceMap",
+    "build:lib:prod": "tsc",
+    "build:prod": "jlpm clean && jlpm build:lib:prod && jlpm build:labextension",
+    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "clean:all": "jlpm clean:lib && jlpm clean:labextension",
+    "clean:labextension": "rimraf ../../../dfnotebook/labextension ../../../dfnotebook/_version.py",
+    "develop": "jupyter labextension develop --overwrite .",
+    "eslint": "jlpm eslint:check --fix",
+    "eslint:check": "eslint . --cache --ext .ts,.tsx",
+    "install:extension": "jlpm build",
+    "lint": "jlpm stylelint && jlpm prettier && jlpm eslint",
+    "lint:check": "jlpm stylelint:check && jlpm prettier:check && jlpm eslint:check",
+    "prettier": "jlpm prettier:base --write --list-different",
+    "prettier:base": "prettier \"**/*{.ts,.tsx,.js,.jsx,.css,.json,.md}\"",
+    "prettier:check": "jlpm prettier:base --check",
+    "stylelint": "jlpm stylelint:check --fix",
+    "stylelint:check": "stylelint --cache \"style/**/*.css\"",
+    "watch": "run-p watch:src watch:labextension",
+    "watch:labextension": "jupyter labextension watch .",
+    "watch:src": "tsc -w --sourceMap"
+  },
+  "dependencies": {
+    "@dfnotebook/dfcells": "^4.2.0-beta.0",
+    "@dfnotebook/dfgraph": "^4.2.0-beta.0",
+    "@dfnotebook/dfnotebook": "^4.2.0-beta.0",
+    "@dfnotebook/dfutils": "^4.2.0-beta.0",
+    "@jupyterlab/application": "^4.2.7",
+    "@jupyterlab/apputils": "^4.3.7",
+    "@jupyterlab/cell-toolbar": "^4.2.7",
+    "@jupyterlab/cells": "^4.2.7",
+    "@jupyterlab/codeeditor": "^4.2.7",
+    "@jupyterlab/codemirror": "^4.2.7",
+    "@jupyterlab/coreutils": "^6.2.7",
+    "@jupyterlab/docmanager-extension": "^4.2.7",
+    "@jupyterlab/docregistry": "^4.2.7",
+    "@jupyterlab/filebrowser": "^4.2.7",
+    "@jupyterlab/launcher": "^4.2.7",
+    "@jupyterlab/mainmenu": "^4.2.7",
+    "@jupyterlab/nbformat": "^4.2.7",
+    "@jupyterlab/notebook": "^4.2.7",
+    "@jupyterlab/notebook-extension": "^4.2.7",
+    "@jupyterlab/observables": "^5.2.7",
+    "@jupyterlab/rendermime": "^4.2.7",
+    "@jupyterlab/settingregistry": "^4.2.7",
+    "@jupyterlab/translation": "^4.2.7",
+    "@jupyterlab/ui-components": "^4.2.7",
+    "@lumino/algorithm": "^2.0.1",
+    "@lumino/commands": "^2.3.0",
+    "@lumino/coreutils": "^2.1.2",
+    "@lumino/disposable": "^2.1.2",
+    "@lumino/widgets": "^2.3.2"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.2.7",
+    "rimraf": "^5.0.5",
+    "typescript": "~5.1.6"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "schemaDir": "schema",
+    "outputDir": "../../../dfnotebook/labextension",
+    "disabledExtensions": [
+      "@jupyterlab/notebook-extension:tracker",
+      "@jupyterlab/notebook-extension:cell-executor"
+    ]
+  },
+  "styleModule": "style/index.js"
+}
