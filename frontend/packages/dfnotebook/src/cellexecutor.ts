@@ -179,13 +179,22 @@ import { truncateCellId } from '@dfnotebook/dfutils';
 
   async function dfCommPostData(notebookId: string|undefined, notebook: DataflowNotebookModel, sessionContext: ISessionContext): Promise<void> {
     const dfData = getCellsMetadata(notebook, '');
+    const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
+
     if (!notebook.getMetadata('enable_tags')) {
       dfData.dfMetadata.input_tags = {};
     }
+
     try {
-      const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata});
+      const executedCode: { [key: string]: string } = {};
+         cellMap?.forEach((value, key) => {
+            executedCode[key] = value;
+      });
+      dfData.dfMetadata.executed_code = executedCode;
+
+      const response = await dfCommGetData(sessionContext, {'dfMetadata': dfData.dfMetadata, 'updateExecutedCode': true});
       if (response?.code_dict && Object.keys(response.code_dict).length > 0) {
-        await updateNotebookCells(notebook, notebookId, response.code_dict);
+        await updateNotebookCells(notebook, notebookId, response);
       }
     } catch (error) {
       console.error('Error during kernel communication:', error);
@@ -208,26 +217,23 @@ import { truncateCellId } from '@dfnotebook/dfutils';
     });
   }
 
-  async function updateNotebookCells(notebook: DataflowNotebookModel, notebookId:string|undefined, codeDict: { [key: string]: any }) {
+  async function updateNotebookCells(notebook: DataflowNotebookModel, notebookId:string|undefined, content: { [key: string]: any }) {
     const cellMap = notebookId ? notebookCellMap.get(notebookId) : undefined;
     const cellsArray = Array.from(notebook.cells);
     cellsArray.forEach(cell => {
       if (cell.type === 'code') {
         const cId = truncateCellId(cell.id);
-        if (codeDict.hasOwnProperty(cId)) {
-          const updatedCode = codeDict[cId];
-          const dfmetadata = cell.getMetadata('dfmetadata');
-
-          if (cellMap) {
-            if (cellMap?.get(cId) !== cell.sharedModel.getSource()) {
-              cell.sharedModel.setSource(updatedCode);
-              cellMap.set(cId, updatedCode.trim());
-            } else {
-              cellMap.set(cId, updatedCode.trim());
-              cell.sharedModel.setSource(updatedCode);
-            }
+        const cAny = cell as ICodeCellModel;
+        
+        if (content.code_dict.hasOwnProperty(cId)) {
+          //updating last executed code of cell in cellMap first to maintain dfcell dirty state
+          if (content.executed_code_dict?.hasOwnProperty(cId) && cellMap) {
+            const updatedCode = content.executed_code_dict[cId];
+            cellMap?.set(cId, updatedCode.trim());
           }
-          cell.setMetadata('dfmetadata', dfmetadata);
+          
+          const updatedCode = content.code_dict[cId];
+          cAny.sharedModel.setSource(updatedCode);
         }
       }
     });
@@ -338,7 +344,7 @@ import { truncateCellId } from '@dfnotebook/dfutils';
         const c = cell as ICodeCellModel;
         const cId = truncateCellId(c.id);
         const dfmetadata = c.getMetadata('dfmetadata');
-        if(!dfmetadata.persistentCode)
+        if(!dfmetadata.persistentCode && cId != cellUUID)
         {
           cellIdModelMap[cId] = c;
           return;
