@@ -309,7 +309,8 @@ export namespace DataflowCodeCell {
         sessionContext,
         metadata,
         dfData,
-        cellIdOutputsMap
+        cellIdOutputsMap,
+        cell.model.id.substr(0, 8)
       );
 
       // cell.outputArea.future assigned synchronously in `execute`
@@ -409,8 +410,8 @@ export namespace DataflowCodeCell {
         GraphManager.updateDepViews(false);
       }
 
-       if (content.update_downstreams) {
-          GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+      if (content.update_downstreams) {
+        GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
       }
 
       return msg;

@@ -441,25 +441,26 @@ const GraphManagerPlugin: JupyterFrontEndPlugin<void> = {
                     GraphManager.updateOrder(cellOrder);
                 }
                 console.log(sessId);
-            });
 
-            (nbPanel.content as any).model._cells.changed.connect(() =>{
-                GraphManager.updateOrder((nbPanel.content as any).model.cells.model.cells.map((cell:any) => cell.id));
-            });
-            nbPanel.content.activeCellChanged.connect(() =>{
-                let prevActive = GraphManager.getActive();
-                if(typeof prevActive == 'object' && prevActive.id != undefined ){
-                    let uuid = truncateCellId(prevActive.id);
-                    if(prevActive.sharedModel.source != GraphManager.getText(uuid)){
-                        GraphManager.markStale(uuid);
-                    }
-                    else if(GraphManager.getStale(uuid) == 'Stale'){
-                        GraphManager.revertStale(uuid);
-                    }
-                }
-                //Have to get this off the model the same way that actions.tsx does
-                let activeId = truncateCellId(nbPanel.content.activeCell?.model?.id.replace(/-/g, '') || '');
-                GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
+                (nbPanel.content as any).model._cells.changed.connect(() =>{
+                  GraphManager.updateOrder((nbPanel.content as any).model.cells.model.cells.map((cell:any) => cell.id));
+                });
+                
+                nbPanel.content.activeCellChanged.connect(() =>{
+                  let prevActive = GraphManager.getActive();
+                  if(typeof prevActive == 'object' && prevActive.id != undefined ){
+                      let uuid = truncateCellId(prevActive.id);
+                      if(prevActive.sharedModel.source != GraphManager.getText(uuid)){
+                          GraphManager.markStale(uuid);
+                      }
+                      else if(GraphManager.getStale(uuid) == 'Stale'){
+                          GraphManager.revertStale(uuid);
+                      }
+                  }
+                  //Have to get this off the model the same way that actions.tsx does
+                  let activeId = truncateCellId(nbPanel.content.activeCell?.model?.id.replace(/-/g, '') || '');
+                  GraphManager.updateActive(activeId,nbPanel.content.activeCell?.model);
+                });
             });
       });
 

@@ -422,6 +422,7 @@ class IPythonKernel(ipykernel.ipkernel.IPythonKernel):
             reply_content["status"] = "ok"
 
             if hasattr(res, "nodes"):
+                reply_content["executed_cell_uuid"] = uuid
                 reply_content["nodes"] = res.nodes
                 reply_content["links"] = res.links
                 reply_content["cells"] = res.cells

@@ -30,8 +30,6 @@ export interface IErrorWithExecCountMsg extends KernelMessage.IErrorMsg {
   };
 }
 
-
-
 export class DataflowOutputArea extends OutputArea {
   constructor(options: OutputArea.IOptions, cellId: string) {
     super({
@@ -173,7 +171,8 @@ export namespace DataflowOutputArea {
     sessionContext: ISessionContext,
     metadata?: JSONObject,
     dfData?: JSONObject,
-    cellIdModelMap?: { [key: string]: IOutputAreaModel }
+    cellIdModelMap?: { [key: string]: IOutputAreaModel },
+    expectedUUID?: string
   ): Promise<KernelMessage.IExecuteReplyMsg | undefined> {
     // Override the default for `stop_on_error`.
     let stopOnError = true;
@@ -203,7 +202,15 @@ export namespace DataflowOutputArea {
 
     DataflowOutputArea.cellIdModelMap = cellIdModelMap;
 
-    return future.done;
+    return new Promise<KernelMessage.IExecuteReplyMsg>((resolve, reject) => {
+      future.onReply = (reply: KernelMessage.IExecuteReplyMsg) => {
+        const executedUUID = (reply.content as any).executed_cell_uuid;
+        const status = (reply.content as any).status;
+        if (expectedUUID && executedUUID === expectedUUID || status !== "ok") {
+          resolve(reply);
+        }
+      };
+    });
   }
 
   /**
