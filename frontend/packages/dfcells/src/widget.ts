@@ -310,7 +310,7 @@ export namespace DataflowCodeCell {
         metadata,
         dfData,
         cellIdOutputsMap,
-        cell.model.id.substr(0, 8)
+        truncateCellId(cell.model.id)
       );
 
       // cell.outputArea.future assigned synchronously in `execute`
@@ -389,31 +389,32 @@ export namespace DataflowCodeCell {
         model.setMetadata('execution', timingInfo);
       }
 
-      let content = (msg.content as any);
-      let nodes = content.nodes;
-      let uplinks = content.links;
-      let cells = content.cells;
-      let downlinks = content.imm_downstream_deps;
-      let allUps = content.upstream_deps;
-      let internalNodes = content.internal_nodes;
-      let sessId = sessionContext.session.id;
-      let graphUndefined = false;
-      
-      //Set information about the graph based on sessionid
-      if(GraphManager.graphs[sessId] === undefined){
-        GraphManager.createGraph(sessId);
-        graphUndefined = true;
-      }
-      GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
-      GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${cell.model.id.substr(0, 8) || ''}`,allUps,internalNodes);
-      if (!graphUndefined){
-        GraphManager.updateDepViews(false);
-      }
+      if(msg && msg.content && msg.content.status === 'ok'){
+        let content = (msg.content as any);
+        let nodes = content.nodes;
+        let uplinks = content.links;
+        let cells = content.cells;
+        let downlinks = content.imm_downstream_deps;
+        let allUps = content.upstream_deps;
+        let internalNodes = content.internal_nodes;
+        let sessId = sessionContext.session.id;
+        let graphUndefined = false;
+        
+        //Set information about the graph based on sessionid
+        if(GraphManager.graphs[sessId] === undefined){
+          GraphManager.createGraph(sessId);
+          graphUndefined = true;
+        }
+        GraphManager.graphs[sessId].updateCellContents(dfData?.code_dict);
+        GraphManager.graphs[sessId].updateGraph(cells,nodes,uplinks,downlinks,`${truncateCellId(cell.model.id) || ''}`,allUps,internalNodes);
+        if (!graphUndefined){
+          GraphManager.updateDepViews(false);
+        }
 
-      if (content.update_downstreams) {
-        GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+        if (content.update_downstreams) {
+          GraphManager.graphs[sessId].updateDownLinks(content.update_downstreams);
+        }
       }
-
       return msg;
     } catch (e) {
       // If we started executing, and the cell is still indicating this

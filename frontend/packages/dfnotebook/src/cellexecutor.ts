@@ -12,6 +12,7 @@ import { KernelError, INotebookModel, INotebookCellExecutor } from '@jupyterlab/
 import { DataflowCodeCell } from '@dfnotebook/dfcells';
 import { DataflowNotebookModel } from './model';
 import { notebookCellMap, getNotebookId } from '@dfnotebook/dfcells';
+import { Manager as GraphManager } from '@dfnotebook/dfgraph';
 import { truncateCellId } from '@dfnotebook/dfutils';
 
 /**
@@ -110,7 +111,11 @@ import { truncateCellId } from '@dfnotebook/dfutils';
               }
 
               if (sessionContext?.session?.kernel) {
-                await dfCommPostData(notebookId, notebook as DataflowNotebookModel, sessionContext)
+                await dfCommPostData(notebookId, notebook as DataflowNotebookModel, sessionContext);
+                
+                let sessId = sessionContext.session.id;
+                let dfData = getCellsMetadata(notebook, cellUUID);
+                GraphManager.graphs[sessId].updateCellContents(dfData.dfMetadata.code_dict);
               }
             } 
             else {
